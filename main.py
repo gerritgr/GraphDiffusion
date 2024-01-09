@@ -40,3 +40,6 @@ from torch_geometric.utils import erdos_renyi_graph, to_networkx, from_networkx,
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 DEVICE
+
+print("test")
+print("test2")
