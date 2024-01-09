@@ -8,4 +8,4 @@ RUN /opt/conda/envs/graphdiffusionenv/bin/python -m ipykernel install --user --n
 
 RUN mamba clean -ya
 
-RUN conda env export --name graphdiffusionenv
+RUN conda env export --name graphdiffusionenv >> environment.yml
