@@ -1,0 +1,20 @@
+channels:
+  - pyg
+  - pytorch
+  - nvidia
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pytorch
+  - torchvision=0.15.2
+  - torchaudio=2.0.2
+  - pyg=2.3.1
+  - networkx=3.1
+  - numpy=1.26
+  - scipy=1.11.1
+  - matplotlib=3.7.2
+  - seaborn
+  - pandas=2.0.3
+  - jupyterlab=3.6.3
+  - wandb=0.15.11
