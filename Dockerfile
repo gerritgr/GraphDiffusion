@@ -13,7 +13,7 @@ RUN conda env export --name graphdiffusionenv >> environment.yml
 
 # Set as default
 # Remove the default environment to save space (optional)
-RUN conda env remove -n base
+# RUN conda env remove -n base
 
 # Activate the new environment by default
 # This is done by appending the activation command to the .bashrc file
