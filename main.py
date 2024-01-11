@@ -61,10 +61,10 @@ class GraphDiffusionPipeline:
         return create_grid_plot(arrays, outfile=outfile, plot_data_func = plot_data_func)
 
 # Example usage
-pipeline = GraphDiffusionPipeline()
+pipeline = GraphDiffusionPipeline(node_feature_dim=5)
 
 # Example tensor
-example_tensor = torch.randn(10, 3)*10  # Replace with your actual data
+example_tensor = torch.randn(5)*10  # Replace with your actual data
 
 # Using the train method
 pipeline.train(example_tensor)
@@ -72,13 +72,10 @@ pipeline.train(example_tensor)
 # Using the denoise method
 pipeline.denoise(example_tensor, 0)
 
-example_func = lambda x: x
-
-# Using the denoise method
-pipeline.denoise(example_func, 0)
 
 
-pipeline.visualize_foward( torch.randn(10) * 5)
+
+pipeline.visualize_foward(torch.randn(5) * 5)
 
 
 
