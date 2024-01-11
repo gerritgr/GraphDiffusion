@@ -23,12 +23,14 @@ def plot_array_on_axis(array, axis, x_limits, y_limits):
     axis.set_ylabel('Value')
     #axis.set_title('Scatter Plot')
 
-def create_grid_plot(arrays, outfile="test.png", plt_show = False):
+def create_grid_plot(arrays, outfile="test.png", plt_show = False, plot_data_func = None):
     """
     Creates a grid plot for a list of 1D PyTorch arrays, each plotted on a separate axis.
 
     :param arrays: A list of 1D PyTorch arrays.
     """
+    plot_data_func = plot_data_func or plot_array_on_axis
+
     # Find global x and y limits
     max_length = max(len(arr) for arr in arrays)
     max_value = max(arr.max() for arr in arrays)
@@ -53,7 +55,7 @@ def create_grid_plot(arrays, outfile="test.png", plt_show = False):
 
     # Plot each array on its respective axis
     for i, array in enumerate(arrays):
-        plot_array_on_axis(array, axes[i], x_limits, y_limits)
+        plot_data_func(array, axes[i], x_limits, y_limits)
 
     # Hide any unused subplots
     for j in range(i + 1, len(axes)):

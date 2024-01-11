@@ -153,13 +153,13 @@ class GraphDiffusionPipeline:
         print("forward")
         return self.forward_obj(self, data, t, *args, **kwargs)
     
-    def visualize_foward(self, data, num=100, *args, **kwargs):
+    def visualize_foward(self, data, outfile = "test.png", num=100, plot_data_func = None):
         from plotting import create_grid_plot
         print("visualize")
         arrays = list()
         for t in np.linspace(0, 1, num):
             arrays.append(self.forward(data, t))
-        return create_grid_plot(arrays, outfile="test.png")
+        return create_grid_plot(arrays, outfile=outfile, plot_data_func = plot_data_func)
 
 # Example usage
 pipeline = GraphDiffusionPipeline()
