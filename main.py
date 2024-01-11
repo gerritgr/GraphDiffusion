@@ -70,12 +70,12 @@ example_tensor = torch.randn(5)*10  # Replace with your actual data
 pipeline.train(example_tensor)
 
 # Using the denoise method
-pipeline.denoise(example_tensor, 0)
+x = pipeline.denoise(example_tensor, 0)
+print(x)
 
 
 
-
-pipeline.visualize_foward(torch.randn(5) * 5)
+#pipeline.visualize_foward(torch.randn(5) * 5)
 
 
 
