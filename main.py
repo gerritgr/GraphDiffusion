@@ -1,112 +1,11 @@
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
-plt.rcParams['figure.dpi'] = 100  # Set this to 300 to get better image quality
-import seaborn as sns
+with open('imports.py', 'r') as file:
+    exec(file.read())
 
-import networkx as nx
-import glob
-import random
-import os
-import traceback
-import time
-import copy
-import pickle
-import numpy as np
-import math
-from tqdm import tqdm
-import gzip
-
-from rdkit import Chem
-from rdkit.Chem import Draw
-
-import torch
-from torch import nn
-from torch.optim import Adam
-from torch.nn import Sequential as Seq
-from torch.nn import Linear as Lin
-import torch.nn.functional as F
-import torch_geometric
-from torch_geometric.loader import DataLoader
-from torch_geometric.nn import (
-    PNA,
-    GATv2Conv,
-    GraphNorm,
-    BatchNorm,
-    global_mean_pool,
-    global_add_pool
-)
-from torch_geometric.utils import erdos_renyi_graph, to_networkx, from_networkx, degree
-
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-DEVICE
-
-print("test")
-print("test2")
-
-
-
-import torch
-from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
-
-
-# Define a simple default inference class
-class DefaultInference(nn.Module):
-    def __init__(self, node_feature_dim=1, batch_size = 1):
-        super(DefaultInference, self).__init__()
-        self.node_feature_dim = node_feature_dim
-    
-    def forward(self, pipeline, noise_to_start, *args, **kwargs):
-        # Placeholder inference logic
-        return noise_to_start
-
-# Define a simple default forward class
-class DefaultForward(nn.Module):
-    def __init__(self, node_feature_dim=1, batch_size = 1):
-        super(DefaultForward, self).__init__()
-        self.node_feature_dim = node_feature_dim
-    
-    def forward(self, pipeline, data, t, *args, **kwargs):
-        if t < 1e-7:
-            return data
-        mean = data * (1-t)
-        std_dev = t 
-        standard_normal_sample = torch.randn_like(data)
-        transformed_sample = mean + std_dev * standard_normal_sample
-        return transformed_sample  
-
-# Define a simple default train class
-class DefaultTrain():
-    def __init__(self, node_feature_dim=1, batch_size = 1):
-        super(DefaultTrain, self).__init__()
-        self.node_feature_dim = node_feature_dim
-    
-    def __call__(self, pipeline, data, epochs, *args, **kwargs):
-        # Placeholder training logic
-        return data
-
-# Define a simple default bridge class
-class DefaultBridge(nn.Module):
-    def __init__(self, node_feature_dim=1, batch_size = 1):
-        super(DefaultBridge, self).__init__()
-        self.node_feature_dim = node_feature_dim
-    
-    def forward(self, pipeline, data_now, data_prediction, t, *args, **kwargs):
-        # Placeholder bridge logic
-        return data_prediction
-
-
-# Define a simple default denoiser class based on torch.nn.Module
-class DefaultDenoiser(nn.Module):
-    def __init__(self, node_feature_dim=1, batch_size = 1):
-        super(DefaultDenoiser, self).__init__()
-        self.node_feature_dim = node_feature_dim
-
-    def forward(self, pipeline, data, t, *args, **kwargs):
-        # Simple denoising logic (this is just a placeholder)
-        # Replace with actual denoising logic
-        return data
+from denoiser import *
+from bridge import *
+from train import *
+from forward import *
+from inference import *
 
 # GraphDiffusionPipeline with a default denoiser
 class GraphDiffusionPipeline:
