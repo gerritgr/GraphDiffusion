@@ -6,18 +6,21 @@ from bridge import *
 from train import *
 from forward import *
 from inference import *
+from loss import * 
 
 # GraphDiffusionPipeline with a default denoiser
 class GraphDiffusionPipeline:
-    def __init__(self, batch_size = 1, node_feature_dim = 1, denoise_obj = None, inference_obj = None, addnoise_obj = None, train_obj = None, bridge_obj = None):
+    def __init__(self, batch_size = 1, node_feature_dim = 1, device = None, denoise_obj = None, inference_obj = None, addnoise_obj = None, train_obj = None, bridge_obj = None, loss_obj = None):
         self.batch_size = batch_size
         self.node_feature_dim = node_feature_dim
+        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.denoise_obj = denoise_obj or DefaultDenoiser(node_feature_dim = node_feature_dim, batch_size = batch_size)
+        self.denoise_obj = denoise_obj or DefaultDenoiser(node_feature_dim = node_feature_dim, batch_size = batch_size).to(self.device)
         self.inference_obj = inference_obj or DefaultInference(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.addnoise_obj = addnoise_obj or DefaultAddnoise(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.train_obj = train_obj or DefaultTrain(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.bridge_obj = bridge_obj or DefaultBridge(node_feature_dim = node_feature_dim, batch_size = batch_size)
+        self.loss_obj = loss_obj or DefaultLoss(node_feature_dim = node_feature_dim, batch_size = batch_size)
 
         if not callable(self.denoise_obj):
             raise ValueError("denoise_obj must be callable")
@@ -29,6 +32,12 @@ class GraphDiffusionPipeline:
             raise ValueError("train_obj must be callable")
         if not callable(self.bridge_obj):
             raise ValueError("bridge_obj must be callable")
+
+    def get_model(self):
+        return self.denoise_obj.to(self.device)
+
+    def loss(self, x1, x2, *args, **kwargs):
+        return self.loss_obj(self, x1, x2, *args, **kwargs)
 
     def bridge(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         print("bridge")
@@ -67,7 +76,7 @@ pipeline = GraphDiffusionPipeline(node_feature_dim=5)
 example_tensor = torch.randn(5)*10  # Replace with your actual data
 
 # Using the train method
-pipeline.train(example_tensor)
+#pipeline.train(example_tensor)
 
 # Using the denoise method
 x = pipeline.denoise(example_tensor, 0)
@@ -82,5 +91,9 @@ input_tensor = torch.tensor(input_tensor)
 print("input_tensor", input_tensor)
 #pipeline.visualize_foward(input_tensor)
 
+
+x1 = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
+x2 = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
+print("loss", pipeline.loss(torch.tensor(x1), torch.tensor(x2))) 
 
 

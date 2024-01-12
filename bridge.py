@@ -11,4 +11,4 @@ class DefaultBridge(nn.Module):
         self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs):
-        pipeline.addnoise(data_prediction, t_query) # this is not actually a bridge distribution between the two points
+        return pipeline.addnoise(data_prediction, t_query) # this is not actually a bridge distribution between the two points

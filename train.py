@@ -1,3 +1,7 @@
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+import random
+
 
 # Define a simple default train class
 class DefaultTrain():
@@ -8,3 +12,55 @@ class DefaultTrain():
     def __call__(self, pipeline, data, epochs, *args, **kwargs):
         # Placeholder training logic
         return data
+    
+    def input_to_dataloader(self, input_data, batch_size, device):
+        # Function to move a tensor or tensors in a list to the specified device
+        def to_device(data):
+            if isinstance(data, torch.Tensor):
+                return data.to(device)
+            elif isinstance(data, list):
+                return [x.to(device) for x in data]
+            return data
+
+        # Check if input_data is a DataLoader
+        if isinstance(input_data, DataLoader):
+            # Check if DataLoader batch size matches
+            if input_data.batch_size != batch_size:
+                raise ValueError("Dataloader batch size does not match the specified batch size")
+
+            # Check and move data in DataLoader to the correct device
+            # Note: This creates a new DataLoader
+            dataloader = DataLoader(
+                dataset=TensorDataset(*[to_device(x) for x in input_data.dataset.tensors]),
+                batch_size=batch_size,
+                shuffle=True
+            )
+        # Check if input_data is a list of tensors and create a DataLoader
+        elif isinstance(input_data, list) and all(isinstance(x, torch.Tensor) for x in input_data):
+            dataset = TensorDataset(*to_device(input_data))
+            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        # Check if input_data is a single tensor and create a DataLoader
+        elif isinstance(input_data, torch.Tensor):
+            dataset = TensorDataset(to_device(input_data))
+            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+        else:
+            raise TypeError("Input data must be a DataLoader, a list of tensors, or a single tensor")
+
+        return dataloader  # or other relevant return value
+    
+    def __call__(self, pipeline, input_data, epochs=1, *args, **kwargs):
+        dataloader = self.input_to_dataloader(input_data, pipeline.batch_size, pipeline.device)
+        model = pipeline.get_model()
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+        for epoch in range(epochs):
+            for batch in dataloader:
+                t = random.random()
+                optimizer.zero_grad()
+                batch_with_noise = pipeline.addnoise(batch, t)
+                batch_denoised = pipeline.denoise(batch_with_noise, t)
+                loss = pipeline.loss(batch_with_noise, batch_denoised)
+                loss.backward()
+                optimizer.step()
+
+        return dataloader
+

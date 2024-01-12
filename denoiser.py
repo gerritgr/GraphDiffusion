@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class DefaultDenoiser(nn.Module):
-    def __init__(self, node_feature_dim=1, batch_size=1, hidden_dim=64):
+    def __init__(self, node_feature_dim=1, batch_size=1, hidden_dim=64, device=None):
         super(DefaultDenoiser, self).__init__()
         self.node_feature_dim = node_feature_dim
 
