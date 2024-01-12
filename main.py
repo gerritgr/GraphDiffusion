@@ -9,13 +9,13 @@ from inference import *
 
 # GraphDiffusionPipeline with a default denoiser
 class GraphDiffusionPipeline:
-    def __init__(self, batch_size = 1, node_feature_dim = 1, denoise_obj = None, inference_obj = None, forward_obj = None, train_obj = None, bridge_obj = None):
+    def __init__(self, batch_size = 1, node_feature_dim = 1, denoise_obj = None, inference_obj = None, addnoise_obj = None, train_obj = None, bridge_obj = None):
         self.batch_size = batch_size
         self.node_feature_dim = node_feature_dim
 
         self.denoise_obj = denoise_obj or DefaultDenoiser(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.inference_obj = inference_obj or DefaultInference(node_feature_dim = node_feature_dim, batch_size = batch_size)
-        self.forward_obj = forward_obj or DefaultForward(node_feature_dim = node_feature_dim, batch_size = batch_size)
+        self.addnoise_obj = addnoise_obj or DefaultAddnoise(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.train_obj = train_obj or DefaultTrain(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.bridge_obj = bridge_obj or DefaultBridge(node_feature_dim = node_feature_dim, batch_size = batch_size)
 
@@ -23,16 +23,16 @@ class GraphDiffusionPipeline:
             raise ValueError("denoise_obj must be callable")
         if not callable(self.inference_obj):
             raise ValueError("inference_obj must be callable")
-        if not callable(self.forward_obj):
-            raise ValueError("forward_obj must be callable")
+        if not callable(self.addnoise_obj):
+            raise ValueError("addnoise_obj must be callable")
         if not callable(self.train_obj):
             raise ValueError("train_obj must be callable")
         if not callable(self.bridge_obj):
             raise ValueError("bridge_obj must be callable")
 
-    def brdige(self, data_now, data_prediction, t, *args, **kwargs):
+    def bridge(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         print("bridge")
-        return self.brdige_obj(self, data_now, data_prediction, t, *args, **kwargs)
+        return self.bridge_obj(self, data_now, data_prediction, t_now, t_query, *args, **kwargs)
 
     def inference(self, data = None, noise_to_start = None, *args, **kwargs):
         print("inference")
@@ -48,11 +48,11 @@ class GraphDiffusionPipeline:
         print("denoise")
         return self.denoise_obj(self, data, t, *args, **kwargs)
 
-    def forward(self, data, t, *args, **kwargs):
+    def addnoise(self, data, t, *args, **kwargs):
         print("forward")
-        return self.forward_obj(self, data, t, *args, **kwargs)
+        return self.addnoise_obj(self, data, t, *args, **kwargs)
     
-    def visualize_foward(self, data, outfile = "test.png", num=100, plot_data_func = None):
+    def visualize_foward(self, data, outfile = "test.jpg", num=100, plot_data_func = None):
         from plotting import create_grid_plot
         print("visualize")
         arrays = list()
@@ -71,12 +71,16 @@ pipeline.train(example_tensor)
 
 # Using the denoise method
 x = pipeline.denoise(example_tensor, 0)
-print(x)
+print("denoise", x)
+
+x = pipeline.bridge(data_now = None, data_prediction=example_tensor, t_now=1.0, t_query=0.5)
+print("bridge", x)
+
+input_tensor = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
+random.shuffle(input_tensor)
+input_tensor = torch.tensor(input_tensor)
+print("input_tensor", input_tensor)
+#pipeline.visualize_foward(input_tensor)
 
 
 
-#pipeline.visualize_foward(torch.randn(5) * 5)
-
-
-
-print( np.linspace(0, 1, 5))

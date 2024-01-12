@@ -3,9 +3,9 @@ with open('imports.py', 'r') as file:
 
 
 # Define a simple default forward class
-class DefaultForward(nn.Module):
+class DefaultAddnoise(nn.Module):
     def __init__(self, node_feature_dim=1, batch_size = 1):
-        super(DefaultForward, self).__init__()
+        super(DefaultAddnoise, self).__init__()
         self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, data, t, *args, **kwargs):

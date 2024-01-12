@@ -23,7 +23,7 @@ def plot_array_on_axis(array, axis, x_limits, y_limits):
     axis.set_ylabel('Value')
     #axis.set_title('Scatter Plot')
 
-def create_grid_plot(arrays, outfile="test.png", plt_show = False, plot_data_func = None):
+def create_grid_plot(arrays, outfile="test.pdf", plt_show = False, plot_data_func = None):
     """
     Creates a grid plot for a list of 1D PyTorch arrays, each plotted on a separate axis.
 
