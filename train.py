@@ -54,7 +54,7 @@ class DefaultTrain():
 
         return dataloader  # or other relevant return value
     
-    def __call__(self, pipeline, input_data, epochs=1, *args, **kwargs):
+    def __call__(self, pipeline, input_data, epochs=100, *args, **kwargs):
         dataloader = self.input_to_dataloader(input_data, pipeline.batch_size, pipeline.device)
         model = pipeline.get_model()
         model.train()
@@ -63,10 +63,10 @@ class DefaultTrain():
             for batch in dataloader:
                 t = random.random()
                 optimizer.zero_grad()
-                print("batch", batch, "dataloader", dataloader)
                 batch_with_noise = pipeline.addnoise(batch, t)
                 batch_denoised = pipeline.denoise(batch_with_noise, t)
                 loss = pipeline.loss(batch_with_noise, batch_denoised)
+                print("loss", loss)
                 loss.backward()
                 optimizer.step()
 

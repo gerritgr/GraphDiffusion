@@ -49,7 +49,7 @@ class GraphDiffusionPipeline:
             raise ValueError("Either data or noise_to_start must be provided")
         return self.inference_obj(self, noise_to_start, *args, **kwargs)
 
-    def train(self, data, epochs=1, *args, **kwargs):
+    def train(self, data, epochs=100, *args, **kwargs):
         print("train")
         return self.train_obj(self, data, epochs, *args, **kwargs)
 
