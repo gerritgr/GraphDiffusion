@@ -97,3 +97,8 @@ x2 = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
 print("loss", pipeline.loss(torch.tensor(x1), torch.tensor(x2))) 
 
 
+pipeline = GraphDiffusionPipeline(node_feature_dim=2)
+tensorlist = [torch.tensor(x1), torch.tensor(x2)]
+data = TensorDataset(*tensorlist)
+data = DataLoader(tensorlist, batch_size=1, shuffle=True)
+pipeline.train(data)

@@ -21,6 +21,9 @@ class DefaultTrain():
             elif isinstance(data, list):
                 return [x.to(device) for x in data]
             return data
+    
+        if isinstance(input_data, DataLoader): #TODO fix
+            return input_data
 
         # Check if input_data is a DataLoader
         if isinstance(input_data, DataLoader):
@@ -31,18 +34,21 @@ class DefaultTrain():
             # Check and move data in DataLoader to the correct device
             # Note: This creates a new DataLoader
             dataloader = DataLoader(
-                dataset=TensorDataset(*[to_device(x) for x in input_data.dataset.tensors]),
+                dataset=TensorDataset(*[to_device(x) for x in input_data.dataset]),
                 batch_size=batch_size,
                 shuffle=True
             )
+            return dataloader
         # Check if input_data is a list of tensors and create a DataLoader
         elif isinstance(input_data, list) and all(isinstance(x, torch.Tensor) for x in input_data):
             dataset = TensorDataset(*to_device(input_data))
             dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            return dataloader
         # Check if input_data is a single tensor and create a DataLoader
         elif isinstance(input_data, torch.Tensor):
             dataset = TensorDataset(to_device(input_data))
             dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            return dataloader
         else:
             raise TypeError("Input data must be a DataLoader, a list of tensors, or a single tensor")
 
@@ -51,11 +57,13 @@ class DefaultTrain():
     def __call__(self, pipeline, input_data, epochs=1, *args, **kwargs):
         dataloader = self.input_to_dataloader(input_data, pipeline.batch_size, pipeline.device)
         model = pipeline.get_model()
+        model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         for epoch in range(epochs):
             for batch in dataloader:
                 t = random.random()
                 optimizer.zero_grad()
+                print("batch", batch, "dataloader", dataloader)
                 batch_with_noise = pipeline.addnoise(batch, t)
                 batch_denoised = pipeline.denoise(batch_with_noise, t)
                 loss = pipeline.loss(batch_with_noise, batch_denoised)
