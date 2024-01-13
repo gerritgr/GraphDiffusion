@@ -10,7 +10,7 @@ from loss import *
 
 # VectorPipeline with a default reconstructionr
 class VectorPipeline:
-    def __init__(self, batch_size = 1, node_feature_dim = 1, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, loss_obj = None):
+    def __init__(self, batch_size = 1, node_feature_dim = 1, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None):
         self.batch_size = batch_size
         self.node_feature_dim = node_feature_dim
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -20,7 +20,7 @@ class VectorPipeline:
         self.degradation_obj = degradation_obj or VectorAddnoise(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.train_obj = train_obj or VectorTrain(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.bridge_obj = bridge_obj or VectorBridge(node_feature_dim = node_feature_dim, batch_size = batch_size)
-        self.loss_obj = loss_obj or VectorLoss(node_feature_dim = node_feature_dim, batch_size = batch_size)
+        self.distance_obj = distance_obj or VectorDistance(node_feature_dim = node_feature_dim, batch_size = batch_size)
 
         if not callable(self.reconstruction_obj):
             raise ValueError("reconstruction_obj must be callable")
@@ -36,18 +36,18 @@ class VectorPipeline:
     def get_model(self):
         return self.reconstruction_obj.to(self.device)
 
-    def loss(self, x1, x2, *args, **kwargs):
-        return self.loss_obj(self, x1, x2, *args, **kwargs)
+    def distance(self, x1, x2, *args, **kwargs):
+        return self.distance_obj(self, x1, x2, *args, **kwargs)
 
     def bridge(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         print("bridge")
         return self.bridge_obj(self, data_now, data_prediction, t_now, t_query, *args, **kwargs)
 
-    def inference(self, data = None, noise_to_start = None, *args, **kwargs):
+    def inference(self, dataloader = None, noise_to_start = None, steps = None, *args, **kwargs): 
         print("inference")
-        if data is not None and noise_to_start is None:
+        if data is None and noise_to_start is None:
             raise ValueError("Either data or noise_to_start must be provided")
-        return self.inference_obj(self, noise_to_start, *args, **kwargs)
+        return self.inference_obj(self, dataloader, noise_to_start, steps, *args, **kwargs)
 
     def train(self, data, epochs=100, *args, **kwargs):
         print("train")
@@ -94,11 +94,15 @@ pipeline.visualize_foward(input_tensor)
 
 x1 = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
 x2 = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
-print("loss", pipeline.loss(torch.tensor(x1), torch.tensor(x2))) 
+print("loss", pipeline.distance(torch.tensor(x1), torch.tensor(x2))) 
 
 
 pipeline = VectorPipeline(node_feature_dim=2)
 tensorlist = [torch.tensor(x1), torch.tensor(x2)]
 data = TensorDataset(*tensorlist)
 data = DataLoader(tensorlist, batch_size=1, shuffle=True)
-pipeline.train(data)
+pipeline.train(data, epochs=1000)
+
+
+data0 = pipeline.inference(data)
+print("inference", data0)

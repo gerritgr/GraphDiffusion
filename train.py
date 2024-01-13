@@ -65,7 +65,7 @@ class VectorTrain():
                 optimizer.zero_grad()
                 batch_with_noise = pipeline.degradation(batch, t)
                 batch_reconstructiond = pipeline.reconstruction(batch_with_noise, t)
-                loss = pipeline.loss(batch_with_noise, batch_reconstructiond)
+                loss = pipeline.distance(batch_with_noise, batch_reconstructiond)
                 print("loss", loss)
                 loss.backward()
                 optimizer.step()
