@@ -6,7 +6,7 @@ from bridge import *
 from train import *
 from degradation import *
 from inference import *
-from loss import * 
+from distance import * 
 
 # VectorPipeline with a default reconstructionr
 class VectorPipeline:
@@ -92,13 +92,15 @@ print("input_tensor", input_tensor)
 pipeline.visualize_foward(input_tensor)
 
 
-x1 = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
-x2 = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
+x1 = [5.0 + random.random()*0.01, -5.0 - random.random()*0.01]
+x2 = [5.0 + random.random()*0.01, -5.0 - random.random()*0.01]
 print("loss", pipeline.distance(torch.tensor(x1), torch.tensor(x2))) 
 
+x3 = [5.0 + random.random()*0.01, -5.0 - random.random()*0.01]
+x4 = [5.0 + random.random()*0.01, -5.0 - random.random()*0.01]
 
 pipeline = VectorPipeline(node_feature_dim=2)
-tensorlist = [torch.tensor(x1), torch.tensor(x2)]
+tensorlist = [torch.tensor(x1), torch.tensor(x2), torch.tensor(x3), torch.tensor(x4)]
 data = TensorDataset(*tensorlist)
 data = DataLoader(tensorlist, batch_size=1, shuffle=True)
 pipeline.train(data, epochs=1000)

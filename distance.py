@@ -10,6 +10,7 @@ class VectorDistance(nn.Module):
         super(VectorDistance, self).__init__()
     
     def forward(self, pipeline, x1, x2, dist_type = "L2", *args, **kwargs):
+        print("distance", x1, x2)
         if dist_type == "L2":
             # Using the built-in MSEDistance function for Euclidean distance (L2 norm)
             return torch.sqrt(F.mse_loss(x1, x2, reduction='sum'))

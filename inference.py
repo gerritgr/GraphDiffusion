@@ -19,6 +19,9 @@ class VectorInference(nn.Module):
         # Ensure either dataloader or noise_to_start is not None
         if dataloader is None and noise_to_start is None:
             raise ValueError("Either dataloader or noise_to_start must be provided.")
+        
+        model = pipeline.get_model()
+        model.eval()
 
         # Get starting point by adding 100% noise to a random data point
         if noise_to_start is None:
