@@ -4,9 +4,9 @@ import random
 
 
 # Define a simple default train class
-class DefaultTrain():
+class VectorTrain():
     def __init__(self, node_feature_dim=1, batch_size = 1):
-        super(DefaultTrain, self).__init__()
+        super(VectorTrain, self).__init__()
         self.node_feature_dim = node_feature_dim
     
     def __call__(self, pipeline, data, epochs, *args, **kwargs):
@@ -63,9 +63,9 @@ class DefaultTrain():
             for batch in dataloader:
                 t = random.random()
                 optimizer.zero_grad()
-                batch_with_noise = pipeline.addnoise(batch, t)
-                batch_denoised = pipeline.denoise(batch_with_noise, t)
-                loss = pipeline.loss(batch_with_noise, batch_denoised)
+                batch_with_noise = pipeline.degradation(batch, t)
+                batch_reconstructiond = pipeline.reconstruction(batch_with_noise, t)
+                loss = pipeline.loss(batch_with_noise, batch_reconstructiond)
                 print("loss", loss)
                 loss.backward()
                 optimizer.step()
