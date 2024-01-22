@@ -1,22 +1,28 @@
 channels:
-  - pyg
   - pytorch
   - nvidia
   - defaults
   - conda-forge
 dependencies:
-  - python=3.10
-  - pytorch=2.0.1=py3.10_cuda11.8_cudnn8.7.0_0
-  - pytorch-cuda=11.8
-  - torchvision=0.15.2
-  - torchaudio=2.0.2
-  - pyg=2.3.1
-  - networkx=3.1
-  - numpy=1.26
-  - scipy=1.11.1
-  - matplotlib=3.7.2
+  - python=3.11
+  - pip
+  - pytorch
+  - torchvision
+  - torchaudio
+  - networkx
+  - numpy
+  - scipy
+  - matplotlib
   - seaborn
-  - pandas=2.0.3
-  - jupyterlab=3.6.3
-  - wandb=0.15.11
+  - pandas
+  - jupyterlab
+  - wandb
+  - scikit-learn
+  - tqdm
   - rdkit
+  - pip:
+      - torch-cluster==1.6.3
+      - torch-geometric==2.4.0
+      - torch-scatter==2.1.2
+      - torch-sparse==0.6.18
+      - torch-spline-conv==1.2.2
