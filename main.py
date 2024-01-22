@@ -103,7 +103,7 @@ pipeline = VectorPipeline(node_feature_dim=2)
 tensorlist = [torch.tensor(x1), torch.tensor(x2), torch.tensor(x3), torch.tensor(x4)]
 data = TensorDataset(*tensorlist)
 data = DataLoader(tensorlist, batch_size=1, shuffle=True)
-pipeline.train(data, epochs=1000)
+pipeline.train(data, epochs=10000)
 
 
 data0 = pipeline.inference(data)
