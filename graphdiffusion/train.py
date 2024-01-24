@@ -1,3 +1,10 @@
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(script_dir, 'imports.py')
+with open(file_path, 'r') as file:
+    exec(file.read())
+
+    
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 import random
@@ -27,26 +34,25 @@ class VectorTrain():
 
         # Check if input_data is a DataLoader
         if isinstance(input_data, DataLoader):
-            # Check if DataLoader batch size matches
-            if input_data.batch_size != batch_size:
-                raise ValueError("Dataloader batch size does not match the specified batch size")
-
             # Check and move data in DataLoader to the correct device
             # Note: This creates a new DataLoader
             dataloader = DataLoader(
-                dataset=TensorDataset(*[to_device(x) for x in input_data.dataset]),
+                dataset=[to_device(x) for x in input_data.dataset],
                 batch_size=batch_size,
                 shuffle=True
             )
             return dataloader
         # Check if input_data is a list of tensors and create a DataLoader
         elif isinstance(input_data, list) and all(isinstance(x, torch.Tensor) for x in input_data):
-            dataset = TensorDataset(*to_device(input_data))
-            dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            dataloader = DataLoader(
+                dataset=[to_device(x) for x in input_data],
+                batch_size=batch_size,
+                shuffle=True
+            )
             return dataloader
         # Check if input_data is a single tensor and create a DataLoader
         elif isinstance(input_data, torch.Tensor):
-            dataset = TensorDataset(to_device(input_data))
+            dataset = [to_device(input_data)]
             dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
             return dataloader
         else:

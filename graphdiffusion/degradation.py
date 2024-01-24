@@ -1,4 +1,7 @@
-with open('imports.py', 'r') as file:
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(script_dir, 'imports.py')
+with open(file_path, 'r') as file:
     exec(file.read())
 
 

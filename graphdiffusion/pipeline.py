@@ -1,4 +1,7 @@
-with open('imports.py', 'r') as file:
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(script_dir, 'imports.py')
+with open(file_path, 'r') as file:
     exec(file.read())
 
 from reconstruction import *
@@ -8,14 +11,28 @@ from degradation import *
 from inference import *
 from distance import * 
 
+
 # VectorPipeline with a default reconstructionr
 class VectorPipeline:
-    def __init__(self, batch_size = 1, node_feature_dim = 1, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None):
-        self.batch_size = batch_size
-        self.node_feature_dim = node_feature_dim
+    def __init__(self, pre_trained = None, batch_size = None, node_feature_dim = None, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None):
+        self.batch_size = batch_size or 1
+        self.node_feature_dim = node_feature_dim or 1
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(node_feature_dim = node_feature_dim, batch_size = batch_size).to(self.device)
+        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(node_feature_dim = node_feature_dim, batch_size = batch_size)
+
+        if pre_trained is not None:
+            try:
+                # See if load_model is implemented
+                self.reconstruction_obj.load_model(self, pre_trained)
+            except:
+                try:
+                    self.reconstruction_obj.load_state_dict(torch.load(pre_trained, map_location=torch.device('cpu')))
+                except:
+                    print("Could not load pre-trained model.")
+            
+        self.reconstruction_obj.to(self.device)
+
         self.inference_obj = inference_obj or VectorInference(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.degradation_obj = degradation_obj or VectorAddnoise(node_feature_dim = node_feature_dim, batch_size = batch_size)
         self.train_obj = train_obj or VectorTrain(node_feature_dim = node_feature_dim, batch_size = batch_size)
@@ -45,7 +62,7 @@ class VectorPipeline:
 
     def inference(self, dataloader = None, noise_to_start = None, steps = None, *args, **kwargs): 
         print("inference")
-        if data is None and noise_to_start is None:
+        if dataloader is None and noise_to_start is None:
             raise ValueError("Either data or noise_to_start must be provided")
         return self.inference_obj(self, dataloader, noise_to_start, steps, *args, **kwargs)
 
@@ -61,7 +78,7 @@ class VectorPipeline:
         print("degradation")
         return self.degradation_obj(self, data, t, *args, **kwargs)
     
-    def visualize_foward(self, data, outfile = "test.jpg", num=100, plot_data_func = None):
+    def visualize_foward(self, data, outfile = "test_forward.jpg", num=100, plot_data_func = None):
         from plotting import create_grid_plot
         print("visualize")
         arrays = list()
@@ -69,42 +86,24 @@ class VectorPipeline:
             arrays.append(self.degradation(data, t))
         return create_grid_plot(arrays, outfile=outfile, plot_data_func = plot_data_func)
 
-# Example usage
-pipeline = VectorPipeline(node_feature_dim=5)
+    def visualize_reconstruction(self, data, outfile = "test_backward.jpg", num=25, steps=100, plot_data_func = None):
+        from plotting import create_grid_plot
+        def split_list(lst, m): #TODO fix
+            if m > len(lst):
+                raise ValueError("m cannot be greater than the number of elements in the list")
+            n = len(lst)
+            size = n // m
+            extra = n % m
+            return [lst[i * size + min(i, extra):(i + 1) * size + min(i + 1, extra)] for i in range(m)]
 
-# Example tensor
-example_tensor = torch.randn(5)*10  # Replace with your actual data
+        print("visualize backward")
+        arrays = list()
+        backward_steps = list(np.linspace(0., 1, steps))
+        backward_steps = split_list(backward_steps, num)
+        current_data = self.degradation(data, t=1.0)
 
-# Using the train method
-#pipeline.train(example_tensor)
+        for t in backward_steps:
+            current_data = self.inference(noise_to_start=current_data, steps=backward_steps)
+            arrays.append(current_data)
+        return create_grid_plot(arrays, outfile=outfile, plot_data_func = plot_data_func)
 
-# Using the reconstruction method
-x = pipeline.reconstruction(example_tensor, 0)
-print("reconstruction", x)
-
-x = pipeline.bridge(data_now = None, data_prediction=example_tensor, t_now=1.0, t_query=0.5)
-print("bridge", x)
-
-input_tensor = [5.0 + random.random()*0.01, -5.0 + random.random()*0.01]
-random.shuffle(input_tensor)
-input_tensor = torch.tensor(input_tensor)
-print("input_tensor", input_tensor)
-pipeline.visualize_foward(input_tensor)
-
-
-x1 = [5.0 + random.random()*0.01, -5.0 - random.random()*0.01]
-x2 = [5.0 + random.random()*0.01, -5.0 - random.random()*0.01]
-print("loss", pipeline.distance(torch.tensor(x1), torch.tensor(x2))) 
-
-x3 = [5.0 + random.random()*0.01, -5.0 - random.random()*0.01]
-x4 = [5.0 + random.random()*0.01, -5.0 - random.random()*0.01]
-
-pipeline = VectorPipeline(node_feature_dim=2)
-tensorlist = [torch.tensor(x1), torch.tensor(x2), torch.tensor(x3), torch.tensor(x4)]
-data = TensorDataset(*tensorlist)
-data = DataLoader(tensorlist, batch_size=1, shuffle=True)
-pipeline.train(data, epochs=10000)
-
-
-data0 = pipeline.inference(data)
-print("inference", data0)
