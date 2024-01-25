@@ -10,13 +10,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class VectorDenoiser(nn.Module):
-    def __init__(self, node_feature_dim=1, hidden_dim=64, num_layers=8, dropout_rate=0.2):
+    def __init__(self, node_feature_dim=1, hidden_dim=64, num_layers=8, dropout_rate=0.2, time_dim = 1):
         super(VectorDenoiser, self).__init__()
         self.node_feature_dim = node_feature_dim
+        self.time_dim = time_dim
 
 
         # First fully connected layer
-        self.fc1 = nn.Linear(node_feature_dim, hidden_dim)
+        self.fc1 = nn.Linear(node_feature_dim+self.time_dim, hidden_dim)
 
         # Creating hidden layers
         self.hidden_layers = nn.ModuleList()
@@ -36,6 +37,19 @@ class VectorDenoiser(nn.Module):
         if data.dim() == 1:
             data = data.unsqueeze(0)
         assert(data.shape[1] == self.node_feature_dim)
+
+        # Add time to data tensor
+        # Handle the case where t is a float
+        if isinstance(t, float):
+            t_tensor = torch.full((data.size(0), 1), t, dtype=data.dtype, device=data.device)
+        # Handle the case where t is a tensor of size m
+        elif isinstance(t, torch.Tensor) and t.ndim == 1 and t.size(0) == data.size(0):
+            t_tensor = t.view(-1, 1)
+        else:
+            raise ValueError('t must be a float or a 1D tensor of size equal to the number of rows in x')
+        # Concatenate t_tensor to x along the last dimension (columns)
+        data = torch.cat((data, t_tensor), dim=1)
+
 
         x = F.relu(self.fc1(data))  # Apply first layer with ReLU
 
