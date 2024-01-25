@@ -4,6 +4,19 @@ import torch
 import matplotlib.pyplot as plt
 import random
 
+
+def to_numpy_array(input_array):
+    # Check if the input_array is a PyTorch tensor
+    if isinstance(input_array, torch.Tensor):
+        # Detach the tensor from the current graph and move it to cpu
+        return input_array.detach().cpu().numpy()
+    # Check if the input_array is already a NumPy array
+    elif isinstance(input_array, np.ndarray):
+        return input_array
+    else:
+        raise TypeError("The input should be a PyTorch tensor or a NumPy array")
+
+
 def plot_array_on_axis(array, axis, x_limits, y_limits):
     """
     Draws the input 1D PyTorch array on the provided Matplotlib axis using a scatter plot.
@@ -13,10 +26,11 @@ def plot_array_on_axis(array, axis, x_limits, y_limits):
     :param x_limits: A tuple containing the minimum and maximum x-axis limits.
     :param y_limits: A tuple containing the minimum and maximum y-axis limits.
     """
-    x = torch.arange(len(array))  # Generate x-coordinates as indices
+    array = to_numpy_array(array)
+    x = np.arange(len(array))  # Generate x-coordinates as indices
     y = array  # y-coordinates are the array values
 
-    axis.scatter(x.numpy(), y.numpy(), s=500, alpha=0.5, edgecolors='none')   # Plotting the scatter plot on the provided axis
+    axis.scatter(x, y, s=500, alpha=0.5, edgecolors='none')   # Plotting the scatter plot on the provided axis
     axis.set_xlim(x_limits)  # Set x-axis limits
     axis.set_ylim(y_limits)  # Set y-axis limits
     axis.set_xlabel('Index')
@@ -29,6 +43,8 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show = False, plot_data_fun
 
     :param arrays: A list of 1D PyTorch arrays.
     """
+    arrays = [to_numpy_array(array) for array in arrays]
+
     plot_data_func = plot_data_func or plot_array_on_axis
 
     # Find global x and y limits

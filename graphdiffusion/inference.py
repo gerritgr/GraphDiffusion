@@ -18,7 +18,7 @@ class VectorInference(nn.Module):
             steps = np.linspace(1, 0, 100)
         
         if len(steps) < 2 or not np.all(steps[:-1] > steps[1:]) or not (0 <= steps[0] <= 1 and 0 <= steps[-1] <= 1):
-            raise ValueError("Steps must be a decreasing sequence in the range [0, 1] and have a length of at least 2.")
+            raise ValueError("Steps must be a decreasing sequence in the range [0, 1] and have a length of at least 2.", "steps:", steps)
         # Ensure either dataloader or noise_to_start is not None
         if dataloader is None and noise_to_start is None:
             raise ValueError("Either dataloader or noise_to_start must be provided.")

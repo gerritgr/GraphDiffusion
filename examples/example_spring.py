@@ -88,13 +88,16 @@ def plot_2darray_on_axis(array, axis, x_limits, y_limits):
     :param x_limits: A tuple containing the minimum and maximum x-axis limits.
     :param y_limits: A tuple containing the minimum and maximum y-axis limits.
     """
-    array = array.detach().numpy()
+    #array = to_numpy_array(array)
 
     axis.scatter([array[0]], [array[1]], s=1000, alpha=0.5, edgecolors='none')   # Plotting the scatter plot on the provided axis
-    axis.set_xlim([-10,10])  # Set x-axis limits
-    axis.set_ylim([-10,10])  # Set x-axis limits
+    #axis.set_xlim([-10,10])  # Set x-axis limits
+    #axis.set_ylim([-10,10])  # Set x-axis limits
     axis.set_xlabel('x')
     axis.set_ylabel('y')
     #axis.set_title('Scatter Plot')
 
 pipeline.visualize_foward(points[0], outfile="spiral_forward.jpg", plot_data_func=plot_2darray_on_axis, num=25)
+
+
+pipeline.visualize_reconstruction(data=points[0], plot_data_func=plot_2darray_on_axis, outfile="spiral_backward.jpg")
