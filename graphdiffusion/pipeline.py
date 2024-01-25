@@ -14,12 +14,11 @@ from distance import *
 
 # VectorPipeline with a default reconstructionr
 class VectorPipeline:
-    def __init__(self, pre_trained = None, batch_size = None, node_feature_dim = None, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None):
-        self.batch_size = batch_size or 1
+    def __init__(self, pre_trained = None, node_feature_dim = None, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None):
         self.node_feature_dim = node_feature_dim or 1
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(node_feature_dim = node_feature_dim, batch_size = batch_size)
+        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(node_feature_dim = node_feature_dim)
 
         if pre_trained is not None:
             try:
@@ -33,11 +32,11 @@ class VectorPipeline:
             
         self.reconstruction_obj.to(self.device)
 
-        self.inference_obj = inference_obj or VectorInference(node_feature_dim = node_feature_dim, batch_size = batch_size)
-        self.degradation_obj = degradation_obj or VectorAddnoise(node_feature_dim = node_feature_dim, batch_size = batch_size)
-        self.train_obj = train_obj or VectorTrain(node_feature_dim = node_feature_dim, batch_size = batch_size)
-        self.bridge_obj = bridge_obj or VectorBridge(node_feature_dim = node_feature_dim, batch_size = batch_size)
-        self.distance_obj = distance_obj or VectorDistance(node_feature_dim = node_feature_dim, batch_size = batch_size)
+        self.inference_obj = inference_obj or VectorInference(node_feature_dim = node_feature_dim)
+        self.degradation_obj = degradation_obj or VectorAddnoise(node_feature_dim = node_feature_dim)
+        self.train_obj = train_obj or VectorTrain(node_feature_dim = node_feature_dim)
+        self.bridge_obj = bridge_obj or VectorBridge(node_feature_dim = node_feature_dim)
+        self.distance_obj = distance_obj or VectorDistance(node_feature_dim = node_feature_dim)
 
         if not callable(self.reconstruction_obj):
             raise ValueError("reconstruction_obj must be callable")
@@ -57,30 +56,26 @@ class VectorPipeline:
         return self.distance_obj(self, x1, x2, *args, **kwargs)
 
     def bridge(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
-        print("bridge")
         return self.bridge_obj(self, data_now, data_prediction, t_now, t_query, *args, **kwargs)
 
     def inference(self, dataloader = None, noise_to_start = None, steps = None, *args, **kwargs): 
-        print("inference")
         if dataloader is None and noise_to_start is None:
             raise ValueError("Either data or noise_to_start must be provided")
         return self.inference_obj(self, dataloader, noise_to_start, steps, *args, **kwargs)
 
     def train(self, data, epochs=100, *args, **kwargs):
-        print("train")
         return self.train_obj(self, data, epochs, *args, **kwargs)
 
     def reconstruction(self, data, t, *args, **kwargs):
-        print("reconstruction")
         return self.reconstruction_obj(self, data, t, *args, **kwargs)
 
     def degradation(self, data, t, *args, **kwargs):
-        print("degradation")
         return self.degradation_obj(self, data, t, *args, **kwargs)
     
     def visualize_foward(self, data, outfile = "test_forward.jpg", num=100, plot_data_func = None):
         from plotting import create_grid_plot
-        print("visualize")
+        if isinstance(data, torch.utils.data.DataLoader):
+            data = next(iter(data))
         arrays = list()
         for t in np.linspace(0, 1, num):
             arrays.append(self.degradation(data, t))
@@ -101,7 +96,10 @@ class VectorPipeline:
                 final_list[i].append(final_list[i+1][0])
             return final_list
 
-        print("visualize backward")
+        if isinstance(data, torch.utils.data.DataLoader):
+            data = next(iter(data))
+        print("data", data)
+
         arrays = list()
         backward_steps = list(np.linspace(1., 0, steps))
         backward_steps = split_list(backward_steps, num)

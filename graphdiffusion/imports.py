@@ -1,3 +1,6 @@
+from icecream import install
+install()
+
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -38,3 +41,4 @@ from torch_geometric.nn import (
     global_add_pool
 )
 from torch_geometric.utils import erdos_renyi_graph, to_networkx, from_networkx, degree
+from icecream import ic

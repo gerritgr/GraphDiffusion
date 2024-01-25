@@ -5,4 +5,3 @@
 #from degradation import *
 #from inference import *
 #from distance import * 
-#print("start init.")

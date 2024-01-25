@@ -1,6 +1,7 @@
 #import os
 #os.chdir("../graphdiffusion")
 #print("Current Working Directory: ", os.getcwd())
+
 import os, sys
 #os.chdir("")
 sys.path.append("../graphdiffusion")
@@ -20,7 +21,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-def generate_noisy_spiral(num_points=10, noise_level=5.5):
+def generate_noisy_spiral(num_points=1000, noise_level=5.5):
     """
     Generate points distributed according to a noisy 2D spiral.
 
@@ -57,16 +58,56 @@ plt.axis('equal')
 
 plt.savefig("spiral.png")
 
+############
+# Inspect Data
+############
+
+def plot_2darray_on_axis(array, axis, x_limits, y_limits):
+    """
+    Draws the input 2D NumPy array on the provided Matplotlib axis using a scatter plot.
+    Each row in the 2D array is considered a separate point in the scatter plot.
+    If the input array is 1D, it's treated as a single point with batch size 1.
+
+    :param array: A 2D or 1D NumPy array of numbers to be plotted.
+                  If 2D, shape should be (batch_size, 2).
+                  If 1D, shape should be (2,).
+    :param axis: A Matplotlib axis object on which to draw the scatter plot.
+    :param x_limits: A tuple containing the minimum and maximum x-axis limits.
+    :param y_limits: A tuple containing the minimum and maximum y-axis limits.
+    """
+    # If the input array is 1D, reshape it to 2D with batch size 1
+    if array.ndim == 1:
+        array = array.reshape(1, -1)
+
+    # Ensure array is a 2D tensor after reshaping
+    if array.ndim != 2 or array.shape[1] != 2:
+        raise ValueError('Input array must be a 2D or 1D array with shape (batch_size, 2) or (2,)')
+
+    # Plotting the scatter plot on the provided axis for all points
+    axis.scatter(array[:, 0], array[:, 1], s=1000, alpha=0.5, edgecolors='none')
+
+    # Set x and y axis limits
+    #axis.set_xlim(x_limits)
+    #axis.set_ylim(y_limits)
+
+    # Setting labels
+    axis.set_xlabel('x')
+    axis.set_ylabel('y')
+
+
+train_dataloader = DataLoader(points, batch_size=50, shuffle=True)
+pipeline = VectorPipeline(node_feature_dim=2)
+pipeline.visualize_foward(train_dataloader, outfile="spiral_forward.jpg", plot_data_func=plot_2darray_on_axis, num=25)
+
 
 ############
 # Train
 ############
 
-pipeline = VectorPipeline(node_feature_dim=2)
-#tensorlist = TensorDataset(*points)
-data = DataLoader(points, batch_size=1, shuffle=True)
-print(points[:10])
-pipeline.train(data, epochs=100)
+
+
+print("first ten points", points[:10])
+pipeline.train(train_dataloader, epochs=100000)
 pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
@@ -74,30 +115,7 @@ pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_
 ############
 
 pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
-data0 = pipeline.inference(data)
+data0 = pipeline.inference(train_dataloader)
 print("inference spring", data0)
 
-
-
-def plot_2darray_on_axis(array, axis, x_limits, y_limits):
-    """
-    Draws the input 1D PyTorch array on the provided Matplotlib axis using a scatter plot.
-
-    :param array: A 1D PyTorch array of numbers to be plotted.
-    :param axis: A Matplotlib axis object on which to draw the scatter plot.
-    :param x_limits: A tuple containing the minimum and maximum x-axis limits.
-    :param y_limits: A tuple containing the minimum and maximum y-axis limits.
-    """
-    #array = to_numpy_array(array)
-
-    axis.scatter([array[0]], [array[1]], s=1000, alpha=0.5, edgecolors='none')   # Plotting the scatter plot on the provided axis
-    #axis.set_xlim([-10,10])  # Set x-axis limits
-    #axis.set_ylim([-10,10])  # Set x-axis limits
-    axis.set_xlabel('x')
-    axis.set_ylabel('y')
-    #axis.set_title('Scatter Plot')
-
-pipeline.visualize_foward(points[0], outfile="spiral_forward.jpg", plot_data_func=plot_2darray_on_axis, num=25)
-
-
-pipeline.visualize_reconstruction(data=points[0], plot_data_func=plot_2darray_on_axis, outfile="spiral_backward.jpg")
+pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2darray_on_axis, outfile="spiral_backward.jpg")

@@ -7,7 +7,7 @@ with open(file_path, 'r') as file:
 
 # Define a simple default forward class
 class VectorAddnoise(nn.Module):
-    def __init__(self, node_feature_dim=1, batch_size = 1):
+    def __init__(self, node_feature_dim=1):
         super(VectorAddnoise, self).__init__()
         self.node_feature_dim = node_feature_dim
     

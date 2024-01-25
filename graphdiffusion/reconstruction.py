@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class VectorDenoiser(nn.Module):
-    def __init__(self, node_feature_dim=1, hidden_dim=64, num_layers=8, dropout_rate=0.2, batch_size=1):
+    def __init__(self, node_feature_dim=1, hidden_dim=64, num_layers=8, dropout_rate=0.2):
         super(VectorDenoiser, self).__init__()
         self.node_feature_dim = node_feature_dim
 
@@ -32,8 +32,10 @@ class VectorDenoiser(nn.Module):
 
 
     def forward(self, pipeline, data, t, *args, **kwargs):
-        data = data.flatten()
-        assert(data.numel() == self.node_feature_dim)
+        # Make sure data has form (batch_size, feature_dim)
+        if data.dim() == 1:
+            data = data.unsqueeze(0)
+        assert(data.shape[1] == self.node_feature_dim)
 
         x = F.relu(self.fc1(data))  # Apply first layer with ReLU
 

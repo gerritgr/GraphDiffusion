@@ -41,7 +41,7 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show = False, plot_data_fun
     """
     Creates a grid plot for a list of 1D PyTorch arrays, each plotted on a separate axis.
 
-    :param arrays: A list of 1D PyTorch arrays.
+    :param arrays: A list of 2D PyTorch arrays.
     """
     arrays = [to_numpy_array(array) for array in arrays]
 

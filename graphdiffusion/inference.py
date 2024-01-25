@@ -7,7 +7,7 @@ with open(file_path, 'r') as file:
 
 
 class VectorInference(nn.Module):
-    def __init__(self, node_feature_dim=1, batch_size = 1):
+    def __init__(self, node_feature_dim=1):
         super(VectorInference, self).__init__()
         self.node_feature_dim = node_feature_dim
     
@@ -34,7 +34,7 @@ class VectorInference(nn.Module):
         data_t = noise_to_start
         for i, t in enumerate(steps):
             data_0 = pipeline.reconstruction(data_t, t)
-            print("data_0", data_0)
+            #print("data_0 projection during inference", data_0)
             if i >= len(steps) - 1:
                 return data_0
             t_next = steps[i+1]
