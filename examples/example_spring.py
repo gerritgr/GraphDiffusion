@@ -21,7 +21,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-def generate_noisy_spiral(num_points=1000, noise_level=5.5):
+def generate_noisy_spiral(num_points=10000, noise_level=5.5, scale=50.0):
     """
     Generate points distributed according to a noisy 2D spiral.
 
@@ -40,7 +40,7 @@ def generate_noisy_spiral(num_points=1000, noise_level=5.5):
     y = r * np.sin(theta) + np.random.normal(0, noise_level, num_points)
 
     # Combine x and y into a list of 2D PyTorch tensors
-    points = [torch.tensor([x[i], y[i]], dtype=torch.float32) for i in range(num_points)]
+    points = [torch.tensor([x[i]/scale, y[i]/scale], dtype=torch.float32) for i in range(num_points)]
 
     return points
 
@@ -49,7 +49,7 @@ points = generate_noisy_spiral()
 
 # Plotting
 plt.clf()
-plt.scatter([p[0].item() for p in points], [p[1].item() for p in points], alpha=0.6, s=500)
+plt.scatter([p[0].item() for p in points], [p[1].item() for p in points], alpha=0.6, s=100)
 plt.title('Noisy 2D Spiral')
 plt.xlabel('X')
 plt.ylabel('Y')
@@ -57,6 +57,7 @@ plt.axis('equal')
 
 
 plt.savefig("spiral.png")
+
 
 ############
 # Inspect Data
@@ -87,15 +88,15 @@ def plot_2darray_on_axis(array, axis, x_limits, y_limits):
     axis.scatter(array[:, 0], array[:, 1], s=1000, alpha=0.5, edgecolors='none')
 
     # Set x and y axis limits
-    #axis.set_xlim(x_limits)
-    #axis.set_ylim(y_limits)
+    axis.set_xlim([-3,3.])
+    axis.set_ylim([-3,3.])
 
     # Setting labels
     axis.set_xlabel('x')
     axis.set_ylabel('y')
 
 
-train_dataloader = DataLoader(points, batch_size=50, shuffle=True)
+train_dataloader = DataLoader(points, batch_size=10, shuffle=True)
 pipeline = VectorPipeline(node_feature_dim=2)
 pipeline.visualize_foward(train_dataloader, outfile="spiral_forward.jpg", plot_data_func=plot_2darray_on_axis, num=25)
 
@@ -107,7 +108,7 @@ pipeline.visualize_foward(train_dataloader, outfile="spiral_forward.jpg", plot_d
 
 
 print("first ten points", points[:10])
-pipeline.train(train_dataloader, epochs=100000)
+pipeline.train(train_dataloader, epochs=1000)
 pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############

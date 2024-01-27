@@ -6,16 +6,31 @@ with open(file_path, 'r') as file:
 
 
 # Define a simple default forward class
-class VectorAddnoise(nn.Module):
+class VectorDegradation(nn.Module):
     def __init__(self, node_feature_dim=1):
-        super(VectorAddnoise, self).__init__()
+        super(VectorDegradation, self).__init__()
         self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, data, t, *args, **kwargs):
-        if t < 1e-7:
+        if torch.is_tensor(t):
+            batch_dim = data.shape[0]
+            t = t.reshape(batch_dim,1)
+            if not torch.all((t >= 0) & (t <= 1)):
+                raise ValueError("All elements of tensor 't' must be between 0 and 1.")
+        elif isinstance(t, float):
+            if not (0 <= t <= 1):
+                raise ValueError("The float value of 't' must be between 0 and 1.")
+        else:
+            raise TypeError("'t' must be a float or a tensor.")
+
+        if isinstance(t, float) and t < 1e-7:
             return data
-        mean = data * (1-t)
-        std_dev = t 
+
+        # If t is a tensor, this operation will be applied element-wise.
+        t = t**0.5  # Add scaling
+        mean = data * (1 - t)
+        std_dev = t
         standard_normal_sample = torch.randn_like(data)
         transformed_sample = mean + std_dev * standard_normal_sample
-        return transformed_sample  
+
+        return transformed_sample

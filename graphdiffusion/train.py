@@ -15,10 +15,7 @@ class VectorTrain():
     def __init__(self, node_feature_dim=1, batch_size = 1):
         super(VectorTrain, self).__init__()
         self.node_feature_dim = node_feature_dim
-    
-    def __call__(self, pipeline, data, epochs, *args, **kwargs):
-        # Placeholder training logic
-        return data
+
     
     def input_to_dataloader(self, input_data, device, batch_size_default = 1):
         # Function to move a tensor or tensors in a list to the specified device
@@ -57,21 +54,28 @@ class VectorTrain():
             raise TypeError("Input data must be a DataLoader, a list of tensors, or a single tensor")
 
         return dataloader  # or other relevant return value
-    
+
     def __call__(self, pipeline, input_data, epochs=100, *args, **kwargs):
         dataloader = self.input_to_dataloader(input_data, pipeline.device)
         model = pipeline.get_model()
         model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-        for epoch in tqdm(range(epochs)):
+        
+        # Create a tqdm progress bar for the epochs
+        pbar = tqdm(range(epochs), desc='Epoch: 0, Loss: N/A')
+        
+        for epoch in pbar:
+            total_loss = 0
             for batch in dataloader:
-                t = random.random()
+                t = torch.rand(batch.shape[0]) #random.random() 
                 optimizer.zero_grad()
                 batch_with_noise = pipeline.degradation(batch, t)
-                batch_reconstructiond = pipeline.reconstruction(batch_with_noise, t)
-                loss = pipeline.distance(batch, batch_reconstructiond)
+                batch_reconstructed = pipeline.reconstruction(batch_with_noise, t)
+                loss = pipeline.distance(batch, batch_reconstructed)
                 loss.backward()
                 optimizer.step()
-
-        return dataloader
-
+                total_loss += loss.item()
+            
+            average_loss = total_loss / len(dataloader)
+            # Update the progress bar description with the current epoch and average loss
+            pbar.set_description(f'Epoch: {epoch + 1}, Loss: {average_loss:.4f}')
