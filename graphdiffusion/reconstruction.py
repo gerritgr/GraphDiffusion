@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class VectorDenoiser(nn.Module):
-    def __init__(self, node_feature_dim=1, hidden_dim=64, num_layers=8, dropout_rate=0.2, time_dim = 32):
+    def __init__(self, node_feature_dim=1, hidden_dim=128, num_layers=8, dropout_rate=0.2, time_dim = 32):
         super(VectorDenoiser, self).__init__()
         self.node_feature_dim = node_feature_dim
         self.time_dim = time_dim

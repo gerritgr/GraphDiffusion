@@ -113,7 +113,7 @@ pipeline.visualize_foward(train_dataloader, outfile="spiral_forward.jpg", plot_d
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 print("first ten points", points[:10])
-pipeline.train(train_dataloader, epochs=100000)
+pipeline.train(train_dataloader, epochs=10000)
 pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
