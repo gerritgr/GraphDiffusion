@@ -113,8 +113,8 @@ pipeline.visualize_foward(train_dataloader, outfile="spiral_forward.jpg", plot_d
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 print("first ten points", points[:10])
-pipeline.train(train_dataloader, epochs=10000)
-pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights.pt")
+#pipeline.train(train_dataloader, epochs=10000)
+#pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
 # Inference
@@ -125,4 +125,4 @@ pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weig
 data0 = pipeline.inference(train_dataloader)
 print("inference spring", data0)
 
-pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2darray_on_axis, outfile="spiral_backward.jpg")
+pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2darray_on_axis, outfile="spiral_backward.jpg", num=25, steps=100)

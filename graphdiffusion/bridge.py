@@ -25,5 +25,7 @@ class VectorBridgeColdDiffusion(nn.Module):
     
     def forward(self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         x_0 = data_prediction
-        x_tminus1 = data_now - pipeline.degradation(x_0, t_now) + pipeline.degradation(x_0, t_query)
+        seed = int(random.random()*10000)
+        assert(t_now > t_query)
+        x_tminus1 = data_now - pipeline.degradation(x_0, t_now, seed=seed) + pipeline.degradation(x_0, t_query, seed=seed)
         return x_tminus1 

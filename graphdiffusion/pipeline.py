@@ -100,13 +100,17 @@ class VectorPipeline:
             data = next(iter(data))
         print("data", data)
 
-        arrays = list()
+        arrays_data = list()
+        arrays_projections = list()
         backward_steps = list(np.linspace(1., 0, steps))
         backward_steps = split_list(backward_steps, num)
         current_data = self.degradation(data, t=1.0)
         print("backward_steps", backward_steps)
         for steps_i in backward_steps:
-            current_data = self.inference(noise_to_start=current_data, steps=steps_i)
-            arrays.append(current_data)
-        return create_grid_plot(arrays, outfile=outfile, plot_data_func = plot_data_func)
+            current_data, current_projection = self.inference(noise_to_start=current_data, steps=steps_i)
+            arrays_data.append(current_data)
+            arrays_projections.append(current_projection)
+
+        create_grid_plot(arrays_data, outfile=outfile, plot_data_func = plot_data_func)
+        return create_grid_plot(arrays_projections, outfile=outfile.replace(".jpg", "_proj.jpg"), plot_data_func = plot_data_func)
 

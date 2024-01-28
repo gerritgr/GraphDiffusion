@@ -11,7 +11,7 @@ class VectorDegradation(nn.Module):
         super(VectorDegradation, self).__init__()
         self.node_feature_dim = node_feature_dim
     
-    def forward(self, pipeline, data, t, *args, **kwargs):
+    def forward(self, pipeline, data, t, seed = None, *args, **kwargs):
         if torch.is_tensor(t):
             batch_dim = data.shape[0]
             t = t.reshape(batch_dim,1)
@@ -30,7 +30,25 @@ class VectorDegradation(nn.Module):
         t = t**3.0  # Add scaling
         mean = data * (1 - t)
         std_dev = t**0.5 # you could also just ust t
+
+        if seed is not None:
+            # Save the current RNG state
+            cpu_rng_state = torch.get_rng_state()
+            gpu_rng_state = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
+            # Set the new seed
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+
         standard_normal_sample = torch.randn_like(data)
+        
+        if seed is not None:
+            # Restore the previous RNG state
+            torch.set_rng_state(cpu_rng_state)
+            if gpu_rng_state is not None:
+                torch.cuda.set_rng_state_all(gpu_rng_state)
+
+
         transformed_sample = mean + std_dev * standard_normal_sample
 
         return transformed_sample
