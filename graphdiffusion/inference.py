@@ -36,8 +36,12 @@ class VectorInference(nn.Module):
             data_0 = pipeline.reconstruction(data_t, t)
             #print("data_0 projection during inference", data_0)
             if i >= len(steps) - 1:
-                return data_0
+                if t<1e-7:
+                    return data_0
+                else:
+                    return pipeline.bridge(data_t, data_0, t, t) # or just return data_t
             t_next = steps[i+1]
+            assert(t_next < t)
             data_t_next = pipeline.bridge(data_t, data_0, t, t_next)
             data_t = data_t_next
 

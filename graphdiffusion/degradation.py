@@ -27,9 +27,9 @@ class VectorDegradation(nn.Module):
             return data
 
         # If t is a tensor, this operation will be applied element-wise.
-        t = t**0.5  # Add scaling
+        t = t**3.0  # Add scaling
         mean = data * (1 - t)
-        std_dev = t
+        std_dev = t**0.5 # you could also just ust t
         standard_normal_sample = torch.randn_like(data)
         transformed_sample = mean + std_dev * standard_normal_sample
 

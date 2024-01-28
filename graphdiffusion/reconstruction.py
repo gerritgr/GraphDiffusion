@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class VectorDenoiser(nn.Module):
-    def __init__(self, node_feature_dim=1, hidden_dim=64, num_layers=8, dropout_rate=0.2, time_dim = 4):
+    def __init__(self, node_feature_dim=1, hidden_dim=64, num_layers=8, dropout_rate=0.2, time_dim = 32):
         super(VectorDenoiser, self).__init__()
         self.node_feature_dim = node_feature_dim
         self.time_dim = time_dim
@@ -31,7 +31,7 @@ class VectorDenoiser(nn.Module):
         # Output layer
         self.fc_last = nn.Linear(hidden_dim, node_feature_dim)
 
-    def time_to_pos_emb(self, t, target_dim):
+    def time_to_pos_emb(self, t, target_dim, add_original = False):
         """
         Converts a tensor of time values into positional embeddings of specified dimensionality.
         
@@ -63,6 +63,9 @@ class VectorDenoiser(nn.Module):
         t_pos_emb = torch.zeros_like(t_tensor.expand(-1, target_dim), device=device)
         t_pos_emb[:, 0::2] = torch.sin(t_tensor * div_term[:, 0::2])  # dim 2i
         t_pos_emb[:, 1::2] = torch.cos(t_tensor * div_term[:, 1::2])  # dim 2i+1
+
+        if add_original:
+            t_pos_emb[:,-1] = t_tensor.squeeze()
         
         return t_pos_emb
     
@@ -86,7 +89,7 @@ class VectorDenoiser(nn.Module):
         # Concatenate t_tensor to x along the last dimension (columns)
         
         if self.time_dim > 1:
-            t_tensor = self.time_to_pos_emb(t_tensor, self.time_dim)
+            t_tensor = self.time_to_pos_emb(t_tensor, self.time_dim, add_original = True)
         data = torch.cat((data, t_tensor), dim=1)
 
 

@@ -12,7 +12,7 @@ import random
 
 # Define a simple default train class
 class VectorTrain():
-    def __init__(self, node_feature_dim=1, batch_size = 1):
+    def __init__(self, node_feature_dim=1):
         super(VectorTrain, self).__init__()
         self.node_feature_dim = node_feature_dim
 
@@ -64,6 +64,10 @@ class VectorTrain():
         # Create a tqdm progress bar for the epochs
         pbar = tqdm(range(epochs), desc='Epoch: 0, Loss: N/A')
         
+        # Initialize moving average loss
+        moving_average_loss = None
+        alpha = 0.1  # Smoothing factor for moving average, between 0 and 1
+        
         for epoch in pbar:
             total_loss = 0
             for batch in dataloader:
@@ -76,6 +80,12 @@ class VectorTrain():
                 optimizer.step()
                 total_loss += loss.item()
             
-            average_loss = total_loss / len(dataloader)
-            # Update the progress bar description with the current epoch and average loss
-            pbar.set_description(f'Epoch: {epoch + 1}, Loss: {average_loss:.4f}')
+            average_loss = total_loss / len(dataloader) # assumes mean reduction for loss
+            # Update moving average loss
+            if moving_average_loss is None:
+                moving_average_loss = average_loss  # Initialize with the first epoch's average loss
+            else:
+                moving_average_loss = alpha * average_loss + (1 - alpha) * moving_average_loss
+            
+            # Update the progress bar description with the current epoch and moving average loss
+            pbar.set_description(f'Epoch: {epoch + 1}, Loss: {moving_average_loss:.4f}')

@@ -15,9 +15,9 @@ class VectorDistance(nn.Module):
     def forward(self, pipeline, x1, x2, dist_type = "L2", *args, **kwargs):
         if dist_type == "L2":
             # Using the built-in MSEDistance function for Euclidean distance (L2 norm)
-            return torch.sqrt(F.mse_loss(x1, x2, reduction='sum'))
+            return torch.sqrt(F.mse_loss(x1, x2, reduction='mean'))
         elif dist_type == "L1":
             # Using the built-in L1Distance function for Manhattan distance (L1 norm)
-            return F.l1_loss(x1, x2, reduction='sum')
+            return F.l1_loss(x1, x2, reduction='mean')
         else:
             raise ValueError(f"Unsupported distance type: {dist_type}")

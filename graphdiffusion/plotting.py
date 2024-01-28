@@ -17,7 +17,7 @@ def to_numpy_array(input_array):
         raise TypeError("The input should be a PyTorch tensor or a NumPy array")
 
 
-def plot_array_on_axis(array, axis, x_limits, y_limits):
+def plot_array_on_axis(array, axis, arrays):
     """
     Draws the input 1D PyTorch array on the provided Matplotlib axis using a scatter plot.
 
@@ -31,8 +31,15 @@ def plot_array_on_axis(array, axis, x_limits, y_limits):
     y = array  # y-coordinates are the array values
 
     axis.scatter(x, y, s=500, alpha=0.5, edgecolors='none')   # Plotting the scatter plot on the provided axis
-    axis.set_xlim(x_limits)  # Set x-axis limits
-    axis.set_ylim(y_limits)  # Set y-axis limits
+    #axis.set_xlim(x_limits)  # Set x-axis limits
+    #axis.set_ylim(y_limits)  # Set y-axis limits
+    min_x = np.min([np.min(x[:,:]) for x in arrays])
+    max_x = np.max([np.max(x[:,:]) for x in arrays])
+    min_y = 0.0
+    max_y = np.max([x.shape[1] for x in arrays]) #TODO fix
+    axis.set_xlim([min_x,max_x])
+    axis.set_ylim([min_y,max_y])
+
     axis.set_xlabel('Index')
     axis.set_ylabel('Value')
     #axis.set_title('Scatter Plot')
@@ -71,7 +78,7 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show = False, plot_data_fun
 
     # Plot each array on its respective axis
     for i, array in enumerate(arrays):
-        plot_data_func(array, axes[i], x_limits, y_limits)
+        plot_data_func(array, axes[i], arrays)
 
     # Hide any unused subplots
     for j in range(i + 1, len(axes)):
