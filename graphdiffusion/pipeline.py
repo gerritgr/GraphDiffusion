@@ -10,6 +10,7 @@ from train import *
 from degradation import *
 from inference import *
 from distance import * 
+from utils import *
 
 
 # VectorPipeline with a default reconstructionr
@@ -35,7 +36,7 @@ class VectorPipeline:
         self.inference_obj = inference_obj or VectorInference(node_feature_dim = node_feature_dim)
         self.degradation_obj = degradation_obj or VectorDegradation(node_feature_dim = node_feature_dim)
         self.train_obj = train_obj or VectorTrain(node_feature_dim = node_feature_dim)
-        self.bridge_obj = bridge_obj or VectorBridgeStepByStep(node_feature_dim = node_feature_dim)
+        self.bridge_obj = bridge_obj or VectorBridge(node_feature_dim = node_feature_dim)
         self.distance_obj = distance_obj or VectorDistance(node_feature_dim = node_feature_dim)
 
         if not callable(self.reconstruction_obj):
