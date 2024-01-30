@@ -94,7 +94,7 @@ class VectorBridgeDDPM(nn.Module):
         assert(row_num == data_prediction.shape[0])
 
         # Generate and calculate betas, alphas, and related parameters
-        betas = VectorDegradationDDPM.generate_schedule()
+        betas = VectorDegradationDDPM.generate_schedule(step_num=pipeline.step_num)
         step_num = betas.numel()
         t_int = int(t_now*(step_num-1))
         t_query_int = int(t_query*(step_num-1))

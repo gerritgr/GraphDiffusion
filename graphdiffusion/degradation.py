@@ -50,34 +50,33 @@ class VectorDegradation(nn.Module):
 
 
 class VectorDegradationDDPM(nn.Module):
-    def __init__(self, node_feature_dim=1, step_num = 100):
+    def __init__(self, node_feature_dim=1):
         super(VectorDegradationDDPM, self).__init__()
         self.node_feature_dim = node_feature_dim
-        self.step_num = step_num
     
-
     @staticmethod
-    def generate_schedule(start = 0.0001, end = 0.01, timesteps=100):
+    def generate_schedule(start = 0.0001, end = 0.01, step_num=100):
         """
         Generates a schedule of beta and alpha values for a forward process.
 
         Args:
         start (float): The starting value for the beta values. Default is START.
         end (float): The ending value for the beta values. Default is END.
-        timesteps (int): The number of timesteps to generate. Default is TIMESTEPS.
+        step_num (int): The number of step_num to generate. Default is step_num.
 
         Returns:
         tuple: A tuple of three tensors containing the beta values, alpha values, and
         cumulative alpha values (alpha bars).
         """
 
-        betas = torch.linspace(start, end, timesteps)
-        assert(betas.numel() == timesteps)
+        betas = torch.linspace(start, end, step_num)
+        assert(betas.numel() == step_num)
         return betas
 
     def forward(self, pipeline, data, t, seed = None, *args, **kwargs):
         row_num = data.shape[0]
         feature_dim = data.shape[1]
+        step_num = pipeline.step_num
 
         if torch.is_tensor(t):
             t = t.reshape(row_num,1)
@@ -91,8 +90,8 @@ class VectorDegradationDDPM(nn.Module):
             raise TypeError("'t' must be a float or a tensor.")
     
 
-        t_scaled = torch.round(t * (self.step_num - 1.)).long().to(data.device)
-        betas = VectorDegradationDDPM.generate_schedule(timesteps=self.step_num).to(data.device)
+        t_scaled = torch.round(t * (step_num - 1.)).long().to(data.device)
+        betas = VectorDegradationDDPM.generate_schedule(step_num=step_num).to(data.device)
         noise = rand_like_with_seed(data, seed=seed)
         alphas = 1. - betas
         alphas_cumprod = torch.cumprod(alphas, axis=0)

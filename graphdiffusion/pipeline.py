@@ -15,9 +15,10 @@ from utils import *
 
 # VectorPipeline with a default reconstructionr
 class VectorPipeline:
-    def __init__(self, pre_trained = None, node_feature_dim = None, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None):
+    def __init__(self, pre_trained = None, step_num = 100, node_feature_dim = None, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None):
         self.node_feature_dim = node_feature_dim or 1
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.step_num = step_num
 
         self.reconstruction_obj = reconstruction_obj or VectorDenoiser(node_feature_dim = node_feature_dim)
 
@@ -82,7 +83,7 @@ class VectorPipeline:
             arrays.append(self.degradation(data, t))
         return create_grid_plot(arrays, outfile=outfile, plot_data_func = plot_data_func)
 
-    def visualize_reconstruction(self, data, outfile = "test_backward.jpg", num=25, steps=100, plot_data_func = None):
+    def visualize_reconstruction(self, data, outfile = "test_backward.jpg", num=25, steps=None, plot_data_func = None):
         from plotting import create_grid_plot
         def split_list(lst, m): #TODO fix
             if m > len(lst):
@@ -100,6 +101,7 @@ class VectorPipeline:
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
 
+        steps = steps or self.step_num
         arrays_data = list()
         arrays_projections = list()
         backward_steps = list(np.linspace(1., 0, steps))
