@@ -98,7 +98,7 @@ class VectorBridgeDDPM(nn.Module):
         step_num = betas.numel()
         t_int = int(t_now*(step_num-1))
         t_query_int = int(t_query*(step_num-1))
-        print("t_int", t_int, "t_query_int", t_query_int)
+        #print("t_int", t_int, "t_query_int", t_query_int)
         assert(t_int == t_query_int+1 or t_int == t_query_int+2 or t_int == t_query_int)
         t_step_tensor = torch.full((row_num, 1), t_int, device=data_now.device).long() 
 

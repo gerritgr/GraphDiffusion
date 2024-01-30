@@ -144,7 +144,7 @@ pipeline = VectorPipeline(node_feature_dim=2, degradation_obj=degradation_obj, b
 pipeline.visualize_foward(train_dataloader, outfile="spiral_forward_ddpm.jpg", plot_data_func=plot_2darray_on_axis, num=25)
 
 # Train
-pipeline.train(train_dataloader, epochs=1000)
+pipeline.train(train_dataloader, epochs=10000)
 pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
 pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 
