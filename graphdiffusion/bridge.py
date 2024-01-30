@@ -94,11 +94,10 @@ class VectorBridgeDDPM(nn.Module):
         assert(row_num == data_prediction.shape[0])
 
         # Generate and calculate betas, alphas, and related parameters
-        betas = VectorDegradationDDPM.generate_schedule()
+        betas = VectorDegradationDDPM.generate_schedule(pipeline.degradation_obj.step_num)
         step_num = betas.numel()
         t_int = int(t_now*(step_num-1))
         t_query_int = int(t_query*(step_num-1))
-        print("t_int", t_int, "t_query_int", t_query_int)
         assert(t_int == t_query_int+1 or t_int == t_query_int+2 or t_int == t_query_int)
         t_step_tensor = torch.full((row_num, 1), t_int, device=data_now.device).long() 
 

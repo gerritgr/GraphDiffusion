@@ -50,14 +50,14 @@ class VectorDegradation(nn.Module):
 
 
 class VectorDegradationDDPM(nn.Module):
-    def __init__(self, node_feature_dim=1, step_num = 1000):
+    def __init__(self, node_feature_dim=1, step_num = 100):
         super(VectorDegradationDDPM, self).__init__()
         self.node_feature_dim = node_feature_dim
         self.step_num = step_num
     
 
     @staticmethod
-    def generate_schedule(start = 0.0001, end = 0.01, timesteps=1000):
+    def generate_schedule(start = 0.0001, end = 0.01, timesteps=100):
         """
         Generates a schedule of beta and alpha values for a forward process.
 
