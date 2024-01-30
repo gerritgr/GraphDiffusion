@@ -78,15 +78,15 @@ class VectorBridgeDDPM(nn.Module):
     
     
     @staticmethod
-    def get_noise_from_pred(original_pred, x_with_noise, future_t):
-        row_num = x_with_noise.shape[0]
+    def get_noise_from_pred(data_prediction, data_now, future_t):
+        row_num = data_now.shape[0]
         betas = VectorDegradationDDPM.generate_schedule()
         alphas = 1. - betas
         alphas_cumprod = torch.cumprod(alphas, axis=0)
         alphabar_t = torch.gather(alphas_cumprod, 0, future_t.flatten()).view(row_num, 1)
 
         scaled_noise = torch.sqrt(alphabar_t)
-        noise = x_with_noise - scaled_noise * original_pred
+        noise = data_prediction - scaled_noise * data_now
         noise = noise / torch.sqrt(1.0 - alphabar_t)
 
         return noise
@@ -125,7 +125,7 @@ class VectorBridgeDDPM(nn.Module):
             posterior_variance = betas * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)  # in the paper this is in 3.2. Note that sigma^2 is variance, not std.
             posterior_std_t = torch.sqrt(posterior_variance[t_int])
             noise = rand_like_with_seed(data_now)
-            posterior_std_t = 1.0
+            #posterior_std_t = 2.5
             values_one_step_denoised = model_mean + posterior_std_t * noise
 
         return values_one_step_denoised
