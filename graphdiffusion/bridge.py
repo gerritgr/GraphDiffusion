@@ -119,7 +119,7 @@ class VectorBridgeDDPM(nn.Module):
         if t_int != 0:
             posterior_variance = (1. - alphas_cumprod_prev) / (1. - alphas_cumprod) * betas  # in the paper this is in 3.2. Note that sigma^2 is variance, not std.
             posterior_std_t = torch.sqrt(posterior_variance[t_int])
-            posterior_std_t = torch.sqrt(beta_t) #alternative
+            #posterior_std_t = torch.sqrt(beta_t) #alternative
             noise = rand_like_with_seed(data_now)
             values_one_step_denoised = model_mean + posterior_std_t * noise
 
