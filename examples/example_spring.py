@@ -142,4 +142,4 @@ pipeline.visualize_foward(train_dataloader, outfile="spiral_forward_ddpm.jpg", p
 #pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
 
 # Inference
-pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2darray_on_axis, outfile="spiral_backward_ddpm.jpg", num=25, steps=100)
+pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2darray_on_axis, outfile="spiral_backward_ddpm.jpg", num=25, steps=1000)

@@ -59,9 +59,6 @@ class VectorBridgeLinear(nn.Module):
     def forward(self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         direction = data_prediction - data_now
         direction = direction/torch.norm(direction)
-        seed = torch.randint(0, 10000, (1,)).item()
-        #magnitude = torch.norm(pipeline.degradation(data_prediction, t_now, seed=seed) - pipeline.degradation(data_prediction, t_query, seed=seed))
-
         x_tminus1 = data_now + direction * (1.0-t_now)
 
         if t_query > 1e-3:
@@ -100,6 +97,9 @@ class VectorBridgeDDPM(nn.Module):
         betas = VectorDegradationDDPM.generate_schedule()
         step_num = betas.numel()
         t_int = int(t_now*(step_num-1))
+        t_query_int = int(t_query*(step_num-1))
+        print("t_int", t_int, "t_query_int", t_query_int)
+        assert(t_int == t_query_int+1 or t_int == t_query_int+2 or t_int == t_query_int)
         t_step_tensor = torch.full((row_num, 1), t_int, device=data_now.device).long() 
 
         beta_t = betas[t_int]
