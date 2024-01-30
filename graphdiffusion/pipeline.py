@@ -11,16 +11,18 @@ from degradation import *
 from inference import *
 from distance import * 
 from utils import *
+from encoding import time_to_pos_emb
 
 
 # VectorPipeline with a default reconstructionr
 class VectorPipeline:
-    def __init__(self, pre_trained = None, step_num = 100, node_feature_dim = None, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None):
+    def __init__(self, pre_trained = None, step_num = 100, node_feature_dim = None, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None, encoding_obj=None, **kwargs):
         self.node_feature_dim = node_feature_dim or 1
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.step_num = step_num
+        self.config = kwargs
 
-        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(node_feature_dim = node_feature_dim)
+        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(self)
 
         if pre_trained is not None:
             try:
@@ -34,11 +36,12 @@ class VectorPipeline:
             
         self.reconstruction_obj.to(self.device)
 
-        self.inference_obj = inference_obj or VectorInference(node_feature_dim = node_feature_dim)
-        self.degradation_obj = degradation_obj or VectorDegradation(node_feature_dim = node_feature_dim)
-        self.train_obj = train_obj or VectorTrain(node_feature_dim = node_feature_dim)
-        self.bridge_obj = bridge_obj or VectorBridge(node_feature_dim = node_feature_dim)
-        self.distance_obj = distance_obj or VectorDistance(node_feature_dim = node_feature_dim)
+        self.inference_obj = inference_obj or VectorInference(self)
+        self.degradation_obj = degradation_obj or VectorDegradation(self)
+        self.train_obj = train_obj or VectorTrain(self)
+        self.bridge_obj = bridge_obj or VectorBridge(self)
+        self.distance_obj = distance_obj or VectorDistance(self)
+        self.encoding_obj = encoding_obj or time_to_pos_emb
 
         if not callable(self.reconstruction_obj):
             raise ValueError("reconstruction_obj must be callable")

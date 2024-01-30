@@ -12,11 +12,10 @@ import random
 
 # Define a simple default train class
 class VectorTrain():
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline):
         super(VectorTrain, self).__init__()
-        self.node_feature_dim = node_feature_dim
 
-    
+    @staticmethod
     def input_to_dataloader(self, input_data, device, batch_size_default = 1):
         # Function to move a tensor or tensors in a list to the specified device
         def to_device(data):
@@ -55,8 +54,8 @@ class VectorTrain():
 
         return dataloader  # or other relevant return value
 
-    def __call__(self, pipeline, input_data, epochs=100, *args, **kwargs):
-        dataloader = self.input_to_dataloader(input_data, pipeline.device)
+    def __call__(self, pipeline, input_data, epochs=100, alpha = 0.1, *args, **kwargs):
+        dataloader = VectorTrain.input_to_dataloader(input_data, pipeline.device)
         model = pipeline.get_model()
         model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -66,7 +65,6 @@ class VectorTrain():
         
         # Initialize moving average loss
         moving_average_loss = None
-        alpha = 0.1  # Smoothing factor for moving average, between 0 and 1
         
         for epoch in pbar:
             total_loss = 0

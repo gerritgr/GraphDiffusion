@@ -9,9 +9,8 @@ from degradation import *
 
 # Define a simple default bridge class
 class VectorBridgeNaive(nn.Module):
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline=None):
         super(VectorBridge, self).__init__()
-        self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         return pipeline.degradation(data_prediction, t_query) # this is not actually a bridge distribution between the two points
@@ -19,9 +18,8 @@ class VectorBridgeNaive(nn.Module):
 
 
 class VectorBridgeColdDiffusion(nn.Module):
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline=None):
         super(VectorBridgeColdDiffusion, self).__init__()
-        self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         x_0 = data_prediction
@@ -33,9 +31,8 @@ class VectorBridgeColdDiffusion(nn.Module):
 
 
 class VectorBridge(nn.Module):
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline=None):
         super(VectorBridge, self).__init__()
-        self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         direction = data_prediction - data_now
@@ -52,9 +49,8 @@ class VectorBridge(nn.Module):
 
 
 class VectorBridgeLinear(nn.Module):
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline=None):
         super(VectorBridgeLinear, self).__init__()
-        self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         direction = data_prediction - data_now
@@ -69,18 +65,14 @@ class VectorBridgeLinear(nn.Module):
 
 
 class VectorBridgeDDPM(nn.Module):
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline=None):
         super(VectorBridgeDDPM, self).__init__()
-        self.node_feature_dim = node_feature_dim
-    
     
     @staticmethod
     def get_noise_from_pred(x_0_pred, x_t, alphas_cumprod_t):
-
         # Solve Algorithm 1 from the DDPM paper solved for nosie
         noise = x_t -  torch.sqrt(alphas_cumprod_t) * x_0_pred
         noise = noise / torch.sqrt(1.0 - alphas_cumprod_t)
-
         return noise
 
         

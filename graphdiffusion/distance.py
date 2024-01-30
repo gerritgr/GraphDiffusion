@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 # Define a simple default forward class
 class VectorDistance(nn.Module):
-    def __init__(self, node_feature_dim=1, hidden_dim=64, device=None):
+    def __init__(self, pipleline=None):
         super(VectorDistance, self).__init__()
     
     def forward(self, pipeline, x1, x2, dist_type = "L1", *args, **kwargs):

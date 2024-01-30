@@ -5,11 +5,9 @@ with open(file_path, 'r') as file:
     exec(file.read())
 
 
-
 class VectorInference(nn.Module):
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline=None):
         super(VectorInference, self).__init__()
-        self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, dataloader=None, noise_to_start=None, steps=None, *args, **kwargs):
         if isinstance(steps, int):

@@ -137,8 +137,8 @@ pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2da
 ############
 
 # Forward
-degradation_obj = VectorDegradationDDPM(node_feature_dim=2)
-bridge_obj = VectorBridgeDDPM(node_feature_dim=2)
+degradation_obj = VectorDegradationDDPM(None)
+bridge_obj = VectorBridgeDDPM(None)
 #pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline = VectorPipeline(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(train_dataloader, outfile="spiral_forward_ddpm.jpg", plot_data_func=plot_2darray_on_axis, num=25)

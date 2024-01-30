@@ -8,9 +8,8 @@ from utils import *
 
 # Define a simple default forward class
 class VectorDegradation(nn.Module):
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline):
         super(VectorDegradation, self).__init__()
-        self.node_feature_dim = node_feature_dim
     
     def forward(self, pipeline, data, t, seed = None, *args, **kwargs):
         if torch.is_tensor(t):
@@ -50,9 +49,8 @@ class VectorDegradation(nn.Module):
 
 
 class VectorDegradationDDPM(nn.Module):
-    def __init__(self, node_feature_dim=1):
+    def __init__(self, pipeline=None):
         super(VectorDegradationDDPM, self).__init__()
-        self.node_feature_dim = node_feature_dim
     
     @staticmethod
     def generate_schedule(start = 0.0001, end = 0.01, step_num=100):
