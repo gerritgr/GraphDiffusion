@@ -46,7 +46,7 @@ class VectorBridge(nn.Module):
         x_tminus1 = data_now + direction * magnitude #(1.0-t_now)
 
         if t_query > 1e-3:
-            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * magnitude/2.0
+            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * magnitude/3.0
 
         return x_tminus1 
 

@@ -120,7 +120,7 @@ print("first ten points", points[:10])
 ############
 print("start inference")
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)#, bridge_obj=bridge_obj)
+pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
 data0 = pipeline.inference(train_dataloader)
 pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2darray_on_axis, outfile="spiral_backward.jpg", num=25, steps=100)
 
@@ -134,12 +134,12 @@ pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2da
 # Forward
 degradation_obj = VectorDegradationDDPM(node_feature_dim=2)
 bridge_obj = VectorBridgeDDPM(node_feature_dim=2)
-pipeline = VectorPipeline(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
+pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(train_dataloader, outfile="spiral_forward_ddpm.jpg", plot_data_func=plot_2darray_on_axis, num=25)
 
 # Train
-pipeline.train(train_dataloader, epochs=100000)
-pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
+#pipeline.train(train_dataloader, epochs=100000)
+#pipeline.reconstruction_obj.save_model(pipeline, "../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
 
 # Inference
 pipeline.visualize_reconstruction(data=train_dataloader, plot_data_func=plot_2darray_on_axis, outfile="spiral_backward_ddpm.jpg", num=25, steps=100)
