@@ -99,15 +99,13 @@ class VectorPipeline:
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
-        print("data", data)
 
         arrays_data = list()
         arrays_projections = list()
         backward_steps = list(np.linspace(1., 0, steps))
         backward_steps = split_list(backward_steps, num)
         current_data = self.degradation(data, t=1.0)
-        print("backward_steps", backward_steps)
-        for steps_i in tqdm(backward_steps, total=len(backward_steps), desc='Processing inference'):
+        for steps_i in tqdm(backward_steps, total=len(backward_steps), desc='Visualize reconstruction'):
             current_data, current_projection = self.inference(noise_to_start=current_data, steps=steps_i)
             arrays_data.append(current_data)
             arrays_projections.append(current_projection)

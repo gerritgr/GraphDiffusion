@@ -94,10 +94,11 @@ class VectorBridgeDDPM(nn.Module):
         assert(row_num == data_prediction.shape[0])
 
         # Generate and calculate betas, alphas, and related parameters
-        betas = VectorDegradationDDPM.generate_schedule(pipeline.degradation_obj.step_num)
+        betas = VectorDegradationDDPM.generate_schedule()
         step_num = betas.numel()
         t_int = int(t_now*(step_num-1))
         t_query_int = int(t_query*(step_num-1))
+        print("t_int", t_int, "t_query_int", t_query_int)
         assert(t_int == t_query_int+1 or t_int == t_query_int+2 or t_int == t_query_int)
         t_step_tensor = torch.full((row_num, 1), t_int, device=data_now.device).long() 
 
@@ -121,5 +122,16 @@ class VectorBridgeDDPM(nn.Module):
             posterior_std_t = torch.sqrt(beta_t) #alternative
             noise = rand_like_with_seed(data_now)
             values_one_step_denoised = model_mean + posterior_std_t * noise
+
+        if torch.isnan(values_one_step_denoised).any() or torch.isinf(values_one_step_denoised).any():
+            warn_str = 'Bridge: The tensor contains NaN or Inf values. These will be replaced with 0.'
+            print(warn_str)
+            print("model_mean", model_mean) 
+            print("noise_prediction", noise_prediction)
+            print("data_prediction", data_prediction)
+            print("data_now", data_now)
+            print("alphas_cumprod_t", alphas_cumprod_t)
+            values_one_step_denoised = torch.where(torch.isnan(values_one_step_denoised) | torch.isinf(values_one_step_denoised), torch.zeros_like(values_one_step_denoised), values_one_step_denoised)
+
 
         return values_one_step_denoised

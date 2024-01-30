@@ -35,7 +35,6 @@ class VectorInference(nn.Module):
         for i, t in enumerate(steps):
         #for i, t in tqdm(enumerate(steps), total=len(steps), desc='Processing inference'):
             data_0 = pipeline.reconstruction(data_t, t)
-            #print("data_0 projection during inference", data_0)
             if i >= len(steps) - 1:
                 if t<1e-3:
                     return data_0, data_0
@@ -47,7 +46,8 @@ class VectorInference(nn.Module):
             data_t = data_t_next
 
             if torch.isnan(data_t).any() or torch.isinf(data_t).any():
-                warnings.warn('The tensor contains NaN or Inf values. These will be replaced with 0. step:', i)
+                warn_str = 'The tensor contains NaN or Inf values. These will be replaced with 0. step:'+str(i)
+                print(warn_str)
                 data_t = torch.where(torch.isnan(data_t) | torch.isinf(data_t), torch.zeros_like(data_t), data_t)
 
 
