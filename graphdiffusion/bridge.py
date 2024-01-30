@@ -78,20 +78,15 @@ class VectorBridgeDDPM(nn.Module):
     
     
     @staticmethod
-    def get_noise_from_pred(data_prediction, data_now, future_t):
-        row_num = data_now.shape[0]
-        betas = VectorDegradationDDPM.generate_schedule()
-        alphas = 1. - betas
-        alphas_cumprod = torch.cumprod(alphas, axis=0)
-        alphabar_t = torch.gather(alphas_cumprod, 0, future_t.flatten()).view(row_num, 1)
+    def get_noise_from_pred(x_0_pred, x_t, alphas_cumprod_t):
 
-        scaled_noise = torch.sqrt(alphabar_t)
-        noise = data_prediction - scaled_noise * data_now
-        noise = noise / torch.sqrt(1.0 - alphabar_t)
+        # Solve Algorithm 1 from the DDPM paper solved for nosie
+        noise = x_t -  torch.sqrt(alphas_cumprod_t) * x_0_pred
+        noise = noise / torch.sqrt(1.0 - alphas_cumprod_t)
 
         return noise
 
-        #(data_t, data_0, t, t_next)
+        
     def forward(self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         """
         Performs one step of denoising using the provided model.
@@ -113,19 +108,19 @@ class VectorBridgeDDPM(nn.Module):
         alphas_cumprod_t = alphas_cumprod[t_int]
 
         sqrt_one_minus_alphas_cumprod_t = torch.sqrt(1. - alphas_cumprod_t)
-        sqrt_recip_alphas_t = torch.sqrt(1.0 / alphas[t_int])
+        sqrt_recip_alphas_t = 1.0/torch.sqrt(alphas[t_int])
         alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value=1.0)
 
-        noise_prediction = VectorBridgeDDPM.get_noise_from_pred(data_prediction, data_now, t_step_tensor)
+        noise_prediction = VectorBridgeDDPM.get_noise_from_pred(data_prediction, data_now, alphas_cumprod_t)
         # Compute denoised values
-        model_mean = sqrt_recip_alphas_t * (data_now - beta_t * noise_prediction / sqrt_one_minus_alphas_cumprod_t)
+        model_mean = sqrt_recip_alphas_t * (data_now - beta_t / sqrt_one_minus_alphas_cumprod_t * noise_prediction)
         values_one_step_denoised = model_mean  # in case that t == 0
 
         if t_int != 0:
-            posterior_variance = betas * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)  # in the paper this is in 3.2. Note that sigma^2 is variance, not std.
+            posterior_variance = (1. - alphas_cumprod_prev) / (1. - alphas_cumprod) * betas  # in the paper this is in 3.2. Note that sigma^2 is variance, not std.
             posterior_std_t = torch.sqrt(posterior_variance[t_int])
+            posterior_std_t = torch.sqrt(beta_t) #alternative
             noise = rand_like_with_seed(data_now)
-            #posterior_std_t = 2.5
             values_one_step_denoised = model_mean + posterior_std_t * noise
 
         return values_one_step_denoised

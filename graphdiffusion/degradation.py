@@ -57,7 +57,7 @@ class VectorDegradationDDPM(nn.Module):
     
 
     @staticmethod
-    def generate_schedule(start = 0.0001, end = 0.0075, timesteps=1000):
+    def generate_schedule(start = 0.0001, end = 0.01, timesteps=1000):
         """
         Generates a schedule of beta and alpha values for a forward process.
 

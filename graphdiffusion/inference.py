@@ -29,7 +29,6 @@ class VectorInference(nn.Module):
         # Get starting point by adding 100% noise to a random data point
         if noise_to_start is None:
             random_data_point = next(iter(dataloader))
-            #random_data_point = dataloader.dataset[np.random.randint(len(dataloader.dataset))]
             noise_to_start = pipeline.degradation(random_data_point, t=1.0)
 
         data_t = noise_to_start
