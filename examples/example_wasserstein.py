@@ -55,6 +55,8 @@ mapping_indices = np.argmax(coupling_matrix, axis=1)
 # Compute the overall transport cost
 overall_transport_cost = np.sum(coupling_matrix * cost_matrix)
 
+print("overall_transport_cost", overall_transport_cost)
+
 # 2) Plot both datasets and the mapping
 plt.figure(figsize=(8, 6))
 plt.scatter(data_0[:, 0], data_0[:, 1], color='blue', label='Data 0')

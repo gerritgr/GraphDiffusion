@@ -20,6 +20,7 @@ dependencies:
   - scikit-learn
   - tqdm
   - rdkit
+  - pot=0.9.3
   - pip:
       - torch-cluster==1.6.3
       - torch-geometric==2.4.0
