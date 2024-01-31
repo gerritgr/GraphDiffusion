@@ -67,7 +67,6 @@ def compare_data_batches_old(data_real, data_generated = None, distance_func = N
 
         ax.set_xlabel('Dimension 1')
         ax.set_ylabel('Dimension 2')
-        ax.set_title('Optimal Transport Map between Two Datasets')
         ax.legend()
 
         if outfile is not None:
@@ -113,7 +112,6 @@ def compare_data_batches(data_real, data_generated=None, distance_func=None, out
 
     # 1) Compute the cost matrix between the two datasets
     cost_matrix = np.zeros((len(data_real), len(data_generated)))
-    print("cost_matrix.shape", cost_matrix.shape, data_real.shape, data_generated.shape, cost_matrix)
 
     # Fill in the cost matrix using your distance_func function
     for i in range(len(data_real)):

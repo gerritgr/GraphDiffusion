@@ -72,7 +72,7 @@ class VectorPipeline:
         if not callable(self.bridge_obj):
             raise ValueError("bridge_obj must be callable")
 
-    def get_model(self):
+    def get_model(self): #TODO does not work with saving loading
         if self.trainable_objects is None:
             return self.reconstruction_obj.to(self.device)
         else:
@@ -210,12 +210,14 @@ class VectorPipeline:
         if outfile is not None:
             plt.clf()
             # Calculate number of rows and columns for the grid of subplots
-            num_rows = int(np.ceil(np.sqrt(num_comparisions)))
-            num_cols = int(np.ceil(num_comparisions / num_rows))
+            num_plots = 2 * num_comparisions  # Double the number of axes
+            num_rows = int(np.ceil(np.sqrt(num_plots)))
+            num_cols = int(np.ceil(num_plots / num_rows))
 
-            # Create a figure with num_comparisions axes in a grid
+            # Create a figure with num_plots axes in a grid
             fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(6 * num_cols, 6 * num_rows))
-            axes = axes.flatten()  # Flatten the axes array for easy indexin
+            axes = axes.flatten()  # Flatten the axes array for easy indexing
+
 
         for i in tqdm(range(num_comparisions)):
             # Create iterators for real and generated data loaders
@@ -227,12 +229,17 @@ class VectorPipeline:
             real_batch_2 = next(real_data_iter) # should be disjoint from real_batch_1
             generated_batch = next(generated_data_iter)
 
-            axis = None
+            axis_between = None
+            axis_within = None
             if outfile is not None:
-                axis = axes[i] if num_comparisions > 1 else axes
+                idx = 2 * i  # Index for the first axis of the pair
+                axis_between = axes[idx] if num_plots > 1 else axes
+                axis_within = axes[idx + 1] if num_plots > 1 else axes
+                axis_between.set_title('Optimal transport map between real and generated data')
+                axis_within.set_title('Optimal transport map between batches real data')
 
-            distance_between, _ = compare_data_batches(real_batch_1, generated_batch, distance_func = self.distance_obj, axis=axis)
-            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func = self.distance_obj, axis=None)
+            distance_between, _ = compare_data_batches(real_batch_1, generated_batch, distance_func = self.distance_obj, axis=axis_between)
+            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func = self.distance_obj, axis=axis_within)
             distances_between.append(distance_between)
             distances_within.append(distance_within)
 

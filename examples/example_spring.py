@@ -124,15 +124,15 @@ pipeline.visualize_foward(
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 print("first ten points", points[:10])
-pipeline.train(train_dataloader, epochs=100000)
-pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
+#pipeline.train(data=train_dataloader, epochs=10000)
+#pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
 # Inference
 ############
 print("start inference")
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
+pipeline = VectorPipeline(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
 data0 = pipeline.inference(data=train_dataloader)
 pipeline.visualize_reconstruction(
     data=train_dataloader,
@@ -153,7 +153,7 @@ print("compare linear", compare)
 # Forward
 degradation_obj = VectorDegradationDDPM()
 bridge_obj = VectorBridgeDDPM()
-# pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
+# pipeline = VectorPipeline(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline = VectorPipeline(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
@@ -163,10 +163,10 @@ pipeline.visualize_foward(
 )
 
 # Train
-pipeline.train(train_dataloader, epochs=10000)
-pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
+#pipeline.train(data=train_dataloader, epochs=10000)
+#pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
 pipeline = VectorPipeline(
-    pre_trained="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt",
+    pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt",
     node_feature_dim=2,
     degradation_obj=degradation_obj,
     bridge_obj=bridge_obj,
