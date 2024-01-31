@@ -8,12 +8,11 @@ with open(file_path, "r") as file:
 from utils import *
 
 
-
 class VectorDegradation(nn.Module):
     """
     A PyTorch module for simulating the degradation of vectors. It modifies the input data by a degradation factor 't'
     and applies scaling to 't' and the standard deviation before degradation.
-    
+
     The degradation is modelled as a linear transformation of the input data,
     scaling it by (1-t) and adding a noise component. The noise follows a standard normal distribution
     and is scaled by t raised to the power of std_dev_scaling_factor.
@@ -39,14 +38,14 @@ class VectorDegradation(nn.Module):
         Args:
             pipeline (object): An object representing the processing pipeline for future use.
             time_scaling_factor (float, optional): The exponent to which the degradation factor 't' is raised.
-                                              Defaults to 3.0. Large values mean that the structure remains intact for longer. 
+                                              Defaults to 3.0. Large values mean that the structure remains intact for longer.
             std_dev_scaling_factor (float, optional): The exponent to which 't' is raised to compute the standard deviation
-                                                      for the noise component. Defaults to 0.5. Small values mean that the standard deviation converges faster to 1. 
+                                                      for the noise component. Defaults to 0.5. Small values mean that the standard deviation converges faster to 1.
         """
         super(VectorDegradation, self).__init__()
         assert time_scaling_factor > 0, "The time scaling factor must be positive."
         assert std_dev_scaling_factor > 0, "The standard deviation scaling factor must be positive."
-        
+
         self.scaling_factor = time_scaling_factor
         self.std_dev_scaling_factor = std_dev_scaling_factor
 
@@ -89,7 +88,7 @@ class VectorDegradation(nn.Module):
         # Compute the mean of the degraded data.
         mean = data * (1 - t)
         # Compute the standard deviation for the noise component based on 't' and the std_dev_scaling_factor.
-        std_dev = t**self.std_dev_scaling_factor  
+        std_dev = t**self.std_dev_scaling_factor
 
         # Generate a sample from the standard normal distribution.
         standard_normal_sample = rand_like_with_seed(data, seed=seed)
@@ -104,7 +103,7 @@ class VectorDegradationDDPM(nn.Module):
     def __init__(self, pipeline=None):
         """
         Initializes the VectorDegradationDDPM module. The pipeline parameter is stored but not currently used.
-        
+
         Args:
             pipeline (object, optional): An object representing the processing pipeline, unused.
         """
@@ -180,4 +179,3 @@ class VectorDegradationDDPM(nn.Module):
         data_noise = data_noise_mean + data_noise_std * noise
 
         return data_noise
-    

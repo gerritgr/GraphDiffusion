@@ -14,7 +14,7 @@ import random
 # Define a simple default train class
 class VectorTrain:
     def __init__(self, pipeline):
-        #super(VectorTrain, self).__init__()
+        # super(VectorTrain, self).__init__()
         pass
 
     @staticmethod
@@ -39,9 +39,7 @@ class VectorTrain:
                 )
 
         # Check if input_data is a list of tensors and create a DataLoader
-        elif isinstance(input_data, list) and all(
-            isinstance(x, torch.Tensor) for x in input_data
-        ):
+        elif isinstance(input_data, list) and all(isinstance(x, torch.Tensor) for x in input_data):
             dataloader = DataLoader(
                 dataset=[to_device(x) for x in input_data],
                 batch_size=batch_size_default,
@@ -51,14 +49,10 @@ class VectorTrain:
         # Check if input_data is a single tensor and create a DataLoader
         elif isinstance(input_data, torch.Tensor):
             dataset = [to_device(input_data)]
-            dataloader = DataLoader(
-                dataset, batch_size=batch_size_default, shuffle=True
-            )
+            dataloader = DataLoader(dataset, batch_size=batch_size_default, shuffle=True)
             return dataloader
         else:
-            raise TypeError(
-                "Input data must be a DataLoader, a list of tensors, or a single tensor"
-            )
+            raise TypeError("Input data must be a DataLoader, a list of tensors, or a single tensor")
 
         return dataloader  # or other relevant return value
 
@@ -86,18 +80,12 @@ class VectorTrain:
                 optimizer.step()
                 total_loss += loss.item()
 
-            average_loss = total_loss / len(
-                dataloader
-            )  # assumes mean reduction for loss
+            average_loss = total_loss / len(dataloader)  # assumes mean reduction for loss
             # Update moving average loss
             if moving_average_loss is None:
-                moving_average_loss = (
-                    average_loss  # Initialize with the first epoch's average loss
-                )
+                moving_average_loss = average_loss  # Initialize with the first epoch's average loss
             else:
-                moving_average_loss = (
-                    alpha * average_loss + (1 - alpha) * moving_average_loss
-                )
+                moving_average_loss = alpha * average_loss + (1 - alpha) * moving_average_loss
 
             # Update the progress bar description with the current epoch and moving average loss
             pbar.set_description(f"Epoch: {epoch + 1}, Loss: {moving_average_loss:.4f}")

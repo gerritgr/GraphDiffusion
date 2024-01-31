@@ -29,9 +29,7 @@ def plot_array_on_axis(array, axis, arrays):
     x = np.arange(len(array))  # Generate x-coordinates as indices
     y = array  # y-coordinates are the array values
 
-    axis.scatter(
-        x, y, s=500, alpha=0.5, edgecolors="none"
-    )  # Plotting the scatter plot on the provided axis
+    axis.scatter(x, y, s=500, alpha=0.5, edgecolors="none")  # Plotting the scatter plot on the provided axis
     # axis.set_xlim(x_limits)  # Set x-axis limits
     # axis.set_ylim(y_limits)  # Set y-axis limits
     min_x = np.min([np.min(x[:, :]) for x in arrays])

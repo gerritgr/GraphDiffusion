@@ -11,7 +11,7 @@ import torch
 import torch.nn.functional as F
 
 
-class VectorDistance():
+class VectorDistance:
     """
     A class to compute distances between vectors.
 
@@ -38,7 +38,7 @@ class VectorDistance():
 
     def __init__(self, pipeline=None):
         """
-        Initializes the VectorDistance class. 
+        Initializes the VectorDistance class.
 
         Args:
             pipeline (object, optional): Pipeline object for future use.

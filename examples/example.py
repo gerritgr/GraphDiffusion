@@ -16,9 +16,7 @@ example_tensor = torch.randn(5) * 10  # Replace with your actual data
 x = pipeline.reconstruction(example_tensor, 0)
 print("reconstruction", x)
 
-x = pipeline.bridge(
-    data_now=None, data_prediction=example_tensor, t_now=1.0, t_query=0.5
-)
+x = pipeline.bridge(data_now=None, data_prediction=example_tensor, t_now=1.0, t_query=0.5)
 print("bridge", x)
 
 input_tensor = [5.0 + random.random() * 0.01, -5.0 + random.random() * 0.01]

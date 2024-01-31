@@ -53,9 +53,7 @@ points = generate_noisy_spiral()
 
 # Plotting
 plt.clf()
-plt.scatter(
-    [p[0].item() for p in points], [p[1].item() for p in points], alpha=0.6, s=50
-)
+plt.scatter([p[0].item() for p in points], [p[1].item() for p in points], alpha=0.6, s=50)
 plt.title("Noisy 2D Spiral")
 plt.xlabel("X")
 plt.ylabel("Y")
@@ -88,14 +86,10 @@ def plot_2darray_on_axis(array, axis, arrays):
 
     # Ensure array is a 2D tensor after reshaping
     if array.ndim != 2 or array.shape[1] != 2:
-        raise ValueError(
-            "Input array must be a 2D or 1D array with shape (batch_size, 2) or (2,)"
-        )
+        raise ValueError("Input array must be a 2D or 1D array with shape (batch_size, 2) or (2,)")
 
     if np.isnan(array).any() or np.isinf(array).any():
-        warnings.warn(
-            "Input array contains NaN or Inf values. These will be replaced with 0."
-        )
+        warnings.warn("Input array contains NaN or Inf values. These will be replaced with 0.")
         array = np.nan_to_num(array, nan=0.0, posinf=0.0, neginf=0.0)
 
     # Plotting the scatter plot on the provided axis for all points
@@ -138,9 +132,7 @@ print("first ten points", points[:10])
 ############
 print("start inference")
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = VectorPipeline(
-    pre_trained="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2
-)
+pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
 data0 = pipeline.inference(data=train_dataloader)
 pipeline.visualize_reconstruction(
     data=train_dataloader,
@@ -159,9 +151,7 @@ pipeline.visualize_reconstruction(
 degradation_obj = VectorDegradationDDPM()
 bridge_obj = VectorBridgeDDPM()
 # pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
-pipeline = VectorPipeline(
-    node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj
-)
+pipeline = VectorPipeline(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="spiral_forward_ddpm.jpg",

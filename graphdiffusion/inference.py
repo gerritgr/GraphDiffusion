@@ -8,17 +8,18 @@ with open(file_path, "r") as file:
 import torch
 import numpy as np
 
+
 class VectorInference:
     """
     A class for performing vector inference, which typically involves reversing a degradation process.
 
     The class uses a specified 'pipeline' to manage the model, degradation, reconstruction, and bridging operations.
     The inference iteratively refines the estimate of the original data starting from noise.
-    
+
     Attributes:
         pipeline (object): An object encapsulating the model and methods for degradation, reconstruction, and bridging.
     """
-    
+
     def __init__(self, pipeline=None):
         """
         Initializes the VectorInference class.
@@ -28,15 +29,7 @@ class VectorInference:
         """
         self.pipeline = pipeline
 
-    def __call__(
-        self,
-        data=None,
-        noise_to_start=None,
-        steps=None,
-        pipeline = None,
-        *args,
-        **kwargs
-    ):
+    def __call__(self, data=None, noise_to_start=None, steps=None, pipeline=None, *args, **kwargs):
         """
         Perform vector inference by iteratively refining the estimate of the original data.
 
@@ -61,7 +54,7 @@ class VectorInference:
             steps = np.linspace(1, 0, step_num)
 
         # Validate the steps
-        if (len(steps) < 2 or not np.all(steps[:-1] > steps[1:]) or not (0 <= steps[0] <= 1 and 0 <= steps[-1] <= 1)):
+        if len(steps) < 2 or not np.all(steps[:-1] > steps[1:]) or not (0 <= steps[0] <= 1 and 0 <= steps[-1] <= 1):
             raise ValueError("Steps must be a decreasing sequence in the range [0, 1] and have a length of at least 2.", "steps:", steps)
 
         # Ensure either dataloader or noise_to_start is provided

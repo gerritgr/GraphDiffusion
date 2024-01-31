@@ -33,12 +33,8 @@ def time_to_pos_emb(t, target_dim, add_original=False):
     t_tensor = t.view(-1, 1)
 
     # Convert t_tensor to positional embeddings of dimensionality target_dim
-    position = torch.arange(0, target_dim, dtype=torch.float, device=device).unsqueeze(
-        0
-    )
-    div_term = torch.exp(
-        position * -(torch.log(torch.tensor(10000.0, device=device)) / target_dim)
-    )
+    position = torch.arange(0, target_dim, dtype=torch.float, device=device).unsqueeze(0)
+    div_term = torch.exp(position * -(torch.log(torch.tensor(10000.0, device=device)) / target_dim))
     t_pos_emb = torch.zeros_like(t_tensor.expand(-1, target_dim), device=device)
     t_pos_emb[:, 0::2] = torch.sin(t_tensor * div_term[:, 0::2])  # dim 2i
     t_pos_emb[:, 1::2] = torch.cos(t_tensor * div_term[:, 1::2])  # dim 2i+1
