@@ -30,6 +30,7 @@ class VectorPipeline:
         bridge_obj=None,
         distance_obj=None,
         encoding_obj=None,
+        trainable_objects=None,
         **kwargs
     ):
         self.node_feature_dim = node_feature_dim or 1
@@ -38,6 +39,7 @@ class VectorPipeline:
         )
         self.step_num = step_num
         self.config = kwargs
+        self.trainable_objects = trainable_objects
 
         self.reconstruction_obj = reconstruction_obj or VectorDenoiser(self)
 
@@ -74,7 +76,12 @@ class VectorPipeline:
             raise ValueError("bridge_obj must be callable")
 
     def get_model(self):
-        return self.reconstruction_obj.to(self.device)
+        if self.trainable_objects is None:
+            return self.reconstruction_obj.to(self.device)
+        else:
+            assert isinstance(self.trainable_objects, list)
+            joint_model = create_model_joint(self.trainable_objects)
+        return joint_model.to(self.device)
 
     def distance(self, x1, x2, *args, **kwargs):
         return self.distance_obj(self, x1, x2, *args, **kwargs)

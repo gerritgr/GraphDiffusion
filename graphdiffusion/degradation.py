@@ -8,12 +8,64 @@ with open(file_path, "r") as file:
 from utils import *
 
 
-# Define a simple default forward class
+
 class VectorDegradation(nn.Module):
-    def __init__(self, pipeline):
+    """
+    A PyTorch module for simulating the degradation of vectors. It modifies the input data by a degradation factor 't'
+    and applies scaling to 't' and the standard deviation before degradation.
+    
+    The degradation is modelled as a linear transformation of the input data,
+    scaling it by (1-t) and adding a noise component. The noise follows a standard normal distribution
+    and is scaled by t raised to the power of std_dev_scaling_factor.
+
+    Attributes:
+        pipeline (object): A pipeline object used for processing. It is not utilized in the current implementation
+                           but is included for future compatibility with complex workflows.
+        time_scaling_factor (float): The exponent to which the degradation factor 't' is raised. Defaults to 3.0.
+        std_dev_scaling_factor (float): The exponent to which 't' is raised to compute the standard deviation
+                                        for the noise component. Defaults to 0.5.
+
+    Methods:
+        forward(pipeline, data, t, seed=None, *args, **kwargs):
+            Applies the degradation transformation to the input data.
+    """
+
+    def __init__(self, pipeline, time_scaling_factor=3.0, std_dev_scaling_factor=0.5):
+        """
+        Initializes the VectorDegradation module. The pipeline parameter is stored but not currently used.
+        The time_scaling_factor parameter is used to control the non-linear scaling of the degradation factor 't',
+        and std_dev_scaling_factor is used to control the scaling of the standard deviation of the noise.
+
+        Args:
+            pipeline (object): An object representing the processing pipeline for future use.
+            time_scaling_factor (float, optional): The exponent to which the degradation factor 't' is raised.
+                                              Defaults to 3.0. Large values mean that the structure remains intact for longer. 
+            std_dev_scaling_factor (float, optional): The exponent to which 't' is raised to compute the standard deviation
+                                                      for the noise component. Defaults to 0.5. Small values mean that the standard deviation converges faster to 1. 
+        """
         super(VectorDegradation, self).__init__()
+        self.scaling_factor = time_scaling_factor
+        self.std_dev_scaling_factor = std_dev_scaling_factor
 
     def forward(self, pipeline, data, t, seed=None, *args, **kwargs):
+        """
+        Apply the degradation process to the input data based on the degradation factor 't',
+        the scaling factor, and the standard deviation scaling factor.
+
+        Args:
+            pipeline (object): Pipeline object, not utilized in the current implementation.
+            data (Tensor): The input tensor to be degraded.
+            t (float or Tensor): The degradation factor. If it's a tensor, it should have the same batch size as the data.
+                                 Each element of 't' should be in the range [0, 1].
+            seed (int, optional): A seed for random number generation to ensure reproducibility.
+
+        Returns:
+            Tensor: The degraded version of the input data.
+
+        Raises:
+            ValueError: If 't' has values outside the range [0, 1].
+            TypeError: If 't' is not a float or a tensor.
+        """
         if torch.is_tensor(t):
             batch_dim = data.shape[0]
             t = t.reshape(batch_dim, 1)
@@ -26,22 +78,20 @@ class VectorDegradation(nn.Module):
             raise TypeError("'t' must be a float or a tensor.")
 
         if isinstance(t, float) and t < 1e-7:
+            # If 't' is very small, return the data unmodified as the degradation is negligible.
             return data
 
-        # If t is a tensor, this operation will be applied element-wise.
-        t = t**3.0  # Add scaling
+        # Transform 't' by raising it to the power of the scaling factor.
+        t = t**self.scaling_factor
+        # Compute the mean of the degraded data.
         mean = data * (1 - t)
-        std_dev = t**0.5  # you could also just ust t
+        # Compute the standard deviation for the noise component based on 't' and the std_dev_scaling_factor.
+        std_dev = t**self.std_dev_scaling_factor  
 
-        if seed:
-            seed_old = torch.randint(0, 10000, (1,)).item()
-            set_all_seeds(seed=seed)
+        # Generate a sample from the standard normal distribution.
+        standard_normal_sample = rand_like_with_seed(data, seed=seed)
 
-        standard_normal_sample = torch.randn_like(data)
-
-        if seed:
-            set_all_seeds(seed=seed_old)
-
+        # Apply the degradation transformation.
         transformed_sample = mean + std_dev * standard_normal_sample
 
         return transformed_sample
@@ -49,32 +99,55 @@ class VectorDegradation(nn.Module):
 
 class VectorDegradationDDPM(nn.Module):
     def __init__(self, pipeline=None):
+        """
+        Initializes the VectorDegradationDDPM module. The pipeline parameter is stored but not currently used.
+        
+        Args:
+            pipeline (object, optional): An object representing the processing pipeline, unused.
+        """
         super(VectorDegradationDDPM, self).__init__()
 
     @staticmethod
     def generate_schedule(start=0.0001, end=0.01, step_num=100):
         """
-        Generates a schedule of beta and alpha values for a forward process.
+        Generates a schedule of beta values for a forward process.
 
         Args:
-        start (float): The starting value for the beta values. Default is START.
-        end (float): The ending value for the beta values. Default is END.
-        step_num (int): The number of step_num to generate. Default is step_num.
+            start (float): The starting value for the beta values. Default is 0.0001.
+            end (float): The ending value for the beta values. Default is 0.01.
+            step_num (int): The number of steps to generate. Default is 100.
 
         Returns:
-        tuple: A tuple of three tensors containing the beta values, alpha values, and
-        cumulative alpha values (alpha bars).
+            Tensor: A tensor containing the beta values.
         """
-
         betas = torch.linspace(start, end, step_num)
-        assert betas.numel() == step_num
+        assert betas.numel() == step_num, "Number of generated betas does not match the step number."
         return betas
 
     def forward(self, pipeline, data, t, seed=None, *args, **kwargs):
+        """
+        Apply the DDPM degradation process to the input data based on the degradation factor 't'.
+
+        Args:
+            pipeline (object): Pipeline object, expected to contain 'step_num' attribute.
+            data (Tensor): The input tensor to be degraded.
+            t (float or Tensor): The degradation factor. If it's a tensor, it should have the same batch size as the data.
+                                 Each element of 't' should be in the range [0, 1].
+                                 A value of 0 (resp. 1) means 0% (resp. 100%) degradation.
+            seed (int, optional): A seed for random number generation to ensure reproducibility.
+
+        Returns:
+            Tensor: The degraded version of the input data.
+
+        Raises:
+            ValueError: If 't' has values outside the range [0, 1].
+            TypeError: If 't' is not a float or a tensor.
+        """
         row_num = data.shape[0]
         feature_dim = data.shape[1]
         step_num = pipeline.step_num
 
+        # Validate and prepare 't'.
         if torch.is_tensor(t):
             t = t.reshape(row_num, 1)
             if not torch.all((t >= 0) & (t <= 1)):
@@ -86,23 +159,22 @@ class VectorDegradationDDPM(nn.Module):
         else:
             raise TypeError("'t' must be a float or a tensor.")
 
+        # Scale 't' according to the number of steps.
         t_scaled = torch.round(t * (step_num - 1.0)).long().to(data.device)
-        betas = VectorDegradationDDPM.generate_schedule(step_num=step_num).to(
-            data.device
-        )
-        noise = rand_like_with_seed(data, seed=seed)
+        betas = VectorDegradationDDPM.generate_schedule(step_num=step_num).to(data.device)
         alphas = 1.0 - betas
-        alphas_cumprod = torch.cumprod(alphas, axis=0)
-        alphabar_t = torch.gather(alphas_cumprod, 0, t_scaled.flatten()).view(
-            row_num, 1
-        )
-        assert alphabar_t.numel() == row_num
+        alphas_cumprod = torch.cumprod(alphas, dim=0)
+        alphabar_t = torch.gather(alphas_cumprod, 0, t_scaled.flatten()).view(row_num, 1)
+        assert alphabar_t.numel() == row_num, "The number of elements in alphabar_t does not match row_num."
 
-        data_noise_mean = (
-            torch.sqrt(alphabar_t) * data
-        )  # Column-wise multiplication, now it is a matrix
-        data_noise_std = torch.sqrt(1.0 - alphabar_t)  # This is a col. vector
-        data_noise_std = data_noise_std.repeat(1, feature_dim)  # This is a matrix
+        # Compute mean and standard deviation for the noise.
+        data_noise_mean = torch.sqrt(alphabar_t) * data  # element-wise multiplication
+        data_noise_std = torch.sqrt(1.0 - alphabar_t)  # This is a column vector
+        data_noise_std = data_noise_std.repeat(1, feature_dim)  # Repeat to match data dimensions
+
+        # Generate noise and apply degradation.
+        noise = rand_like_with_seed(data, seed=seed)
         data_noise = data_noise_mean + data_noise_std * noise
 
         return data_noise
+    
