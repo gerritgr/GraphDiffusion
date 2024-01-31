@@ -187,7 +187,7 @@ class VectorPipeline:
             plot_data_func=plot_data_func,
         )
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=100, num_comparisions=10, outfile=None):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=100, num_comparisions=25, outfile=None):
 
         assert isinstance(real_data, torch.utils.data.DataLoader)
         assert generated_data is None or isinstance(generated_data, torch.utils.data.DataLoader)
@@ -232,7 +232,7 @@ class VectorPipeline:
                 axis = axes[i] if num_comparisions > 1 else axes
 
             distance_between, _ = compare_data_batches(real_batch_1, generated_batch, distance_func = self.distance_obj, axis=axis)
-            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func = self.distance_obj, axis=axis)
+            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func = self.distance_obj, axis=None)
             distances_between.append(distance_between)
             distances_within.append(distance_within)
 
@@ -241,3 +241,5 @@ class VectorPipeline:
             plt.savefig(outfile)
 
         return np.nanmean(distances_between), np.nanmean(distances_within), np.nanstd(distances_between), np.nanstd(distances_within)
+    
+

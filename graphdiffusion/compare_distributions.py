@@ -15,7 +15,7 @@ def euclid_distance(x, y):
 
 
 
-def compare_data_batches(data_real, data_generated = None, distance_func = None, outfile = None, numItermax=1000000, epsilon = 0.002, axis=None):
+def compare_data_batches_old(data_real, data_generated = None, distance_func = None, outfile = None, numItermax=1000000, epsilon = 0.002, axis=None):
     # important: does not necessary return 1-to-1 mapping.
 
     distance_func = distance_func or euclid_distance
@@ -35,7 +35,7 @@ def compare_data_batches(data_real, data_generated = None, distance_func = None,
     # Fill in the cost matrix using your distance_func function
     for i in range(len(data_real)):
         for j in range(len(data_generated)):
-            cost_matrix[i, j] = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j]))**2 #slow # TODO make scaling a parameter
+            cost_matrix[i, j] = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j])) #slow # TODO make scaling a parameter
 
 
     # Compute the optimal transport plan (coupling matrix) using the Sinkhorn algorithm
@@ -89,3 +89,74 @@ if __name__ == "__main__":
     data_generated = np.random.randn(batch_size, 2)
 
     compare_data_batches(data_0, data_generated, outfile="test_wasserstein.pdf")
+
+
+
+
+
+
+
+
+from scipy.optimize import linear_sum_assignment
+
+def compare_data_batches(data_real, data_generated=None, distance_func=None, outfile=None, axis=None):
+    # important: ensures a 1-to-1 mapping.
+    
+    distance_func = distance_func or euclid_distance
+
+    # Convert PyTorch tensors to NumPy arrays if they are not already
+    if isinstance(data_real, torch.Tensor):
+        data_real = data_real.detach().cpu().numpy()
+    if isinstance(data_generated, torch.Tensor):
+        data_generated = data_generated.detach().cpu().numpy()
+    assert data_real.shape[0] == data_generated.shape[0]  # make sure num samples (batch_dim) is the same
+
+    # 1) Compute the cost matrix between the two datasets
+    cost_matrix = np.zeros((len(data_real), len(data_generated)))
+    print("cost_matrix.shape", cost_matrix.shape, data_real.shape, data_generated.shape, cost_matrix)
+
+    # Fill in the cost matrix using your distance_func function
+    for i in range(len(data_real)):
+        for j in range(len(data_generated)):
+            cost_matrix[i, j] = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j]))  #slow
+
+    # Use the Hungarian algorithm (linear sum assignment) to find the minimum cost 1-to-1 mapping
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+
+    # Create the coupling matrix for the 1-to-1 mapping
+    coupling_matrix = np.zeros_like(cost_matrix)
+    for i, j in zip(row_ind, col_ind):
+        coupling_matrix[i, j] = 1
+
+    # Find the indices of the mappings (this works for small enough epsilon and assumes that data_real and data_generated have the same length)
+    # For each point in data_real, find the index of its corresponding point in data_generated
+    mapping_indices = np.argmax(coupling_matrix, axis=1)
+
+    # Compute the overall transport cost
+    overall_transport_cost = np.sum(coupling_matrix * cost_matrix)
+
+    if outfile is not None or axis is not None:
+        if axis is None:
+            plt.figure(figsize=(8, 6))
+            ax = plt.gca()
+        else:
+            ax = axis
+
+        # Plot both datasets and the mapping
+        ax.scatter(data_real[:, 0], data_real[:, 1], color='blue', label='Data real', alpha=0.5)
+        ax.scatter(data_generated[:, 0], data_generated[:, 1], color='red', label='Data generated', alpha=0.5)
+
+        # Draw lines between matched points
+        for i, j in enumerate(mapping_indices):
+            ax.plot([data_real[i, 0], data_generated[j, 0]], [data_real[i, 1], data_generated[j, 1]], color='gray', alpha=0.5)
+
+        ax.set_xlabel('Dimension 1')
+        ax.set_ylabel('Dimension 2')
+        ax.set_title('Optimal Transport Map between Two Datasets')
+        ax.legend()
+
+        if outfile is not None:
+            plt.savefig(outfile)
+
+    return overall_transport_cost, mapping_indices
+
