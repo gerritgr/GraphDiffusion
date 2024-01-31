@@ -29,7 +29,7 @@ class VectorDegradation(nn.Module):
             Applies the degradation transformation to the input data.
     """
 
-    def __init__(self, time_scaling_factor=3.0, std_dev_scaling_factor=0.5, pipeline=None):
+    def __init__(self, time_scaling_factor=3.0, std_dev_scaling_factor=0.5):
         """
         Initializes the VectorDegradation module. The pipeline parameter is stored but not currently used.
         The time_scaling_factor parameter is used to control the non-linear scaling of the degradation factor 't',
@@ -100,7 +100,7 @@ class VectorDegradation(nn.Module):
 
 
 class VectorDegradationDDPM(nn.Module):
-    def __init__(self, pipeline=None):
+    def __init__(self):
         """
         Initializes the VectorDegradationDDPM module. The pipeline parameter is stored but not currently used.
 

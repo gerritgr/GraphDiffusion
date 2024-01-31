@@ -14,19 +14,14 @@ import torch.nn.functional as F
 class VectorDenoiser(nn.Module):
     def __init__(
         self,
-        node_feature_dim=None,
+        node_feature_dim=1,
         hidden_dim=256,
         num_layers=8,
         dropout_rate=0.2,
         time_dim=32,
-        pipeline=None,
     ):
         super(VectorDenoiser, self).__init__()
-        if node_feature_dim is not None:
-            self.node_feature_dim = node_feature_dim
-        else:
-            assert pipeline is not None
-            self.node_feature_dim = pipeline.node_feature_dim
+        self.node_feature_dim = node_feature_dim
         self.time_dim = time_dim
 
         # First fully connected layer
@@ -76,12 +71,12 @@ class VectorDenoiser(nn.Module):
 
         return x
 
-    def save_model(self, path, pipeline=None):
+    def save_model(self, pre_trained_path, pipeline=None):
         """
         Save the model weights to the specified path.
-        :param path: The file path where the model weights should be saved.
+        :param pre_trained_path: The file path where the model weights should be saved.
         """
-        torch.save(self.state_dict(), path)
+        torch.save(self.state_dict(), pre_trained_path)
 
-    def load_model(self, path, pipeline=None):
-        self.load_state_dict(torch.load(path, map_location=torch.device("cpu")))
+    def load_model(self, pre_trained_path, pipeline=None):
+        self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))

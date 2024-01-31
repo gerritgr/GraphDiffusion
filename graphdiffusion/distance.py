@@ -36,7 +36,7 @@ class VectorDistance:
         to be called as a function. In this case, it is used to compute the distance between two vectors.
     """
 
-    def __init__(self, pipeline=None):
+    def __init__(self):
         """
         Initializes the VectorDistance class.
 

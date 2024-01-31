@@ -10,7 +10,7 @@ from degradation import *
 
 # Define a simple default bridge class
 class VectorBridgeNaive(nn.Module):
-    def __init__(self, pipeline=None):
+    def __init__(self):
         super(VectorBridge, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
@@ -18,7 +18,7 @@ class VectorBridgeNaive(nn.Module):
 
 
 class VectorBridgeColdDiffusion(nn.Module):
-    def __init__(self, pipeline=None):
+    def __init__(self):
         super(VectorBridgeColdDiffusion, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
@@ -30,7 +30,7 @@ class VectorBridgeColdDiffusion(nn.Module):
 
 
 class VectorBridge(nn.Module):
-    def __init__(self, pipeline=None):
+    def __init__(self):
         super(VectorBridge, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
@@ -48,7 +48,7 @@ class VectorBridge(nn.Module):
 
 
 class VectorBridgeLinear(nn.Module):
-    def __init__(self, pipeline=None):
+    def __init__(self):
         super(VectorBridgeLinear, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
@@ -63,7 +63,7 @@ class VectorBridgeLinear(nn.Module):
 
 
 class VectorBridgeDDPM(nn.Module):
-    def __init__(self, pipeline=None):
+    def __init__(self):
         super(VectorBridgeDDPM, self).__init__()
 
     @staticmethod

@@ -20,14 +20,13 @@ class VectorInference:
         pipeline (object): An object encapsulating the model and methods for degradation, reconstruction, and bridging.
     """
 
-    def __init__(self, pipeline=None):
+    def __init__(self):
         """
         Initializes the VectorInference class.
 
         Args:
             pipeline (object, optional): An object representing the processing pipeline.
         """
-        self.pipeline = pipeline
 
     def __call__(self, data=None, noise_to_start=None, steps=None, pipeline=None, *args, **kwargs):
         """
@@ -45,12 +44,14 @@ class VectorInference:
             ValueError: If the steps are not in a decreasing sequence or not in the range [0, 1], or if neither 'dataloader' nor 'noise_to_start' is provided.
         """
         # Generate or validate the steps sequence
+        assert pipeline is not None, "pipeline must be provided"
+        #assert isinstance(pipeline, VectorPipeline), "pipeline must be a VectorPipeline" # TODO add basepipeline class
+        self.pipeline = pipeline
+
         if isinstance(steps, int):
             steps = np.linspace(1, 0, steps)
         elif steps is None:
-            step_num = 100
-            if pipeline is not None and pipeline.step_num is not None:
-                step_num = pipeline.step_num
+            step_num = pipeline.step_num or 100
             steps = np.linspace(1, 0, step_num)
 
         # Validate the steps

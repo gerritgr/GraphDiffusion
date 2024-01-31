@@ -19,7 +19,7 @@ from encoding import time_to_pos_emb
 class VectorPipeline:
     def __init__(
         self,
-        pre_trained=None,
+        pre_trained_path=None,
         step_num=100,
         node_feature_dim=None,
         device=None,
@@ -39,25 +39,25 @@ class VectorPipeline:
         self.config = kwargs
         self.trainable_objects = trainable_objects
 
-        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(pipeline=self)
+        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(node_feature_dim=node_feature_dim)
 
-        if pre_trained is not None:
+        if pre_trained_path is not None:
             try:
                 # See if load_model is implemented
-                self.reconstruction_obj.load_model(self, pre_trained)
+                self.reconstruction_obj.load_model(pipeline=self, pre_trained_path=pre_trained_path)
             except:
                 try:
-                    self.reconstruction_obj.load_state_dict(torch.load(pre_trained, map_location=torch.device("cpu")))
+                    self.reconstruction_obj.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
                 except:
                     print("Could not load pre-trained model.")
 
         self.reconstruction_obj.to(self.device)
 
-        self.inference_obj = inference_obj or VectorInference(pipeline=self)
-        self.degradation_obj = degradation_obj or VectorDegradation(pipeline=self)
-        self.train_obj = train_obj or VectorTrain(pipeline=self)
-        self.bridge_obj = bridge_obj or VectorBridge(pipeline=self)
-        self.distance_obj = distance_obj or VectorDistance(pipeline=self)
+        self.inference_obj = inference_obj or VectorInference()
+        self.degradation_obj = degradation_obj or VectorDegradation()
+        self.train_obj = train_obj or VectorTrain()
+        self.bridge_obj = bridge_obj or VectorBridge()
+        self.distance_obj = distance_obj or VectorDistance()
         self.encoding_obj = encoding_obj or time_to_pos_emb
 
         if not callable(self.reconstruction_obj):
@@ -119,7 +119,7 @@ class VectorPipeline:
         return self.inference_obj(data=data, noise_to_start=noise_to_start, steps=steps, pipeline=self, *args, **kwargs)
 
     def train(self, data, epochs=100, *args, **kwargs):
-        return self.train_obj(data, epochs, pipeline=self, *args, **kwargs)
+        return self.train_obj(data=data, epochs=epochs, pipeline=self, *args, **kwargs)
 
     def reconstruction(self, data, t, *args, **kwargs):
         return self.reconstruction_obj(data=data, t=t, pipeline=self, *args, **kwargs)
