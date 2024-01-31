@@ -45,7 +45,7 @@ class VectorDistance():
         """
         pass
 
-    def __call__(self, pipeline, x1, x2, dist_type="L1", *args, **kwargs):
+    def __call__(self, x1, x2, dist_type="L1", *args, **kwargs):
         """
         Compute the distance between two vectors based on the specified distance type.
 

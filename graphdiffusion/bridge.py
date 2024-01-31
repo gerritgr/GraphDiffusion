@@ -14,7 +14,7 @@ class VectorBridgeNaive(nn.Module):
         super(VectorBridge, self).__init__()
 
     def forward(
-        self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs
+        self, data_now, data_prediction, t_now, t_query, *args, **kwargs
     ):
         return pipeline.degradation(
             data_prediction, t_query
@@ -26,7 +26,7 @@ class VectorBridgeColdDiffusion(nn.Module):
         super(VectorBridgeColdDiffusion, self).__init__()
 
     def forward(
-        self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs
+        self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs
     ):
         x_0 = data_prediction
         seed = torch.randint(0, 10000, (1,)).item()
@@ -44,7 +44,7 @@ class VectorBridge(nn.Module):
         super(VectorBridge, self).__init__()
 
     def forward(
-        self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs
+        self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs
     ):
         direction = data_prediction - data_now
         direction = direction / torch.norm(direction)
@@ -67,7 +67,7 @@ class VectorBridgeLinear(nn.Module):
         super(VectorBridgeLinear, self).__init__()
 
     def forward(
-        self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs
+        self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs
     ):
         direction = data_prediction - data_now
         direction = direction / torch.norm(direction)
@@ -91,7 +91,7 @@ class VectorBridgeDDPM(nn.Module):
         return noise
 
     def forward(
-        self, pipeline, data_now, data_prediction, t_now, t_query, *args, **kwargs
+        self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs
     ):
         """
         Performs one step of denoising using the provided model.

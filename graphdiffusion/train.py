@@ -14,7 +14,8 @@ import random
 # Define a simple default train class
 class VectorTrain:
     def __init__(self, pipeline):
-        super(VectorTrain, self).__init__()
+        #super(VectorTrain, self).__init__()
+        pass
 
     @staticmethod
     def input_to_dataloader(self, input_data, device, batch_size_default=1):
@@ -61,7 +62,7 @@ class VectorTrain:
 
         return dataloader  # or other relevant return value
 
-    def __call__(self, pipeline, input_data, epochs=100, alpha=0.1, *args, **kwargs):
+    def __call__(self, input_data, epochs=100, alpha=0.1, pipeline=None, *args, **kwargs):
         dataloader = VectorTrain.input_to_dataloader(input_data, pipeline.device)
         model = pipeline.get_model()
         model.train()

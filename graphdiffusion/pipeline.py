@@ -41,7 +41,7 @@ class VectorPipeline:
         self.config = kwargs
         self.trainable_objects = trainable_objects
 
-        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(self)
+        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(pipeline=self)
 
         if pre_trained is not None:
             try:
@@ -57,11 +57,11 @@ class VectorPipeline:
 
         self.reconstruction_obj.to(self.device)
 
-        self.inference_obj = inference_obj or VectorInference(self)
-        self.degradation_obj = degradation_obj or VectorDegradation(self)
-        self.train_obj = train_obj or VectorTrain(self)
-        self.bridge_obj = bridge_obj or VectorBridge(self)
-        self.distance_obj = distance_obj or VectorDistance(self)
+        self.inference_obj = inference_obj or VectorInference(pipeline=self)
+        self.degradation_obj = degradation_obj or VectorDegradation(pipeline=self)
+        self.train_obj = train_obj or VectorTrain(pipeline=self)
+        self.bridge_obj = bridge_obj or VectorBridge(pipeline=self)
+        self.distance_obj = distance_obj or VectorDistance(pipeline=self)
         self.encoding_obj = encoding_obj or time_to_pos_emb
 
         if not callable(self.reconstruction_obj):
@@ -80,34 +80,62 @@ class VectorPipeline:
             return self.reconstruction_obj.to(self.device)
         else:
             assert isinstance(self.trainable_objects, list)
-            joint_model = create_model_joint(self.trainable_objects)
-        return joint_model.to(self.device)
+            if self.joint_model:
+                return self.joint_model.to(self.device)
 
+        joint_model = create_model_joint(self.trainable_objects)
+        self.joint_model = joint_model
+        return joint_model.to(self.device)
+    
+    def define_trainable_objects(self, reconstruction=True, degragation=False, distance=False, encoding=False):
+
+        # default
+        if reconstruction and not degragation and not distance and not encoding:
+            self.trainable_objects = None
+            return
+        
+        self.trainable_objects = list()
+        self.joint_model = None
+        if reconstruction:
+            assert isinstance(self.reconstruction_obj, nn.Module)
+            self.trainable_objects.append(self.reconstruction_obj)
+        if degragation:
+            assert isinstance(self.degradation_obj, nn.Module)
+            self.trainable_objects.append(self.degradation_obj)
+        if distance:
+            assert isinstance(self.distance_obj, nn.Module)
+            self.trainable_objects.append(self.distance_obj)
+        if encoding:
+            assert isinstance(self.encoding_obj, nn.Module)
+            self.trainable_objects.append(self.encoding_obj)
+        if len(self.trainable_objects) == 0:
+            raise ValueError("No trainable objects defined.")
+        
     def distance(self, x1, x2, *args, **kwargs):
-        return self.distance_obj(self, x1, x2, *args, **kwargs)
+        return self.distance_obj(x1, x2, pipeline=self, *args, **kwargs)
 
     def bridge(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         return self.bridge_obj(
-            self, data_now, data_prediction, t_now, t_query, *args, **kwargs
+            data_now, data_prediction, t_now, t_query, pipeline=self, *args, **kwargs
         )
 
     def inference(
-        self, dataloader=None, noise_to_start=None, steps=None, *args, **kwargs
+        self, data=None, noise_to_start=None, steps=None, *args, **kwargs
     ):
-        if dataloader is None and noise_to_start is None:
+        if data is None and noise_to_start is None:
             raise ValueError("Either data or noise_to_start must be provided")
         return self.inference_obj(
-            self, dataloader, noise_to_start, steps, *args, **kwargs
+            data=data, noise_to_start=noise_to_start, steps=steps, pipeline=self, *args, **kwargs
         )
 
     def train(self, data, epochs=100, *args, **kwargs):
-        return self.train_obj(self, data, epochs, *args, **kwargs)
+        return self.train_obj(data, epochs, pipeline=self, *args, **kwargs)
 
     def reconstruction(self, data, t, *args, **kwargs):
-        return self.reconstruction_obj(self, data, t, *args, **kwargs)
+        return self.reconstruction_obj(data=data, t=t, pipeline=self, *args, **kwargs)
 
     def degradation(self, data, t, *args, **kwargs):
-        return self.degradation_obj(self, data, t, *args, **kwargs)
+        return self.degradation_obj(data=data, t=t, pipeline=self, *args, **kwargs)
 
     def visualize_foward(
         self, data, outfile="test_forward.jpg", num=100, plot_data_func=None
@@ -118,8 +146,8 @@ class VectorPipeline:
             data = next(iter(data))
         arrays = list()
         for t in np.linspace(0, 1, num):
-            arrays.append(self.degradation(data, t))
-        return create_grid_plot(arrays, outfile=outfile, plot_data_func=plot_data_func)
+            arrays.append(self.degradation(data=data, t=t))
+        return create_grid_plot(arrays=arrays, outfile=outfile, plot_data_func=plot_data_func)
 
     def visualize_reconstruction(
         self, data, outfile="test_backward.jpg", num=25, steps=None, plot_data_func=None

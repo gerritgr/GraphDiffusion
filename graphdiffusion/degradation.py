@@ -30,7 +30,7 @@ class VectorDegradation(nn.Module):
             Applies the degradation transformation to the input data.
     """
 
-    def __init__(self, pipeline, time_scaling_factor=3.0, std_dev_scaling_factor=0.5):
+    def __init__(self, time_scaling_factor=3.0, std_dev_scaling_factor=0.5, pipeline=None):
         """
         Initializes the VectorDegradation module. The pipeline parameter is stored but not currently used.
         The time_scaling_factor parameter is used to control the non-linear scaling of the degradation factor 't',
@@ -44,10 +44,13 @@ class VectorDegradation(nn.Module):
                                                       for the noise component. Defaults to 0.5. Small values mean that the standard deviation converges faster to 1. 
         """
         super(VectorDegradation, self).__init__()
+        assert time_scaling_factor > 0, "The time scaling factor must be positive."
+        assert std_dev_scaling_factor > 0, "The standard deviation scaling factor must be positive."
+        
         self.scaling_factor = time_scaling_factor
         self.std_dev_scaling_factor = std_dev_scaling_factor
 
-    def forward(self, pipeline, data, t, seed=None, *args, **kwargs):
+    def forward(self, data, t, seed=None, pipeline=None, *args, **kwargs):
         """
         Apply the degradation process to the input data based on the degradation factor 't',
         the scaling factor, and the standard deviation scaling factor.
@@ -124,7 +127,7 @@ class VectorDegradationDDPM(nn.Module):
         assert betas.numel() == step_num, "Number of generated betas does not match the step number."
         return betas
 
-    def forward(self, pipeline, data, t, seed=None, *args, **kwargs):
+    def forward(self, data, t, seed=None, pipeline=None, *args, **kwargs):
         """
         Apply the DDPM degradation process to the input data based on the degradation factor 't'.
 

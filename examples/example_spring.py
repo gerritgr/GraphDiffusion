@@ -117,7 +117,7 @@ def plot_2darray_on_axis(array, axis, arrays):
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 pipeline = VectorPipeline(node_feature_dim=2)
 pipeline.visualize_foward(
-    train_dataloader,
+    data=train_dataloader,
     outfile="spiral_forward.jpg",
     plot_data_func=plot_2darray_on_axis,
     num=25,
@@ -141,7 +141,7 @@ train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 pipeline = VectorPipeline(
     pre_trained="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2
 )
-data0 = pipeline.inference(train_dataloader)
+data0 = pipeline.inference(data=train_dataloader)
 pipeline.visualize_reconstruction(
     data=train_dataloader,
     plot_data_func=plot_2darray_on_axis,
@@ -156,14 +156,14 @@ pipeline.visualize_reconstruction(
 ############
 
 # Forward
-degradation_obj = VectorDegradationDDPM(None)
-bridge_obj = VectorBridgeDDPM(None)
+degradation_obj = VectorDegradationDDPM()
+bridge_obj = VectorBridgeDDPM()
 # pipeline = VectorPipeline(pre_trained="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline = VectorPipeline(
     node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj
 )
 pipeline.visualize_foward(
-    train_dataloader,
+    data=train_dataloader,
     outfile="spiral_forward_ddpm.jpg",
     plot_data_func=plot_2darray_on_axis,
     num=25,
