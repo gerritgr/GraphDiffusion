@@ -1,20 +1,22 @@
 import os
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(script_dir, 'imports.py')
-with open(file_path, 'r') as file:
+file_path = os.path.join(script_dir, "imports.py")
+with open(file_path, "r") as file:
     exec(file.read())
 
 from utils import *
+
 
 # Define a simple default forward class
 class VectorDegradation(nn.Module):
     def __init__(self, pipeline):
         super(VectorDegradation, self).__init__()
-    
-    def forward(self, pipeline, data, t, seed = None, *args, **kwargs):
+
+    def forward(self, pipeline, data, t, seed=None, *args, **kwargs):
         if torch.is_tensor(t):
             batch_dim = data.shape[0]
-            t = t.reshape(batch_dim,1)
+            t = t.reshape(batch_dim, 1)
             if not torch.all((t >= 0) & (t <= 1)):
                 raise ValueError("All elements of tensor 't' must be between 0 and 1.")
         elif isinstance(t, float):
@@ -29,7 +31,7 @@ class VectorDegradation(nn.Module):
         # If t is a tensor, this operation will be applied element-wise.
         t = t**3.0  # Add scaling
         mean = data * (1 - t)
-        std_dev = t**0.5 # you could also just ust t
+        std_dev = t**0.5  # you could also just ust t
 
         if seed:
             seed_old = torch.randint(0, 10000, (1,)).item()
@@ -40,20 +42,17 @@ class VectorDegradation(nn.Module):
         if seed:
             set_all_seeds(seed=seed_old)
 
-
         transformed_sample = mean + std_dev * standard_normal_sample
 
         return transformed_sample
-    
-
 
 
 class VectorDegradationDDPM(nn.Module):
     def __init__(self, pipeline=None):
         super(VectorDegradationDDPM, self).__init__()
-    
+
     @staticmethod
-    def generate_schedule(start = 0.0001, end = 0.01, step_num=100):
+    def generate_schedule(start=0.0001, end=0.01, step_num=100):
         """
         Generates a schedule of beta and alpha values for a forward process.
 
@@ -68,37 +67,42 @@ class VectorDegradationDDPM(nn.Module):
         """
 
         betas = torch.linspace(start, end, step_num)
-        assert(betas.numel() == step_num)
+        assert betas.numel() == step_num
         return betas
 
-    def forward(self, pipeline, data, t, seed = None, *args, **kwargs):
+    def forward(self, pipeline, data, t, seed=None, *args, **kwargs):
         row_num = data.shape[0]
         feature_dim = data.shape[1]
         step_num = pipeline.step_num
 
         if torch.is_tensor(t):
-            t = t.reshape(row_num,1)
+            t = t.reshape(row_num, 1)
             if not torch.all((t >= 0) & (t <= 1)):
                 raise ValueError("All elements of tensor 't' must be between 0 and 1.")
         elif isinstance(t, float):
             if not (0 <= t <= 1):
                 raise ValueError("The float value of 't' must be between 0 and 1.")
-            t = torch.full((row_num, 1), t, device=data.device)  
+            t = torch.full((row_num, 1), t, device=data.device)
         else:
             raise TypeError("'t' must be a float or a tensor.")
-    
 
-        t_scaled = torch.round(t * (step_num - 1.)).long().to(data.device)
-        betas = VectorDegradationDDPM.generate_schedule(step_num=step_num).to(data.device)
+        t_scaled = torch.round(t * (step_num - 1.0)).long().to(data.device)
+        betas = VectorDegradationDDPM.generate_schedule(step_num=step_num).to(
+            data.device
+        )
         noise = rand_like_with_seed(data, seed=seed)
-        alphas = 1. - betas
+        alphas = 1.0 - betas
         alphas_cumprod = torch.cumprod(alphas, axis=0)
-        alphabar_t = torch.gather(alphas_cumprod, 0, t_scaled.flatten()).view(row_num, 1)
-        assert(alphabar_t.numel() == row_num)
+        alphabar_t = torch.gather(alphas_cumprod, 0, t_scaled.flatten()).view(
+            row_num, 1
+        )
+        assert alphabar_t.numel() == row_num
 
-        data_noise_mean = torch.sqrt(alphabar_t) * data # Column-wise multiplication, now it is a matrix
-        data_noise_std = torch.sqrt(1.-alphabar_t) # This is a col. vector
-        data_noise_std = data_noise_std.repeat(1,feature_dim) # This is a matrix
-        data_noise =  data_noise_mean + data_noise_std * noise  
+        data_noise_mean = (
+            torch.sqrt(alphabar_t) * data
+        )  # Column-wise multiplication, now it is a matrix
+        data_noise_std = torch.sqrt(1.0 - alphabar_t)  # This is a col. vector
+        data_noise_std = data_noise_std.repeat(1, feature_dim)  # This is a matrix
+        data_noise = data_noise_mean + data_noise_std * noise
 
         return data_noise

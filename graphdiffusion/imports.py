@@ -1,11 +1,14 @@
 from icecream import install
+
 install()
 
 import warnings
 import matplotlib
-matplotlib.use('agg')
+
+matplotlib.use("agg")
 import matplotlib.pyplot as plt
-plt.rcParams['figure.dpi'] = 100  # Set this to 300 to get better image quality
+
+plt.rcParams["figure.dpi"] = 100  # Set this to 300 to get better image quality
 import seaborn as sns
 
 import networkx as nx
@@ -39,7 +42,7 @@ from torch_geometric.nn import (
     GraphNorm,
     BatchNorm,
     global_mean_pool,
-    global_add_pool
+    global_add_pool,
 )
 from torch_geometric.utils import erdos_renyi_graph, to_networkx, from_networkx, degree
 from icecream import ic

@@ -1,4 +1,3 @@
-
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -30,21 +29,24 @@ def plot_array_on_axis(array, axis, arrays):
     x = np.arange(len(array))  # Generate x-coordinates as indices
     y = array  # y-coordinates are the array values
 
-    axis.scatter(x, y, s=500, alpha=0.5, edgecolors='none')   # Plotting the scatter plot on the provided axis
-    #axis.set_xlim(x_limits)  # Set x-axis limits
-    #axis.set_ylim(y_limits)  # Set y-axis limits
-    min_x = np.min([np.min(x[:,:]) for x in arrays])
-    max_x = np.max([np.max(x[:,:]) for x in arrays])
+    axis.scatter(
+        x, y, s=500, alpha=0.5, edgecolors="none"
+    )  # Plotting the scatter plot on the provided axis
+    # axis.set_xlim(x_limits)  # Set x-axis limits
+    # axis.set_ylim(y_limits)  # Set y-axis limits
+    min_x = np.min([np.min(x[:, :]) for x in arrays])
+    max_x = np.max([np.max(x[:, :]) for x in arrays])
     min_y = 0.0
-    max_y = np.max([x.shape[1] for x in arrays]) #TODO fix
-    axis.set_xlim([min_x,max_x])
-    axis.set_ylim([min_y,max_y])
+    max_y = np.max([x.shape[1] for x in arrays])  # TODO fix
+    axis.set_xlim([min_x, max_x])
+    axis.set_ylim([min_y, max_y])
 
-    axis.set_xlabel('Index')
-    axis.set_ylabel('Value')
-    #axis.set_title('Scatter Plot')
+    axis.set_xlabel("Index")
+    axis.set_ylabel("Value")
+    # axis.set_title('Scatter Plot')
 
-def create_grid_plot(arrays, outfile="test.pdf", plt_show = False, plot_data_func = None):
+
+def create_grid_plot(arrays, outfile="test.pdf", plt_show=False, plot_data_func=None):
     """
     Creates a grid plot for a list of 1D PyTorch arrays, each plotted on a separate axis.
 
@@ -59,7 +61,7 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show = False, plot_data_fun
     max_value = max(arr.max() for arr in arrays)
     min_value = min(arr.min() for arr in arrays)
     x_limits = (-0.5, max_length - 0.5)
-    y_limits = (min_value-0.5, max_value+0.5)
+    y_limits = (min_value - 0.5, max_value + 0.5)
 
     # Determine the grid size
     num_plots = len(arrays)
@@ -82,7 +84,7 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show = False, plot_data_fun
 
     # Hide any unused subplots
     for j in range(i + 1, len(axes)):
-        axes[j].axis('off')
+        axes[j].axis("off")
 
     plt.tight_layout()
     try:
@@ -92,15 +94,16 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show = False, plot_data_fun
         pass
     try:
         if outfile is not None:
-            plt.savefig(outfile) 
+            plt.savefig(outfile)
     except:
         pass
+
 
 if __name__ == "__main__":
     # Example usage
     arrays = list()
 
     for _ in range(100):
-        arrays.append(torch.tensor([1, 2+random.random(), 3*+random.random(), 4]))
+        arrays.append(torch.tensor([1, 2 + random.random(), 3 * +random.random(), 4]))
 
     create_grid_plot(arrays)

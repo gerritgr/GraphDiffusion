@@ -1,7 +1,8 @@
 import os
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(script_dir, 'imports.py')
-with open(file_path, 'r') as file:
+file_path = os.path.join(script_dir, "imports.py")
+with open(file_path, "r") as file:
     exec(file.read())
 
 from reconstruction import *
@@ -9,16 +10,32 @@ from bridge import *
 from train import *
 from degradation import *
 from inference import *
-from distance import * 
+from distance import *
 from utils import *
 from encoding import time_to_pos_emb
 
 
 # VectorPipeline with a default reconstructionr
 class VectorPipeline:
-    def __init__(self, pre_trained = None, step_num = 100, node_feature_dim = None, device = None, reconstruction_obj = None, inference_obj = None, degradation_obj = None, train_obj = None, bridge_obj = None, distance_obj = None, encoding_obj=None, **kwargs):
+    def __init__(
+        self,
+        pre_trained=None,
+        step_num=100,
+        node_feature_dim=None,
+        device=None,
+        reconstruction_obj=None,
+        inference_obj=None,
+        degradation_obj=None,
+        train_obj=None,
+        bridge_obj=None,
+        distance_obj=None,
+        encoding_obj=None,
+        **kwargs
+    ):
         self.node_feature_dim = node_feature_dim or 1
-        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
         self.step_num = step_num
         self.config = kwargs
 
@@ -30,10 +47,12 @@ class VectorPipeline:
                 self.reconstruction_obj.load_model(self, pre_trained)
             except:
                 try:
-                    self.reconstruction_obj.load_state_dict(torch.load(pre_trained, map_location=torch.device('cpu')))
+                    self.reconstruction_obj.load_state_dict(
+                        torch.load(pre_trained, map_location=torch.device("cpu"))
+                    )
                 except:
                     print("Could not load pre-trained model.")
-            
+
         self.reconstruction_obj.to(self.device)
 
         self.inference_obj = inference_obj or VectorInference(self)
@@ -61,12 +80,18 @@ class VectorPipeline:
         return self.distance_obj(self, x1, x2, *args, **kwargs)
 
     def bridge(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
-        return self.bridge_obj(self, data_now, data_prediction, t_now, t_query, *args, **kwargs)
+        return self.bridge_obj(
+            self, data_now, data_prediction, t_now, t_query, *args, **kwargs
+        )
 
-    def inference(self, dataloader = None, noise_to_start = None, steps = None, *args, **kwargs): 
+    def inference(
+        self, dataloader=None, noise_to_start=None, steps=None, *args, **kwargs
+    ):
         if dataloader is None and noise_to_start is None:
             raise ValueError("Either data or noise_to_start must be provided")
-        return self.inference_obj(self, dataloader, noise_to_start, steps, *args, **kwargs)
+        return self.inference_obj(
+            self, dataloader, noise_to_start, steps, *args, **kwargs
+        )
 
     def train(self, data, epochs=100, *args, **kwargs):
         return self.train_obj(self, data, epochs, *args, **kwargs)
@@ -76,29 +101,40 @@ class VectorPipeline:
 
     def degradation(self, data, t, *args, **kwargs):
         return self.degradation_obj(self, data, t, *args, **kwargs)
-    
-    def visualize_foward(self, data, outfile = "test_forward.jpg", num=100, plot_data_func = None):
+
+    def visualize_foward(
+        self, data, outfile="test_forward.jpg", num=100, plot_data_func=None
+    ):
         from plotting import create_grid_plot
+
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
         arrays = list()
         for t in np.linspace(0, 1, num):
             arrays.append(self.degradation(data, t))
-        return create_grid_plot(arrays, outfile=outfile, plot_data_func = plot_data_func)
+        return create_grid_plot(arrays, outfile=outfile, plot_data_func=plot_data_func)
 
-    def visualize_reconstruction(self, data, outfile = "test_backward.jpg", num=25, steps=None, plot_data_func = None):
+    def visualize_reconstruction(
+        self, data, outfile="test_backward.jpg", num=25, steps=None, plot_data_func=None
+    ):
         from plotting import create_grid_plot
-        def split_list(lst, m): #TODO fix
+
+        def split_list(lst, m):  # TODO fix
             if m > len(lst):
-                raise ValueError("m cannot be greater than the number of elements in the list")
+                raise ValueError(
+                    "m cannot be greater than the number of elements in the list"
+                )
             n = len(lst)
             size = n // m
             extra = n % m
-            final_list = [lst[i * size + min(i, extra):(i + 1) * size + min(i + 1, extra)] for i in range(m)]
-            assert(np.sum([len(x) for x in final_list]) == n)
+            final_list = [
+                lst[i * size + min(i, extra) : (i + 1) * size + min(i + 1, extra)]
+                for i in range(m)
+            ]
+            assert np.sum([len(x) for x in final_list]) == n
             # add additional element to each list
-            for i in range(len(final_list)-1):
-                final_list[i].append(final_list[i+1][0])
+            for i in range(len(final_list) - 1):
+                final_list[i].append(final_list[i + 1][0])
             return final_list
 
         if isinstance(data, torch.utils.data.DataLoader):
@@ -107,14 +143,21 @@ class VectorPipeline:
         steps = steps or self.step_num
         arrays_data = list()
         arrays_projections = list()
-        backward_steps = list(np.linspace(1., 0, steps))
+        backward_steps = list(np.linspace(1.0, 0, steps))
         backward_steps = split_list(backward_steps, num)
         current_data = self.degradation(data, t=1.0)
-        for steps_i in tqdm(backward_steps, total=len(backward_steps), desc='Visualize reconstruction'):
-            current_data, current_projection = self.inference(noise_to_start=current_data, steps=steps_i)
+        for steps_i in tqdm(
+            backward_steps, total=len(backward_steps), desc="Visualize reconstruction"
+        ):
+            current_data, current_projection = self.inference(
+                noise_to_start=current_data, steps=steps_i
+            )
             arrays_data.append(current_data)
             arrays_projections.append(current_projection)
 
-        create_grid_plot(arrays_data, outfile=outfile, plot_data_func = plot_data_func)
-        return create_grid_plot(arrays_projections, outfile=outfile.replace(".jpg", "_proj.jpg"), plot_data_func = plot_data_func)
-
+        create_grid_plot(arrays_data, outfile=outfile, plot_data_func=plot_data_func)
+        return create_grid_plot(
+            arrays_projections,
+            outfile=outfile.replace(".jpg", "_proj.jpg"),
+            plot_data_func=plot_data_func,
+        )
