@@ -187,7 +187,7 @@ class VectorPipeline:
             plot_data_func=plot_data_func,
         )
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=100, num_comparisions=25, outfile=None):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=500, num_comparisions=8, outfile=None):
 
         assert isinstance(real_data, torch.utils.data.DataLoader)
         assert generated_data is None or isinstance(generated_data, torch.utils.data.DataLoader)
@@ -219,7 +219,7 @@ class VectorPipeline:
             axes = axes.flatten()  # Flatten the axes array for easy indexing
 
 
-        for i in tqdm(range(num_comparisions)):
+        for i in tqdm(range(num_comparisions), desc="Compare distributions:"):
             # Create iterators for real and generated data loaders
             # Reset dataloader to make sure all batches have the same size and samples are i.i.d. in each comparision
             real_data_iter = iter(real_dataloader)
@@ -239,7 +239,7 @@ class VectorPipeline:
                 axis_within.set_title('Optimal transport map between batches real data')
 
             distance_between, _ = compare_data_batches(real_batch_1, generated_batch, distance_func = self.distance_obj, axis=axis_between)
-            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func = self.distance_obj, axis=axis_within)
+            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func = self.distance_obj, axis=axis_within, color_generated='orange')
             distances_between.append(distance_between)
             distances_within.append(distance_within)
 

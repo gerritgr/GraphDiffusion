@@ -130,7 +130,6 @@ print("first ten points", points[:10])
 ############
 # Inference
 ############
-print("start inference")
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 pipeline = VectorPipeline(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
 data0 = pipeline.inference(data=train_dataloader)

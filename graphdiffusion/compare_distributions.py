@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
 from scipy.optimize import linear_sum_assignment
 
-def compare_data_batches(data_real, data_generated=None, distance_func=None, outfile=None, axis=None):
+def compare_data_batches(data_real, data_generated=None, distance_func=None, outfile=None, axis=None, color_real = 'red', color_generated = 'blue'):
     # important: ensures a 1-to-1 mapping.
     
     distance_func = distance_func or euclid_distance
@@ -141,8 +141,8 @@ def compare_data_batches(data_real, data_generated=None, distance_func=None, out
             ax = axis
 
         # Plot both datasets and the mapping
-        ax.scatter(data_real[:, 0], data_real[:, 1], color='blue', label='Data real', alpha=0.5)
-        ax.scatter(data_generated[:, 0], data_generated[:, 1], color='red', label='Data generated', alpha=0.5)
+        ax.scatter(data_real[:, 0], data_real[:, 1], color=color_real, label='Data real', alpha=0.5)
+        ax.scatter(data_generated[:, 0], data_generated[:, 1], color=color_generated, label='Data generated', alpha=0.5)
 
         # Draw lines between matched points
         for i, j in enumerate(mapping_indices):
@@ -150,7 +150,6 @@ def compare_data_batches(data_real, data_generated=None, distance_func=None, out
 
         ax.set_xlabel('Dimension 1')
         ax.set_ylabel('Dimension 2')
-        ax.set_title('Optimal Transport Map between Two Datasets')
         ax.legend()
 
         if outfile is not None:
