@@ -143,6 +143,9 @@ pipeline.visualize_reconstruction(
 )
 
 
+compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="spiral_compare.pdf")
+print("compare linear", compare)
+
 ############
 # Denoising Diffusion Forward Process
 ############
@@ -177,3 +180,7 @@ pipeline.visualize_reconstruction(
     num=25,
     steps=100,
 )
+
+
+compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="spiral_compare_ddpm.pdf")
+print("compare ddpm", compare)

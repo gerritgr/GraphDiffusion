@@ -45,8 +45,8 @@ for i in range(len(data_0)):
 
 # Compute the optimal transport plan (coupling matrix) using the Sinkhorn algorithm
 # epsilon is the regularization term, you may need to adjust it
-epsilon = 1e-2
-coupling_matrix = ot.sinkhorn(a=np.ones(len(data_0)) / len(data_0), b=np.ones(len(data_1)) / len(data_1), M=cost_matrix, reg=epsilon)
+epsilon = 0.005
+coupling_matrix = ot.sinkhorn(a=np.ones(len(data_0)) / len(data_0), b=np.ones(len(data_1)) / len(data_1), M=cost_matrix, reg=epsilon, numItermax=1000000)
 
 # Find the indices of the mappings (this works for small enough epsilon and assumes that data_0 and data_1 have the same length)
 # For each point in data_0, find the index of its corresponding point in data_1

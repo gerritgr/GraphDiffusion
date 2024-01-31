@@ -73,6 +73,29 @@ def create_model_joint(models):
     return ModelJoint(models)
 
 
+def unbatch_tensor_list(batched_tensor_list):
+    """
+    Convert a list of batched tensors into a list of individual tensors.
+    
+    Args:
+        batched_tensor_list (list of torch.Tensor): A list where each element is a batched tensor.
+    
+    Returns:
+        list of torch.Tensor: A list where each element is an individual tensor from the batch.
+    """
+    unbatched_tensor_list = []
+    for batched_tensor in batched_tensor_list:
+        # Ensure batched_tensor is a tensor
+        if not isinstance(batched_tensor, torch.Tensor):
+            raise TypeError("All elements of batched_tensor_list should be torch.Tensor")
+        
+        # Split the batched tensor along the batch dimension (dim=0) and extend the list
+        unbatched_tensor_list.extend(batched_tensor.unbind(dim=0))
+    
+    return unbatched_tensor_list
+
+
+
 # Example usage:
 # model1 = YourModelClass1(...)
 # model2 = YourModelClass2(...)

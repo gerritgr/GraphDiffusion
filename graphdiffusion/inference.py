@@ -68,8 +68,12 @@ class VectorInference:
 
         # Initialize the starting point by adding 100% noise to a random data point if noise_to_start is not provided
         if noise_to_start is None:
-            assert isinstance(data, torch.utils.data.DataLoader), "data must be a DataLoader"
-            random_data_point = next(iter(data))
+            if isinstance(data, torch.utils.data.DataLoader):
+                random_data_point = next(iter(data))
+            elif isinstance(data, torch.Tensor):
+                random_data_point = data
+            else:
+                raise ValueError("data must be a DataLoader or a Tensor")
             noise_to_start = self.pipeline.degradation(random_data_point, t=1.0)
             print("Starting inference from a random data point.")
 

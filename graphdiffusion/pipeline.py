@@ -13,6 +13,7 @@ from inference import *
 from distance import *
 from utils import *
 from encoding import time_to_pos_emb
+from compare_distributions import compare_data_batches
 
 
 # VectorPipeline with a default reconstructionr
@@ -117,6 +118,18 @@ class VectorPipeline:
         if data is None and noise_to_start is None:
             raise ValueError("Either data or noise_to_start must be provided")
         return self.inference_obj(data=data, noise_to_start=noise_to_start, steps=steps, pipeline=self, *args, **kwargs)
+    
+    def inference_from_dataloader(self, dataloader, steps=None, *args, **kwargs):
+        assert isinstance(dataloader, torch.utils.data.DataLoader)
+        generated_data = list()
+        for data in dataloader:
+            data_new, _ = self.inference(data=data)
+            generated_data.append(data_new)
+            assert data.shape[0] == data_new.shape[0] # the batch_dim of data_new and data should be the same
+
+        generated_data = unbatch_tensor_list(generated_data)
+        assert len(generated_data) == len(dataloader.dataset)
+        return generated_data
 
     def train(self, data, epochs=100, *args, **kwargs):
         return self.train_obj(data=data, epochs=epochs, pipeline=self, *args, **kwargs)
@@ -173,3 +186,58 @@ class VectorPipeline:
             outfile=outfile.replace(".jpg", "_proj.jpg"),
             plot_data_func=plot_data_func,
         )
+
+    def compare_distribution(self, real_data, generated_data=None, batch_size=100, num_comparisions=10, outfile=None):
+
+        assert isinstance(real_data, torch.utils.data.DataLoader)
+        assert generated_data is None or isinstance(generated_data, torch.utils.data.DataLoader)
+        assert len(real_data.dataset) >= batch_size*2
+
+        if batch_size < 100:
+            print("Warning: batch_size is small, the result may not be accurate.")
+
+        real_dataloader = DataLoader(real_data.dataset, batch_size=batch_size, shuffle=True)
+        if generated_data is None:
+            generated_data_list = self.inference_from_dataloader(dataloader=real_data)
+            generated_dataloader = DataLoader(generated_data_list, batch_size=batch_size, shuffle=True)
+        else:
+            generated_dataloader = DataLoader(generated_data.dataset, batch_size=batch_size, shuffle=True)
+
+        assert len(real_data.dataset) == len(generated_dataloader.dataset)
+        distances_between = list()
+        distances_within = list()
+
+        if outfile is not None:
+            plt.clf()
+            # Calculate number of rows and columns for the grid of subplots
+            num_rows = int(np.ceil(np.sqrt(num_comparisions)))
+            num_cols = int(np.ceil(num_comparisions / num_rows))
+
+            # Create a figure with num_comparisions axes in a grid
+            fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(6 * num_cols, 6 * num_rows))
+            axes = axes.flatten()  # Flatten the axes array for easy indexin
+
+        for i in tqdm(range(num_comparisions)):
+            # Create iterators for real and generated data loaders
+            # Reset dataloader to make sure all batches have the same size and samples are i.i.d. in each comparision
+            real_data_iter = iter(real_dataloader)
+            generated_data_iter = iter(generated_dataloader)
+
+            real_batch_1 = next(real_data_iter)
+            real_batch_2 = next(real_data_iter) # should be disjoint from real_batch_1
+            generated_batch = next(generated_data_iter)
+
+            axis = None
+            if outfile is not None:
+                axis = axes[i] if num_comparisions > 1 else axes
+
+            distance_between, _ = compare_data_batches(real_batch_1, generated_batch, distance_func = self.distance_obj, axis=axis)
+            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func = self.distance_obj, axis=axis)
+            distances_between.append(distance_between)
+            distances_within.append(distance_within)
+
+        if outfile is not None:
+            plt.tight_layout()
+            plt.savefig(outfile)
+
+        return np.nanmean(distances_between), np.nanmean(distances_within), np.nanstd(distances_between), np.nanstd(distances_within)
