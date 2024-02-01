@@ -4,7 +4,7 @@ with open("imports.py", "r") as file:
 from pipeline import *
 
 # Example usage
-pipeline = VectorPipeline(node_feature_dim=5)
+pipeline = PipelineEuclid(node_feature_dim=5)
 
 # Example tensor
 example_tensor = torch.randn(5) * 10  # Replace with your actual data
@@ -33,7 +33,7 @@ print("loss", pipeline.distance(torch.tensor(x1), torch.tensor(x2)))
 x3 = [5.0 + random.random() * 0.01, -5.0 - random.random() * 0.01]
 x4 = [5.0 + random.random() * 0.01, -5.0 - random.random() * 0.01]
 
-pipeline = VectorPipeline(node_feature_dim=2)
+pipeline = PipelineEuclid(node_feature_dim=2)
 tensorlist = [torch.tensor(x1), torch.tensor(x2), torch.tensor(x3), torch.tensor(x4)]
 # data = TensorDataset(*tensorlist)
 data = DataLoader(tensorlist, batch_size=1, shuffle=True)

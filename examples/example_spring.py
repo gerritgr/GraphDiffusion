@@ -68,7 +68,7 @@ plt.savefig("spiral.png")
 ############
 
 
-def plot_2darray_on_axis(array, axis, arrays):
+def plot_2darray_on_axisXXXXXX(array, axis, arrays):
     """
     Draws the input 2D NumPy array on the provided Matplotlib axis using a scatter plot.
     Each row in the 2D array is considered a separate point in the scatter plot.
@@ -109,11 +109,11 @@ def plot_2darray_on_axis(array, axis, arrays):
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = VectorPipeline(node_feature_dim=2)
+pipeline = PipelineEuclid(node_feature_dim=2, dist_type="L2")
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="spiral_forward.jpg",
-    plot_data_func=plot_2darray_on_axis,
+    #    plot_data_func=plot_2darray_on_axis,
     num=25,
 )
 
@@ -131,11 +131,11 @@ pipeline.train(data=train_dataloader, epochs=100)
 # Inference
 ############
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = VectorPipeline(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
-data0 = pipeline.inference(data=train_dataloader)
+pipeline = PipelineEuclid(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
+data0 = pipeline.inference(train_dataloader, noise_to_start=None)
 pipeline.visualize_reconstruction(
     data=train_dataloader,
-    plot_data_func=plot_2darray_on_axis,
+    #    plot_data_func=plot_2darray_on_axis,
     outfile="spiral_backward.jpg",
     num=25,
     steps=100,
@@ -152,19 +152,19 @@ print("compare linear", compare)
 # Forward
 degradation_obj = VectorDegradationDDPM()
 bridge_obj = VectorBridgeDDPM()
-# pipeline = VectorPipeline(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
-pipeline = VectorPipeline(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
+# pipeline = PipelineEuclid(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
+pipeline = PipelineEuclid(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="spiral_forward_ddpm.jpg",
-    plot_data_func=plot_2darray_on_axis,
+    #    plot_data_func=plot_2darray_on_axis,
     num=25,
 )
 
 # Train
 # pipeline.train(data=train_dataloader, epochs=10000)
 # pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
-pipeline = VectorPipeline(
+pipeline = PipelineEuclid(
     pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt",
     node_feature_dim=2,
     degradation_obj=degradation_obj,

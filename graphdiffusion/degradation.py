@@ -50,7 +50,7 @@ class VectorDegradation(nn.Module):
         assert self.time_scaling_factor > 0, "The time scaling factor must be positive."
         assert self.std_dev_scaling_factor > 0, "The standard deviation scaling factor must be positive."
 
-    def forward(self, data, t, seed=None, pipeline=None, *args, **kwargs):
+    def forward(self, data, t, pipeline, seed=None, **kwargs):
         """
         Apply the degradation process to the input data based on the degradation factor 't',
         the scaling factor, and the standard deviation scaling factor.
@@ -127,7 +127,7 @@ class VectorDegradationDDPM(nn.Module):
         assert betas.numel() == step_num, "Number of generated betas does not match the step number."
         return betas
 
-    def forward(self, data, t, seed=None, pipeline=None, *args, **kwargs):
+    def forward(self, data, t, pipeline, seed=None, **kwargs):
         """
         Apply the DDPM degradation process to the input data based on the degradation factor 't'.
 

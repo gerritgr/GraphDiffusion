@@ -15,52 +15,21 @@ from utils import *
 from config import *
 from encoding import time_to_pos_emb
 from compare_distributions import compare_data_batches
+from plotting import *
 
 
-# VectorPipeline with a default reconstructionr
-class VectorPipeline:
-    def __init__(
-        self,
-        pre_trained_path=None,
-        node_feature_dim=None,
-        device=None,
-        reconstruction_obj=None,
-        inference_obj=None,
-        degradation_obj=None,
-        train_obj=None,
-        bridge_obj=None,
-        distance_obj=None,
-        encoding_obj=None,
-        trainable_objects=None,
-        **kwargs
-    ):
-        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.config = get_config()
-        self.config.node_feature_dim = node_feature_dim or 1
-        for key, value in kwargs.items():
-            self.config[key] = value
-
+class PipelineBase:
+    def __init__(self, node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path, **kwargs):
+        self.device = device
+        self.node_feature_dim = node_feature_dim
+        self.reconstruction_obj = reconstruction_obj
+        self.inference_obj = inference_obj
+        self.degradation_obj = degradation_obj
+        self.train_obj = train_obj
+        self.bridge_obj = bridge_obj
+        self.distance_obj = distance_obj
+        self.encoding_obj = encoding_obj
         self.trainable_objects = trainable_objects
-        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(**get_params(VectorDenoiser, self.config))
-
-        if pre_trained_path is not None:
-            try:
-                # See if load_model is implemented
-                self.reconstruction_obj.load_model(pipeline=self, pre_trained_path=pre_trained_path)
-            except:
-                try:
-                    self.reconstruction_obj.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
-                except:
-                    print("Could not load pre-trained model.")
-
-        self.reconstruction_obj.to(self.device)
-
-        self.inference_obj = inference_obj or VectorInference()
-        self.degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation, self.config))
-        self.train_obj = train_obj or VectorTrain()
-        self.bridge_obj = bridge_obj or VectorBridge()
-        self.distance_obj = distance_obj or VectorDistance()
-        self.encoding_obj = encoding_obj or time_to_pos_emb
 
         if not callable(self.reconstruction_obj):
             raise ValueError("reconstruction_obj must be callable")
@@ -72,6 +41,29 @@ class VectorPipeline:
             raise ValueError("train_obj must be callable")
         if not callable(self.bridge_obj):
             raise ValueError("bridge_obj must be callable")
+        if not callable(self.distance_obj):
+            raise ValueError("distance_obj must be callable")
+        if not callable(self.encoding_obj):
+            raise ValueError("encoding_obj must be callable")
+        assert isinstance(self.node_feature_dim, int)
+
+        if pre_trained_path is not None:
+            try:
+                # See if load_model is implemented
+                self.reconstruction_obj.load_model(pre_trained_path)
+            except:
+                try:
+                    self.reconstruction_obj.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
+                except:
+                    print("Could not load pre-trained model.")
+
+        try:
+            for key, value in kwargs.items():
+                self.config[key] = value
+        except:
+            self.config = get_config()
+            for key, value in kwargs.items():
+                self.config[key] = value
 
     def get_model(self):  # TODO does not work with saving loading
         if self.trainable_objects is None:
@@ -109,23 +101,27 @@ class VectorPipeline:
         if len(self.trainable_objects) == 0:
             raise ValueError("No trainable objects defined.")
 
-    def distance(self, x1, x2, *args, **kwargs):
-        params = get_params(self.distance_obj, self.config)
+    def distance(self, x1, x2, **kwargs):
+        params = get_params(self.distance_obj, self.config, kwargs)
         return self.distance_obj(x1, x2, **params)
 
-    def bridge(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
-        return self.bridge_obj(data_now, data_prediction, t_now, t_query, pipeline=self, *args, **kwargs)
+    def bridge(self, data_now, data_prediction, t_now, t_query, **kwargs):
+        params = get_params(self.bridge_obj, self.config, kwargs)
+        return self.bridge_obj(data_now, data_prediction, t_now, t_query, self, **params)
 
-    def inference(self, data=None, noise_to_start=None, steps=None, *args, **kwargs):
+    def inference(self, data, noise_to_start, steps=None, **kwargs):
         if data is None and noise_to_start is None:
             raise ValueError("Either data or noise_to_start must be provided")
-        return self.inference_obj(data=data, noise_to_start=noise_to_start, steps=steps, pipeline=self, *args, **kwargs)
+        steps = steps or self.config["step_num"]
+        params = get_params(self.inference_obj, self.config, kwargs)
+        return self.inference_obj(data, self, noise_to_start, steps, **params)
 
-    def inference_from_dataloader(self, dataloader, steps=None, *args, **kwargs):
+    def inference_from_dataloader(self, dataloader, **kwargs):
         assert isinstance(dataloader, torch.utils.data.DataLoader)
+        # params = get_params(self.inference_obj, self.config, kwargs)
         generated_data = list()
         for data in dataloader:
-            data_new, _ = self.inference(data=data)
+            data_new, _ = self.inference(data, noise_to_start=None, steps=self.config.step_num, **kwargs)
             generated_data.append(data_new)
             assert data.shape[0] == data_new.shape[0]  # the batch_dim of data_new and data should be the same
 
@@ -133,27 +129,29 @@ class VectorPipeline:
         assert len(generated_data) == len(dataloader.dataset)
         return generated_data
 
-    def train(self, data, *args, **kwargs):
-        params = get_params(self.train_obj, self.config)
+    def train(self, data, **kwargs):
+        params = get_params(self.train_obj, self.config, kwargs)
         return self.train_obj(data, self, **params)
 
-    def reconstruction(self, data, t, *args, **kwargs):
-        return self.reconstruction_obj(data=data, t=t, pipeline=self, *args, **kwargs)
+    def reconstruction(self, data, t, **kwargs):
+        params = get_params(self.reconstruction_obj, self.config, kwargs)
+        return self.reconstruction_obj(data, t, self, **params)
 
-    def degradation(self, data, t, *args, **kwargs):
-        return self.degradation_obj(data=data, t=t, pipeline=self, *args, **kwargs)
+    def degradation(self, data, t, **kwargs):
+        params = get_params(self.degradation_obj, self.config, kwargs)
+        return self.degradation_obj(data, t, self, **params)
 
-    def visualize_foward(self, data, outfile="test_forward.jpg", num=100, plot_data_func=None):
+    def visualize_foward(self, data, outfile, num, plot_data_func):
         from plotting import create_grid_plot
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
         arrays = list()
         for t in np.linspace(0, 1, num):
-            arrays.append(self.degradation(data=data, t=t))
+            arrays.append(self.degradation(data, t))
         return create_grid_plot(arrays=arrays, outfile=outfile, plot_data_func=plot_data_func)
 
-    def visualize_reconstruction(self, data, outfile="test_backward.jpg", num=25, steps=None, plot_data_func=None):
+    def visualize_reconstruction(self, data, outfile, outfile_projection, num, steps, plot_data_func):
         from plotting import create_grid_plot
 
         def split_list(lst, m):  # TODO fix
@@ -172,25 +170,24 @@ class VectorPipeline:
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
 
-        steps = steps or self.config["step_num"]
         arrays_data = list()
         arrays_projections = list()
         backward_steps = list(np.linspace(1.0, 0, steps))
         backward_steps = split_list(backward_steps, num)
         current_data = self.degradation(data, t=1.0)
         for steps_i in tqdm(backward_steps, total=len(backward_steps), desc="Visualize reconstruction"):
-            current_data, current_projection = self.inference(noise_to_start=current_data, steps=steps_i)
+            current_data, current_projection = self.inference(data=None, noise_to_start=current_data, steps=steps_i)
             arrays_data.append(current_data)
             arrays_projections.append(current_projection)
 
         create_grid_plot(arrays_data, outfile=outfile, plot_data_func=plot_data_func)
         return create_grid_plot(
             arrays_projections,
-            outfile=outfile.replace(".jpg", "_proj.jpg"),
+            outfile=outfile_projection,
             plot_data_func=plot_data_func,
         )
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=32, outfile=None, max_plot=64):
+    def compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func):
 
         assert isinstance(real_data, torch.utils.data.DataLoader)
         assert generated_data is None or isinstance(generated_data, torch.utils.data.DataLoader)
@@ -243,8 +240,8 @@ class VectorPipeline:
                 axis_between.set_title("Optimal transport map between real and generated data")
                 axis_within.set_title("Optimal transport map between batches real data")
 
-            distance_between, _ = compare_data_batches(real_batch_1, generated_batch, distance_func=self.distance, axis=axis_between)
-            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func=self.distance, axis=axis_within, color_generated="orange")
+            distance_between, _ = compare_data_batches_func(real_batch_1, generated_batch, distance_func=self.distance, axis=axis_between)
+            distance_within, _ = compare_data_batches_func(real_batch_1, real_batch_2, distance_func=self.distance, axis=axis_within, color_generated="orange")
             distances_between.append(distance_between)
             distances_within.append(distance_within)
 
@@ -253,3 +250,67 @@ class VectorPipeline:
             plt.savefig(outfile)
 
         return np.nanmean(distances_between), np.nanmean(distances_within), np.nanstd(distances_between), np.nanstd(distances_within)
+
+
+# PipelineEuclid with a default reconstructionr
+class PipelineEuclid(PipelineBase):
+    def __init__(
+        self,
+        node_feature_dim=None,
+        device=None,
+        reconstruction_obj=None,
+        inference_obj=None,
+        degradation_obj=None,
+        train_obj=None,
+        bridge_obj=None,
+        distance_obj=None,
+        encoding_obj=None,
+        trainable_objects=None,
+        pre_trained_path=None,
+        **kwargs
+    ):
+
+        self.config = get_config()
+        self.config.node_feature_dim = node_feature_dim or 1
+        node_feature_dim = node_feature_dim or 1
+        device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        reconstruction_obj = reconstruction_obj or VectorDenoiser(**get_params(VectorDenoiser, self.config))
+        inference_obj = inference_obj or VectorInference()
+        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation, self.config))
+        train_obj = train_obj or VectorTrain()
+        bridge_obj = bridge_obj or VectorBridge()
+        distance_obj = distance_obj or VectorDistance()
+        encoding_obj = encoding_obj or time_to_pos_emb
+
+        super().__init__(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path)
+
+        for key, value in kwargs.items():
+            self.config[key] = value
+
+    def visualize_foward(self, data, outfile, num=100, plot_data_func=None):
+        if plot_data_func is None:
+            if self.config.node_feature_dim == 2:
+                plot_data_func = plot_2darray_on_axis
+            else:
+                plot_data_func = plot_array_on_axis
+        super().visualize_foward(data, outfile, num, plot_data_func)
+
+    def visualize_reconstruction(self, data, outfile, outfile_projection=None, num=None, steps=None, plot_data_func=None):
+        if outfile_projection is None:
+            outfile_projection = outfile + "_proj.jpg"
+        if num is None:
+            num = 25
+        if steps is None:
+            steps = self.config["step_num"] or 100
+        if plot_data_func is None:
+            if self.config.node_feature_dim == 2:
+                plot_data_func = plot_2darray_on_axis
+            else:
+                plot_data_func = plot_array_on_axis
+        super().visualize_reconstruction(data, outfile, outfile_projection, num, steps, plot_data_func)
+
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=32, outfile=None, max_plot=64):
+        if outfile is not None and self.config.node_feature_dim != 2:
+            print("Warning: compare_distribution only shows 2 dimensions.")
+        return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches)

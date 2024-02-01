@@ -2,7 +2,7 @@ import numpy as np
 
 import torch
 import numpy as np
-import ot  # Python Optimal Transport library
+
 import matplotlib.pyplot as plt
 
 
@@ -14,6 +14,8 @@ def euclid_distance(x, y):
 
 
 def compare_data_batches_ot(data_real, data_generated=None, distance_func=None, outfile=None, numItermax=1000000, epsilon=0.002, axis=None, color_real="red", color_generated="blue"):
+    import ot  # Python Optimal Transport library
+
     # important: does not necessary return 1-to-1 mapping.
 
     distance_func = distance_func or euclid_distance

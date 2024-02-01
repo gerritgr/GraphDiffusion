@@ -41,7 +41,7 @@ class VectorDenoiser(nn.Module):
         # Output layer
         self.fc_last = nn.Linear(hidden_dim, self.node_feature_dim)
 
-    def forward(self, data, t, pipeline=None, *args, **kwargs):
+    def forward(self, data, t, pipeline, *args, **kwargs):
         # Make sure data has form (batch_size, feature_dim)
         if data.dim() == 1:
             data = data.unsqueeze(0)
@@ -73,12 +73,12 @@ class VectorDenoiser(nn.Module):
 
         return x
 
-    def save_model(self, pre_trained_path, pipeline=None):
+    def save_model(self, pre_trained_path):
         """
         Save the model weights to the specified path.
         :param pre_trained_path: The file path where the model weights should be saved.
         """
         torch.save(self.state_dict(), pre_trained_path)
 
-    def load_model(self, pre_trained_path, pipeline=None):
+    def load_model(self, pre_trained_path):
         self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))

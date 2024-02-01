@@ -26,6 +26,7 @@ class Config:
 
 def get_config():
     config = Config(
+        epochs=100,
         step_num=100,
         dist_type="L1",
         time_scaling_factor=3.0,
@@ -39,7 +40,7 @@ def get_config():
     return config
 
 
-def get_params(func, config):
+def get_params(func, config, kwargs=None):
     # Determine the function to inspect (regular function, __init__ of class, or __call__ of callable object)
     if not callable(func):
         raise TypeError(f"{func} is not callable")
@@ -64,5 +65,9 @@ def get_params(func, config):
     start_index = 1 if "self" in code.co_varnames[: code.co_argcount] else 0
     valid_keys = code.co_varnames[start_index : code.co_argcount]
     filtered_config = {k: config[k] for k in valid_keys if k in config}
+
+    if kwargs is not None:
+        for key, value in kwargs.items():
+            filtered_config[key] = value
 
     return filtered_config

@@ -33,7 +33,7 @@ class VectorBridge(nn.Module):
     def __init__(self):
         super(VectorBridge, self).__init__()
 
-    def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
+    def forward(self, data_now, data_prediction, t_now, t_query, pipeline):
         vectorbridge_magnitude_scale = pipeline.config.vectorbridge_magnitude_scale or 3.0
         vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 3.0
 
@@ -76,7 +76,7 @@ class VectorBridgeDDPM(nn.Module):
         noise = noise / torch.sqrt(1.0 - alphas_cumprod_t)
         return noise
 
-    def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
+    def forward(self, data_now, data_prediction, t_now, t_query, pipeline):
         """
         Performs one step of denoising using the provided model.
         Use only with VectorDegradationDDPM.
