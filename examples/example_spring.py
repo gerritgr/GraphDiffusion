@@ -109,7 +109,7 @@ def plot_2darray_on_axisXXXXXX(array, axis, arrays):
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineEuclid(node_feature_dim=2, dist_type="L2")
+pipeline = PipelineEuclid(node_feature_dim=2, dist_type="L1")
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="spiral_forward.jpg",
@@ -123,7 +123,6 @@ pipeline.visualize_foward(
 ############
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-print("first ten points", points[:10])
 pipeline.train(data=train_dataloader, epochs=100)
 # pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
 
@@ -183,3 +182,10 @@ pipeline.visualize_reconstruction(
 
 compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="spiral_compare_ddpm.pdf")
 print("compare ddpm", compare)
+
+
+
+
+############
+# Denoising Diffusion Forward Process
+############

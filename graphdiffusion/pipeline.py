@@ -146,6 +146,9 @@ class PipelineBase:
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
+        if isinstance(data, torch.Tensor) and data.dim() == 1:
+            data = data.view(1,-1)
+
         arrays = list()
         for t in np.linspace(0, 1, num):
             arrays.append(self.degradation(data, t))
@@ -233,12 +236,11 @@ class PipelineBase:
             axis_within = None
             if outfile is not None:
                 idx = 2 * i  # Index for the first axis of the pair
-                if idx >= num_plots:
-                    break
-                axis_between = axes[idx]
-                axis_within = axes[idx + 1]
-                axis_between.set_title("Optimal transport map between real and generated data")
-                axis_within.set_title("Optimal transport map between batches real data")
+                if idx < num_plots:
+                    axis_between = axes[idx]
+                    axis_within = axes[idx + 1]
+                    axis_between.set_title("Optimal transport map between real and generated data")
+                    axis_within.set_title("Optimal transport map between batches real data")
 
             distance_between, _ = compare_data_batches_func(real_batch_1, generated_batch, distance_func=self.distance, axis=axis_between)
             distance_within, _ = compare_data_batches_func(real_batch_1, real_batch_2, distance_func=self.distance, axis=axis_within, color_generated="orange")
@@ -249,7 +251,8 @@ class PipelineBase:
             plt.tight_layout()
             plt.savefig(outfile)
 
-        return np.nanmean(distances_between), np.nanmean(distances_within), np.nanstd(distances_between), np.nanstd(distances_within)
+        result_dict = {"mean distance (real vs generated)": np.nanmean(distances_between), "mean distance (real vs real)": np.nanmean(distances_within), "std distance (real vs generated)": np.nanstd(distances_between), "std distance (real vs real)": np.nanstd(distances_within)}
+        return result_dict
 
 
 # PipelineEuclid with a default reconstructionr
@@ -313,7 +316,7 @@ class PipelineEuclid(PipelineBase):
                 plot_data_func = plot_array_on_axis
         super().visualize_reconstruction(data, outfile, outfile_projection, num, steps, plot_data_func)
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=32, outfile=None, max_plot=64):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=32):
         if outfile is not None and self.config.node_feature_dim != 2:
             print("Warning: compare_distribution only shows 2 dimensions.")
         return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches)

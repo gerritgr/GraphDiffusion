@@ -25,19 +25,21 @@ def plot_array_on_axis(array, axis, arrays):
     :param x_limits: A tuple containing the minimum and maximum x-axis limits.
     :param y_limits: A tuple containing the minimum and maximum y-axis limits.
     """
-    array = to_numpy_array(array)
-    x = np.arange(len(array))  # Generate x-coordinates as indices
-    y = array  # y-coordinates are the array values
 
-    axis.scatter(x, y, s=500, alpha=0.5, edgecolors="none")  # Plotting the scatter plot on the provided axis
+    array = to_numpy_array(array)
+    for i in range(array.shape[0]):
+        x = np.arange(len(array[i,:]))  # Generate x-coordinates as indices
+        y = array[i,:]  # y-coordinates are the array values
+        axis.plot(x, y, alpha=0.5)  # Plotting the scatter plot on the provided axis
+
     # axis.set_xlim(x_limits)  # Set x-axis limits
     # axis.set_ylim(y_limits)  # Set y-axis limits
-    min_x = np.min([np.min(x[:, :]) for x in arrays])
-    max_x = np.max([np.max(x[:, :]) for x in arrays])
-    min_y = 0.0
-    max_y = np.max([x.shape[1] for x in arrays])  # TODO fix
-    axis.set_xlim([min_x, max_x])
-    axis.set_ylim([min_y, max_y])
+    #min_x = np.min([np.min(x[:, :]) for x in arrays])
+    #max_x = np.max([np.max(x[:, :]) for x in arrays])
+    #min_y = 0.0
+    #max_y = np.max([x.shape[1] for x in arrays])  # TODO fix
+    #axis.set_xlim([min_x, max_x])
+    #axis.set_ylim([min_y, max_y])
 
     axis.set_xlabel("Index")
     axis.set_ylabel("Value")

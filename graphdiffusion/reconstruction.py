@@ -49,7 +49,7 @@ class VectorDenoiser(nn.Module):
 
         # Add time to data tensor
         # Handle the case where t is a float
-        if isinstance(t, float):
+        if isinstance(t, float) or isinstance(t, int):
             t_tensor = torch.full((data.size(0), 1), t, dtype=data.dtype, device=data.device)
         # Handle the case where t is a tensor of size m
         elif isinstance(t, torch.Tensor) and t.ndim == 1 and t.size(0) == data.size(0):

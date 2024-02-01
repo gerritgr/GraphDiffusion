@@ -1,7 +1,14 @@
-with open("imports.py", "r") as file:
+# import os
+# os.chdir("../graphdiffusion")
+# print("Current Working Directory: ", os.getcwd())
+import os, sys
+# os.chdir("")
+sys.path.append("../graphdiffusion")
+with open("../graphdiffusion/imports.py", "r") as file:
     exec(file.read())
-
 from pipeline import *
+
+
 
 # Example usage
 pipeline = PipelineEuclid(node_feature_dim=5)
@@ -10,20 +17,17 @@ pipeline = PipelineEuclid(node_feature_dim=5)
 example_tensor = torch.randn(5) * 10  # Replace with your actual data
 
 # Using the train method
-# pipeline.train(example_tensor)
+pipeline.train(example_tensor)
 
 # Using the reconstruction method
 x = pipeline.reconstruction(example_tensor, 0)
 print("reconstruction", x)
 
-x = pipeline.bridge(data_now=None, data_prediction=example_tensor, t_now=1.0, t_query=0.5)
+x = pipeline.bridge(data_now=0.5, data_prediction=example_tensor, t_now=1.0, t_query=0.5)
 print("bridge", x)
 
-input_tensor = [5.0 + random.random() * 0.01, -5.0 + random.random() * 0.01]
-random.shuffle(input_tensor)
-input_tensor = torch.tensor(input_tensor)
-print("input_tensor", input_tensor)
-pipeline.visualize_foward(input_tensor)
+input_tensor = torch.rand(5,5)
+pipeline.visualize_foward(input_tensor, outfile="forward_5d.jpg")
 
 
 x1 = [5.0 + random.random() * 0.01, -5.0 - random.random() * 0.01]
@@ -33,12 +37,7 @@ print("loss", pipeline.distance(torch.tensor(x1), torch.tensor(x2)))
 x3 = [5.0 + random.random() * 0.01, -5.0 - random.random() * 0.01]
 x4 = [5.0 + random.random() * 0.01, -5.0 - random.random() * 0.01]
 
-pipeline = PipelineEuclid(node_feature_dim=2)
-tensorlist = [torch.tensor(x1), torch.tensor(x2), torch.tensor(x3), torch.tensor(x4)]
-# data = TensorDataset(*tensorlist)
-data = DataLoader(tensorlist, batch_size=1, shuffle=True)
-pipeline.train(data, epochs=10000)
 
-
-data0 = pipeline.inference(data)
+example_tensor = torch.randn(5,5) * 10
+data0 = pipeline.inference(data=example_tensor, noise_to_start=None)
 print("inference", data0)
