@@ -5,17 +5,17 @@ file_path = os.path.join(script_dir, "imports.py")
 with open(file_path, "r") as file:
     exec(file.read())
 
-from reconstruction import *
-from bridge import *
-from train import *
-from degradation import *
-from inference import *
-from distance import *
-from utils import *
-from config import *
-from encoding import time_to_pos_emb
-from compare_distributions import compare_data_batches
-from plotting import *
+from .reconstruction import *
+from .bridge import *
+from .train import *
+from .degradation import *
+from .inference import *
+from .distance import *
+from .utils import *
+from .config import *
+from .encoding import time_to_pos_emb
+from .compare_distributions import compare_data_batches
+from .plotting import *
 
 
 class PipelineBase:
@@ -70,8 +70,10 @@ class PipelineBase:
             return self.reconstruction_obj.to(self.device)
         else:
             assert isinstance(self.trainable_objects, list)
-            if self.joint_model:
+            try:
                 return self.joint_model.to(self.device)
+            except:
+                pass
 
         joint_model = create_model_joint(self.trainable_objects)
         self.joint_model = joint_model
@@ -142,7 +144,7 @@ class PipelineBase:
         return self.degradation_obj(data, t, self, **params)
 
     def visualize_foward(self, data, outfile, num, plot_data_func):
-        from plotting import create_grid_plot
+        from .plotting import create_grid_plot
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
@@ -155,7 +157,7 @@ class PipelineBase:
         return create_grid_plot(arrays=arrays, outfile=outfile, plot_data_func=plot_data_func)
 
     def visualize_reconstruction(self, data, outfile, outfile_projection, num, steps, plot_data_func):
-        from plotting import create_grid_plot
+        from .plotting import create_grid_plot
 
         def split_list(lst, m):  # TODO fix
             if m > len(lst):

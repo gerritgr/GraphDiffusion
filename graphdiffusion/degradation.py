@@ -5,8 +5,8 @@ file_path = os.path.join(script_dir, "imports.py")
 with open(file_path, "r") as file:
     exec(file.read())
 
-from utils import *
-from pipeline import *
+from .utils import *
+from .pipeline import *
 
 
 class VectorDegradation(nn.Module):

@@ -5,7 +5,7 @@ file_path = os.path.join(script_dir, "imports.py")
 with open(file_path, "r") as file:
     exec(file.read())
 
-from degradation import *
+from .degradation import *
 
 
 # Define a simple default bridge class
