@@ -34,15 +34,18 @@ class VectorBridge(nn.Module):
         super(VectorBridge, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
+        vectorbridge_magnitude_scale = pipeline.config.vectorbridge_magnitude_scale or 3.0
+        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 3.0
+
         direction = data_prediction - data_now
         direction = direction / torch.norm(direction)
         seed = torch.randint(0, 10000, (1,)).item()
         magnitude = torch.norm(pipeline.degradation(data_prediction, t_now, seed=seed) - pipeline.degradation(data_prediction, t_query, seed=seed))
 
-        x_tminus1 = data_now + direction * magnitude / 3
+        x_tminus1 = data_now + direction * magnitude / vectorbridge_magnitude_scale
 
         if t_query > 1e-3:
-            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * magnitude / 3.0
+            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * magnitude / vectorbridge_rand_scale
 
         return x_tminus1
 
@@ -81,9 +84,10 @@ class VectorBridgeDDPM(nn.Module):
         """
         row_num = data_now.shape[0]
         assert row_num == data_prediction.shape[0]
+        config = pipeline.config
 
         # Generate and calculate betas, alphas, and related parameters
-        betas = VectorDegradationDDPM.generate_schedule(step_num=pipeline.step_num)
+        betas = VectorDegradationDDPM.generate_schedule(step_num=config.step_num, ddpm_start=config.ddpm_start, ddpm_end=config.ddpm_end).to(data_now.device)
         step_num = betas.numel()
         t_int = int(t_now * (step_num - 1))
         t_query_int = int(t_query * (step_num - 1))
@@ -107,8 +111,10 @@ class VectorBridgeDDPM(nn.Module):
 
         if t_int != 0:
             posterior_variance = (1.0 - alphas_cumprod_prev) / (1.0 - alphas_cumprod) * betas  # in the paper this is in 3.2. Note that sigma^2 is variance, not std.
-            posterior_std_t = torch.sqrt(posterior_variance[t_int])
-            # posterior_std_t = torch.sqrt(beta_t) #alternative
+            if pipeline.config.vectorbridgeddpm_use_simple_posterior_std:
+                posterior_std_t = torch.sqrt(beta_t)
+            else:
+                posterior_std_t = torch.sqrt(posterior_variance[t_int])
             noise = rand_like_with_seed(data_now)
             values_one_step_denoised = model_mean + posterior_std_t * noise
 

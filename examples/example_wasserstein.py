@@ -13,7 +13,6 @@ def compute_distance(x, y):
     return np.sqrt(np.sum((x - y) ** 2))
 
 
-
 # Set random seed for reproducibility
 np.random.seed(42)
 
@@ -23,7 +22,6 @@ batch_size = 50
 # Create datasets data_0 and data_1 using 2D standard normal distribution
 data_0 = np.random.randn(batch_size, 2)
 data_1 = np.random.randn(batch_size, 2)
-
 
 
 # Convert PyTorch tensors to NumPy arrays if they are not already
@@ -59,15 +57,15 @@ print("overall_transport_cost", overall_transport_cost)
 
 # 2) Plot both datasets and the mapping
 plt.figure(figsize=(8, 6))
-plt.scatter(data_0[:, 0], data_0[:, 1], color='blue', label='Data 0')
-plt.scatter(data_1[:, 0], data_1[:, 1], color='red', label='Data 1')
+plt.scatter(data_0[:, 0], data_0[:, 1], color="blue", label="Data 0")
+plt.scatter(data_1[:, 0], data_1[:, 1], color="red", label="Data 1")
 
 # Draw lines between matched points
 for i, j in enumerate(mapping_indices):
-    plt.plot([data_0[i, 0], data_1[j, 0]], [data_0[i, 1], data_1[j, 1]], color='gray', alpha=0.5)
+    plt.plot([data_0[i, 0], data_1[j, 0]], [data_0[i, 1], data_1[j, 1]], color="gray", alpha=0.5)
 
-plt.xlabel('Dimension 1')
-plt.ylabel('Dimension 2')
-plt.title('Optimal Transport Map between Two Datasets')
+plt.xlabel("Dimension 1")
+plt.ylabel("Dimension 2")
+plt.title("Optimal Transport Map between Two Datasets")
 plt.legend()
 plt.show()

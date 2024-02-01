@@ -14,7 +14,7 @@ import random
 class VectorTrain:
     """
     A class for training a model using a specified pipeline that encapsulates the model, degradation, reconstruction, and distance calculation.
-    
+
     Attributes:
         pipeline (object): An object encapsulating the model, degradation, reconstruction, and distance calculation.
     """
@@ -44,6 +44,7 @@ class VectorTrain:
         Raises:
             TypeError: If the input data is not a DataLoader, list of Tensors, or a single Tensor.
         """
+
         def to_device(data):
             if isinstance(data, torch.Tensor):
                 return data.to(device)
@@ -78,7 +79,6 @@ class VectorTrain:
         else:
             raise TypeError("Input data must be a DataLoader, a list of tensors, or a single tensor")
 
-
     def __call__(self, data, epochs=100, alpha=0.1, pipeline=None, *args, **kwargs):
         """
         Train the model using the provided input data and pipeline.
@@ -111,11 +111,11 @@ class VectorTrain:
                 t = torch.rand(batch.shape[0], device=self.pipeline.device)
 
                 optimizer.zero_grad()
-                
+
                 # Apply degradation and reconstruction from the pipeline
                 batch_with_noise = self.pipeline.degradation(batch, t)
                 batch_reconstructed = self.pipeline.reconstruction(batch_with_noise, t)
-                
+
                 # Compute loss using the pipeline's distance method
                 loss = self.pipeline.distance(batch, batch_reconstructed)
                 loss.backward()

@@ -20,7 +20,9 @@ class VectorDenoiser(nn.Module):
         dropout_rate=0.2,
         time_dim=32,
     ):
+        # important: config overwrites parameters
         super(VectorDenoiser, self).__init__()
+
         self.node_feature_dim = node_feature_dim
         self.time_dim = time_dim
 

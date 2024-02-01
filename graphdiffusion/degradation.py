@@ -6,6 +6,7 @@ with open(file_path, "r") as file:
     exec(file.read())
 
 from utils import *
+from pipeline import *
 
 
 class VectorDegradation(nn.Module):
@@ -43,11 +44,11 @@ class VectorDegradation(nn.Module):
                                                       for the noise component. Defaults to 0.5. Small values mean that the standard deviation converges faster to 1.
         """
         super(VectorDegradation, self).__init__()
-        assert time_scaling_factor > 0, "The time scaling factor must be positive."
-        assert std_dev_scaling_factor > 0, "The standard deviation scaling factor must be positive."
 
-        self.scaling_factor = time_scaling_factor
+        self.time_scaling_factor = time_scaling_factor
         self.std_dev_scaling_factor = std_dev_scaling_factor
+        assert self.time_scaling_factor > 0, "The time scaling factor must be positive."
+        assert self.std_dev_scaling_factor > 0, "The standard deviation scaling factor must be positive."
 
     def forward(self, data, t, seed=None, pipeline=None, *args, **kwargs):
         """
@@ -84,7 +85,7 @@ class VectorDegradation(nn.Module):
             return data
 
         # Transform 't' by raising it to the power of the scaling factor.
-        t = t**self.scaling_factor
+        t = t**self.time_scaling_factor
         # Compute the mean of the degraded data.
         mean = data * (1 - t)
         # Compute the standard deviation for the noise component based on 't' and the std_dev_scaling_factor.
@@ -110,7 +111,7 @@ class VectorDegradationDDPM(nn.Module):
         super(VectorDegradationDDPM, self).__init__()
 
     @staticmethod
-    def generate_schedule(start=0.0001, end=0.01, step_num=100):
+    def generate_schedule(ddpm_start=0.0001, ddpm_end=0.01, step_num=100):
         """
         Generates a schedule of beta values for a forward process.
 
@@ -122,7 +123,7 @@ class VectorDegradationDDPM(nn.Module):
         Returns:
             Tensor: A tensor containing the beta values.
         """
-        betas = torch.linspace(start, end, step_num)
+        betas = torch.linspace(ddpm_start, ddpm_end, step_num)
         assert betas.numel() == step_num, "Number of generated betas does not match the step number."
         return betas
 
@@ -145,9 +146,11 @@ class VectorDegradationDDPM(nn.Module):
             ValueError: If 't' has values outside the range [0, 1].
             TypeError: If 't' is not a float or a tensor.
         """
+        assert pipeline is not None
         row_num = data.shape[0]
         feature_dim = data.shape[1]
-        step_num = pipeline.step_num
+        config = pipeline.config
+        step_num = config.step_num
 
         # Validate and prepare 't'.
         if torch.is_tensor(t):
@@ -163,7 +166,7 @@ class VectorDegradationDDPM(nn.Module):
 
         # Scale 't' according to the number of steps.
         t_scaled = torch.round(t * (step_num - 1.0)).long().to(data.device)
-        betas = VectorDegradationDDPM.generate_schedule(step_num=step_num).to(data.device)
+        betas = VectorDegradationDDPM.generate_schedule(step_num=step_num, ddpm_start=config.ddpm_start, ddpm_end=config.ddpm_end).to(data.device)
         alphas = 1.0 - betas
         alphas_cumprod = torch.cumprod(alphas, dim=0)
         alphabar_t = torch.gather(alphas_cumprod, 0, t_scaled.flatten()).view(row_num, 1)

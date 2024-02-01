@@ -13,9 +13,7 @@ def euclid_distance(x, y):
     return np.sqrt(np.sum((x - y) ** 2))
 
 
-
-
-def compare_data_batches_ot(data_real, data_generated = None, distance_func = None, outfile = None, numItermax=1000000, epsilon = 0.002, axis=None, color_real = 'red', color_generated = 'blue'):
+def compare_data_batches_ot(data_real, data_generated=None, distance_func=None, outfile=None, numItermax=1000000, epsilon=0.002, axis=None, color_real="red", color_generated="blue"):
     # important: does not necessary return 1-to-1 mapping.
 
     distance_func = distance_func or euclid_distance
@@ -25,7 +23,7 @@ def compare_data_batches_ot(data_real, data_generated = None, distance_func = No
         data_real = data_real.detach().cpu().numpy()
     if isinstance(data_generated, torch.Tensor):
         data_generated = data_generated.detach().cpu().numpy()
-    assert data_real.shape[0] == data_generated.shape[0] # make sure num samples (batch_dim) is the same
+    assert data_real.shape[0] == data_generated.shape[0]  # make sure num samples (batch_dim) is the same
 
     # 1) Compute the cost matrix between the two datasets
     # Using Euclidean distance here, but you can choose an appropriate measure
@@ -35,12 +33,11 @@ def compare_data_batches_ot(data_real, data_generated = None, distance_func = No
     # Fill in the cost matrix using your distance_func function
     for i in range(len(data_real)):
         for j in range(len(data_generated)):
-            cost_matrix[i, j] = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j])) #slow # TODO make scaling a parameter
-
+            cost_matrix[i, j] = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j]))  # slow # TODO make scaling a parameter
 
     # Compute the optimal transport plan (coupling matrix) using the Sinkhorn algorithm
     # epsilon is the regularization term, you may need to adjust it
-    #coupling_matrix = ot.sinkhorn(a=np.ones(len(data_real)) / len(data_real), b=np.ones(len(data_generated)) / len(data_generated), M=cost_matrix, reg=epsilon, numItermax=numItermax)
+    # coupling_matrix = ot.sinkhorn(a=np.ones(len(data_real)) / len(data_real), b=np.ones(len(data_generated)) / len(data_generated), M=cost_matrix, reg=epsilon, numItermax=numItermax)
     coupling_matrix = ot.emd(a=np.ones(len(data_real)) / len(data_real), b=np.ones(len(data_generated)) / len(data_generated), M=cost_matrix, numItermax=numItermax)
 
     # Find the indices of the mappings (this works for small enough epsilon and assumes that data_real and data_generated have the same length)
@@ -50,7 +47,6 @@ def compare_data_batches_ot(data_real, data_generated = None, distance_func = No
     # Compute the overall transport cost
     overall_transport_cost = np.sum(coupling_matrix * cost_matrix)
 
-
     if outfile is not None or axis is not None:
         if axis is None:
             plt.figure(figsize=(8, 6))
@@ -59,23 +55,21 @@ def compare_data_batches_ot(data_real, data_generated = None, distance_func = No
             ax = axis
 
         # Plot both datasets and the mapping
-        ax.scatter(data_real[:, 0], data_real[:, 1], color=color_real, label='Data real', alpha=0.5)
-        ax.scatter(data_generated[:, 0], data_generated[:, 1], color=color_generated, label='Data generated', alpha=0.5)
+        ax.scatter(data_real[:, 0], data_real[:, 1], color=color_real, label="Data real", alpha=0.5)
+        ax.scatter(data_generated[:, 0], data_generated[:, 1], color=color_generated, label="Data generated", alpha=0.5)
 
         # Draw lines between matched points
         for i, j in enumerate(mapping_indices):
-            ax.plot([data_real[i, 0], data_generated[j, 0]], [data_real[i, 1], data_generated[j, 1]], color='gray', alpha=0.5)
+            ax.plot([data_real[i, 0], data_generated[j, 0]], [data_real[i, 1], data_generated[j, 1]], color="gray", alpha=0.5)
 
-        ax.set_xlabel('Dimension 1')
-        ax.set_ylabel('Dimension 2')
+        ax.set_xlabel("Dimension 1")
+        ax.set_ylabel("Dimension 2")
         ax.legend()
 
         if outfile is not None:
             plt.savefig(outfile)
 
-
     return overall_transport_cost, mapping_indices
-
 
 
 if __name__ == "__main__":
@@ -92,17 +86,12 @@ if __name__ == "__main__":
     compare_data_batches(data_0, data_generated, outfile="test_wasserstein.pdf")
 
 
-
-
-
-
-
-
 from scipy.optimize import linear_sum_assignment
 
-def compare_data_batches(data_real, data_generated=None, distance_func=None, outfile=None, axis=None, color_real = 'red', color_generated = 'blue'):
+
+def compare_data_batches(data_real, data_generated=None, distance_func=None, outfile=None, axis=None, color_real="red", color_generated="blue"):
     # important: ensures a 1-to-1 mapping.
-    
+
     distance_func = distance_func or euclid_distance
 
     # Convert PyTorch tensors to NumPy arrays if they are not already
@@ -118,7 +107,7 @@ def compare_data_batches(data_real, data_generated=None, distance_func=None, out
     # Fill in the cost matrix using your distance_func function
     for i in range(len(data_real)):
         for j in range(len(data_generated)):
-            cost_matrix[i, j] = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j]))  #slow
+            cost_matrix[i, j] = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j]))  # slow
 
     # Use the Hungarian algorithm (linear sum assignment) to find the minimum cost 1-to-1 mapping
     row_ind, col_ind = linear_sum_assignment(cost_matrix)
@@ -143,19 +132,18 @@ def compare_data_batches(data_real, data_generated=None, distance_func=None, out
             ax = axis
 
         # Plot both datasets and the mapping
-        ax.scatter(data_real[:, 0], data_real[:, 1], color=color_real, label='Data real', alpha=0.5)
-        ax.scatter(data_generated[:, 0], data_generated[:, 1], color=color_generated, label='Data generated', alpha=0.5)
+        ax.scatter(data_real[:, 0], data_real[:, 1], color=color_real, label="Data real", alpha=0.5)
+        ax.scatter(data_generated[:, 0], data_generated[:, 1], color=color_generated, label="Data generated", alpha=0.5)
 
         # Draw lines between matched points
         for i, j in enumerate(mapping_indices):
-            ax.plot([data_real[i, 0], data_generated[j, 0]], [data_real[i, 1], data_generated[j, 1]], color='gray', alpha=0.5)
+            ax.plot([data_real[i, 0], data_generated[j, 0]], [data_real[i, 1], data_generated[j, 1]], color="gray", alpha=0.5)
 
-        ax.set_xlabel('Dimension 1')
-        ax.set_ylabel('Dimension 2')
+        ax.set_xlabel("Dimension 1")
+        ax.set_ylabel("Dimension 2")
         ax.legend()
 
         if outfile is not None:
             plt.savefig(outfile)
 
     return overall_transport_cost, mapping_indices
-

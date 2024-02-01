@@ -124,8 +124,8 @@ pipeline.visualize_foward(
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 print("first ten points", points[:10])
-#pipeline.train(data=train_dataloader, epochs=10000)
-#pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
+# pipeline.train(data=train_dataloader, epochs=10000)
+# pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
 # Inference
@@ -162,8 +162,8 @@ pipeline.visualize_foward(
 )
 
 # Train
-#pipeline.train(data=train_dataloader, epochs=10000)
-#pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
+# pipeline.train(data=train_dataloader, epochs=10000)
+# pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
 pipeline = VectorPipeline(
     pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt",
     node_feature_dim=2,

@@ -45,13 +45,13 @@ class VectorInference:
         """
         # Generate or validate the steps sequence
         assert pipeline is not None, "pipeline must be provided"
-        #assert isinstance(pipeline, VectorPipeline), "pipeline must be a VectorPipeline" # TODO add basepipeline class
+        # assert isinstance(pipeline, VectorPipeline), "pipeline must be a VectorPipeline" # TODO add basepipeline class
         self.pipeline = pipeline
 
         if isinstance(steps, int):
             steps = np.linspace(1, 0, steps)
         elif steps is None:
-            step_num = pipeline.step_num or 100
+            step_num = pipeline.config["step_num"] or 100
             steps = np.linspace(1, 0, step_num)
 
         # Validate the steps

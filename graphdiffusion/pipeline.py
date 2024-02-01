@@ -12,6 +12,7 @@ from degradation import *
 from inference import *
 from distance import *
 from utils import *
+from config import *
 from encoding import time_to_pos_emb
 from compare_distributions import compare_data_batches
 
@@ -21,7 +22,6 @@ class VectorPipeline:
     def __init__(
         self,
         pre_trained_path=None,
-        step_num=100,
         node_feature_dim=None,
         device=None,
         reconstruction_obj=None,
@@ -34,13 +34,14 @@ class VectorPipeline:
         trainable_objects=None,
         **kwargs
     ):
-        self.node_feature_dim = node_feature_dim or 1
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.step_num = step_num
-        self.config = kwargs
-        self.trainable_objects = trainable_objects
+        self.config = get_config()
+        self.config.node_feature_dim = node_feature_dim or 1
+        for key, value in kwargs.items():
+            self.config[key] = value
 
-        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(node_feature_dim=node_feature_dim)
+        self.trainable_objects = trainable_objects
+        self.reconstruction_obj = reconstruction_obj or VectorDenoiser(**get_params(VectorDenoiser, self.config))
 
         if pre_trained_path is not None:
             try:
@@ -55,7 +56,7 @@ class VectorPipeline:
         self.reconstruction_obj.to(self.device)
 
         self.inference_obj = inference_obj or VectorInference()
-        self.degradation_obj = degradation_obj or VectorDegradation()
+        self.degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation, self.config))
         self.train_obj = train_obj or VectorTrain()
         self.bridge_obj = bridge_obj or VectorBridge()
         self.distance_obj = distance_obj or VectorDistance()
@@ -72,7 +73,7 @@ class VectorPipeline:
         if not callable(self.bridge_obj):
             raise ValueError("bridge_obj must be callable")
 
-    def get_model(self): #TODO does not work with saving loading
+    def get_model(self):  # TODO does not work with saving loading
         if self.trainable_objects is None:
             return self.reconstruction_obj.to(self.device)
         else:
@@ -109,7 +110,8 @@ class VectorPipeline:
             raise ValueError("No trainable objects defined.")
 
     def distance(self, x1, x2, *args, **kwargs):
-        return self.distance_obj(x1, x2, pipeline=self, *args, **kwargs)
+        params = get_params(self.distance_obj, self.config)
+        return self.distance_obj(x1, x2, **params)
 
     def bridge(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
         return self.bridge_obj(data_now, data_prediction, t_now, t_query, pipeline=self, *args, **kwargs)
@@ -118,20 +120,21 @@ class VectorPipeline:
         if data is None and noise_to_start is None:
             raise ValueError("Either data or noise_to_start must be provided")
         return self.inference_obj(data=data, noise_to_start=noise_to_start, steps=steps, pipeline=self, *args, **kwargs)
-    
+
     def inference_from_dataloader(self, dataloader, steps=None, *args, **kwargs):
         assert isinstance(dataloader, torch.utils.data.DataLoader)
         generated_data = list()
         for data in dataloader:
             data_new, _ = self.inference(data=data)
             generated_data.append(data_new)
-            assert data.shape[0] == data_new.shape[0] # the batch_dim of data_new and data should be the same
+            assert data.shape[0] == data_new.shape[0]  # the batch_dim of data_new and data should be the same
 
         generated_data = unbatch_tensor_list(generated_data)
         assert len(generated_data) == len(dataloader.dataset)
         return generated_data
 
-    def train(self, data, epochs=100, *args, **kwargs):
+    def train(self, data, epochs=None, *args, **kwargs):
+        epochs = self.config.epochs
         return self.train_obj(data=data, epochs=epochs, pipeline=self, *args, **kwargs)
 
     def reconstruction(self, data, t, *args, **kwargs):
@@ -169,7 +172,7 @@ class VectorPipeline:
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
 
-        steps = steps or self.step_num
+        steps = steps or self.config["step_num"]
         arrays_data = list()
         arrays_projections = list()
         backward_steps = list(np.linspace(1.0, 0, steps))
@@ -187,11 +190,11 @@ class VectorPipeline:
             plot_data_func=plot_data_func,
         )
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=32, outfile=None):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=32, outfile=None, max_plot=64):
 
         assert isinstance(real_data, torch.utils.data.DataLoader)
         assert generated_data is None or isinstance(generated_data, torch.utils.data.DataLoader)
-        assert len(real_data.dataset) >= batch_size*2
+        assert len(real_data.dataset) >= batch_size * 2
 
         if batch_size < 100:
             print("Warning: batch_size is small, the result may not be accurate.")
@@ -211,13 +214,13 @@ class VectorPipeline:
             plt.clf()
             # Calculate number of rows and columns for the grid of subplots
             num_plots = 2 * num_comparisions  # Double the number of axes
+            num_plots = min(num_plots, max_plot)
             num_rows = int(np.ceil(np.sqrt(num_plots)))
             num_cols = int(np.ceil(num_plots / num_rows))
 
             # Create a figure with num_plots axes in a grid
             fig, axes = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(6 * num_cols, 6 * num_rows))
             axes = axes.flatten()  # Flatten the axes array for easy indexing
-
 
         for i in tqdm(range(num_comparisions), desc="Compare distributions:"):
             # Create iterators for real and generated data loaders
@@ -226,20 +229,22 @@ class VectorPipeline:
             generated_data_iter = iter(generated_dataloader)
 
             real_batch_1 = next(real_data_iter)
-            real_batch_2 = next(real_data_iter) # should be disjoint from real_batch_1
+            real_batch_2 = next(real_data_iter)  # should be disjoint from real_batch_1
             generated_batch = next(generated_data_iter)
 
             axis_between = None
             axis_within = None
             if outfile is not None:
                 idx = 2 * i  # Index for the first axis of the pair
-                axis_between = axes[idx] if num_plots > 1 else axes
-                axis_within = axes[idx + 1] if num_plots > 1 else axes
-                axis_between.set_title('Optimal transport map between real and generated data')
-                axis_within.set_title('Optimal transport map between batches real data')
+                if idx >= num_plots:
+                    break
+                axis_between = axes[idx]
+                axis_within = axes[idx + 1]
+                axis_between.set_title("Optimal transport map between real and generated data")
+                axis_within.set_title("Optimal transport map between batches real data")
 
-            distance_between, _ = compare_data_batches(real_batch_1, generated_batch, distance_func = self.distance_obj, axis=axis_between)
-            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func = self.distance_obj, axis=axis_within, color_generated='orange')
+            distance_between, _ = compare_data_batches(real_batch_1, generated_batch, distance_func=self.distance, axis=axis_between)
+            distance_within, _ = compare_data_batches(real_batch_1, real_batch_2, distance_func=self.distance, axis=axis_within, color_generated="orange")
             distances_between.append(distance_between)
             distances_within.append(distance_within)
 
@@ -248,5 +253,3 @@ class VectorPipeline:
             plt.savefig(outfile)
 
         return np.nanmean(distances_between), np.nanmean(distances_within), np.nanstd(distances_between), np.nanstd(distances_within)
-    
-
