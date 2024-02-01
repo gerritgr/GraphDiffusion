@@ -298,7 +298,10 @@ class PipelineEuclid(PipelineBase):
 
     def visualize_reconstruction(self, data, outfile, outfile_projection=None, num=None, steps=None, plot_data_func=None):
         if outfile_projection is None:
-            outfile_projection = outfile + "_proj.jpg"
+            for ending in [".jpg", ".pdf", ".png", ".jpeg", ".svg"]:
+                if ending in outfile:
+                    outfile_projection = outfile.replace(ending, "") + "_proj"+ending
+                    break
         if num is None:
             num = 25
         if steps is None:
