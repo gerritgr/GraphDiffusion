@@ -187,7 +187,7 @@ class VectorPipeline:
             plot_data_func=plot_data_func,
         )
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=500, num_comparisions=8, outfile=None):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=32, outfile=None):
 
         assert isinstance(real_data, torch.utils.data.DataLoader)
         assert generated_data is None or isinstance(generated_data, torch.utils.data.DataLoader)

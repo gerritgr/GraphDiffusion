@@ -15,7 +15,7 @@ def euclid_distance(x, y):
 
 
 
-def compare_data_batches_old(data_real, data_generated = None, distance_func = None, outfile = None, numItermax=1000000, epsilon = 0.002, axis=None):
+def compare_data_batches_ot(data_real, data_generated = None, distance_func = None, outfile = None, numItermax=1000000, epsilon = 0.002, axis=None, color_real = 'red', color_generated = 'blue'):
     # important: does not necessary return 1-to-1 mapping.
 
     distance_func = distance_func or euclid_distance
@@ -50,6 +50,7 @@ def compare_data_batches_old(data_real, data_generated = None, distance_func = N
     # Compute the overall transport cost
     overall_transport_cost = np.sum(coupling_matrix * cost_matrix)
 
+
     if outfile is not None or axis is not None:
         if axis is None:
             plt.figure(figsize=(8, 6))
@@ -58,8 +59,8 @@ def compare_data_batches_old(data_real, data_generated = None, distance_func = N
             ax = axis
 
         # Plot both datasets and the mapping
-        ax.scatter(data_real[:, 0], data_real[:, 1], color='blue', label='Data real', alpha=0.5)
-        ax.scatter(data_generated[:, 0], data_generated[:, 1], color='red', label='Data generated', alpha=0.5)
+        ax.scatter(data_real[:, 0], data_real[:, 1], color=color_real, label='Data real', alpha=0.5)
+        ax.scatter(data_generated[:, 0], data_generated[:, 1], color=color_generated, label='Data generated', alpha=0.5)
 
         # Draw lines between matched points
         for i, j in enumerate(mapping_indices):
@@ -71,6 +72,7 @@ def compare_data_batches_old(data_real, data_generated = None, distance_func = N
 
         if outfile is not None:
             plt.savefig(outfile)
+
 
     return overall_transport_cost, mapping_indices
 

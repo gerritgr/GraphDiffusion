@@ -39,7 +39,7 @@ class VectorBridge(nn.Module):
         seed = torch.randint(0, 10000, (1,)).item()
         magnitude = torch.norm(pipeline.degradation(data_prediction, t_now, seed=seed) - pipeline.degradation(data_prediction, t_query, seed=seed))
 
-        x_tminus1 = data_now + direction * magnitude  # (1.0-t_now)
+        x_tminus1 = data_now + direction * magnitude / 3
 
         if t_query > 1e-3:
             x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * magnitude / 3.0
@@ -47,9 +47,9 @@ class VectorBridge(nn.Module):
         return x_tminus1
 
 
-class VectorBridgeLinear(nn.Module):
+class VectorBridgeAlt(nn.Module):
     def __init__(self):
-        super(VectorBridgeLinear, self).__init__()
+        super(VectorBridgeAlt, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
         direction = data_prediction - data_now
@@ -57,7 +57,7 @@ class VectorBridgeLinear(nn.Module):
         x_tminus1 = data_now + direction * (1.0 - t_now)
 
         if t_query > 1e-3:
-            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * t_query / 2.0
+            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * t_query / 3.0
 
         return x_tminus1
 
