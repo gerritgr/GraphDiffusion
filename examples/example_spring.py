@@ -60,54 +60,12 @@ plt.title("Noisy 2D Spiral")
 plt.xlabel("X")
 plt.ylabel("Y")
 plt.axis("equal")
-
-
 plt.savefig("spiral.png")
 
 
 ############
 # Inspect Data
 ############
-
-
-def plot_2darray_on_axisXXXXXX(array, axis, arrays):
-    """
-    Draws the input 2D NumPy array on the provided Matplotlib axis using a scatter plot.
-    Each row in the 2D array is considered a separate point in the scatter plot.
-    If the input array is 1D, it's treated as a single point with batch size 1.
-
-    :param array: A 2D or 1D NumPy array of numbers to be plotted.
-                  If 2D, shape should be (batch_size, 2).
-                  If 1D, shape should be (2,).
-    :param axis: A Matplotlib axis object on which to draw the scatter plot.
-    :param arrays: List of all arrays that will be plotttet.
-    """
-    # If the input array is 1D, reshape it to 2D with batch size 1
-    if array.ndim == 1:
-        array = array.reshape(1, -1)
-
-    # Ensure array is a 2D tensor after reshaping
-    if array.ndim != 2 or array.shape[1] != 2:
-        raise ValueError("Input array must be a 2D or 1D array with shape (batch_size, 2) or (2,)")
-
-    if np.isnan(array).any() or np.isinf(array).any():
-        warnings.warn("Input array contains NaN or Inf values. These will be replaced with 0.")
-        array = np.nan_to_num(array, nan=0.0, posinf=0.0, neginf=0.0)
-
-    # Plotting the scatter plot on the provided axis for all points
-    axis.scatter(array[:, 0], array[:, 1], s=100, alpha=0.5, edgecolors="none")
-
-    # Set x and y axis limits
-    min_x = np.min([np.min(x[:, 0]) for x in arrays])
-    max_x = np.max([np.max(x[:, 0]) for x in arrays])
-    min_y = np.min([np.min(x[:, 1]) for x in arrays])
-    max_y = np.max([np.max(x[:, 1]) for x in arrays])
-    # axis.set_xlim([min_x,max_x])
-    # axis.set_ylim([min_y,max_y])
-
-    # Setting labels
-    axis.set_xlabel("x")
-    axis.set_ylabel("y")
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)

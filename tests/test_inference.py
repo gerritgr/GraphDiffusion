@@ -43,6 +43,7 @@ def test_distance(pipeline):
     assert distance is not None
 
 def test_inference(pipeline):
+    print("test inference")
     example_tensor = torch.randn(5,5) * 10
     data0 = pipeline.inference(data=example_tensor, noise_to_start=None)
     # Include assertions here to validate the inference
