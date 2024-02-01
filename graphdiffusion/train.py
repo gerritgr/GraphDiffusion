@@ -79,7 +79,7 @@ class VectorTrain:
         else:
             raise TypeError("Input data must be a DataLoader, a list of tensors, or a single tensor")
 
-    def __call__(self, data, epochs=100, alpha=0.1, pipeline=None, *args, **kwargs):
+    def __call__(self, data, pipeline, epochs=100, alpha=0.1, *args, **kwargs):
         """
         Train the model using the provided input data and pipeline.
 

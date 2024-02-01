@@ -133,9 +133,9 @@ class VectorPipeline:
         assert len(generated_data) == len(dataloader.dataset)
         return generated_data
 
-    def train(self, data, epochs=None, *args, **kwargs):
-        epochs = self.config.epochs
-        return self.train_obj(data=data, epochs=epochs, pipeline=self, *args, **kwargs)
+    def train(self, data, *args, **kwargs):
+        params = get_params(self.train_obj, self.config)
+        return self.train_obj(data, self, **params)
 
     def reconstruction(self, data, t, *args, **kwargs):
         return self.reconstruction_obj(data=data, t=t, pipeline=self, *args, **kwargs)
