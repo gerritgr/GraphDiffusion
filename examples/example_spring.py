@@ -143,6 +143,9 @@ pipeline.visualize_reconstruction(
 compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="spiral_compare_ddpm.pdf")
 print("compare ddpm", compare)
 
+compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="spiral_compare_ddpm_emd.pdf", method="emd")
+print("compare ddpm emd", compare)
+
 
 
 

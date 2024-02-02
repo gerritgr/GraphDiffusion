@@ -58,10 +58,16 @@ class PipelineBase:
                     print("Could not load pre-trained model.")
 
         try:
+            self.config["node_feature_dim"] = node_feature_dim
+            self.config["device"] = device
+            self.config["pre_trained_path"] = pre_trained_path
             for key, value in kwargs.items():
                 self.config[key] = value
         except:
             self.config = get_config()
+            self.config["node_feature_dim"] = node_feature_dim
+            self.config["device"] = device
+            self.config["pre_trained_path"] = pre_trained_path
             for key, value in kwargs.items():
                 self.config[key] = value
 
@@ -191,8 +197,12 @@ class PipelineBase:
             outfile=outfile_projection,
             plot_data_func=plot_data_func,
         )
+    
+    def info_to_str(self):
+        config = "\n".join([f"    {key}: {value}" for key, value in self.config.items()])
+        return f"Pipeline with the following configuration:\n{config}"
 
-    def compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func):
+    def compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func, **kwargs):
 
         assert isinstance(real_data, torch.utils.data.DataLoader)
         assert generated_data is None or isinstance(generated_data, torch.utils.data.DataLoader)
@@ -244,8 +254,8 @@ class PipelineBase:
                     axis_between.set_title("Optimal transport map between real and generated data")
                     axis_within.set_title("Optimal transport map between batches real data")
 
-            distance_between, _ = compare_data_batches_func(real_batch_1, generated_batch, distance_func=self.distance, axis=axis_between)
-            distance_within, _ = compare_data_batches_func(real_batch_1, real_batch_2, distance_func=self.distance, axis=axis_within, color_generated="orange")
+            distance_between, _ = compare_data_batches_func(real_batch_1, generated_batch, distance_func=self.distance, axis=axis_between, **kwargs)
+            distance_within, _ = compare_data_batches_func(real_batch_1, real_batch_2, distance_func=self.distance, axis=axis_within, color_generated="orange", **kwargs)
             distances_between.append(distance_between)
             distances_within.append(distance_within)
 
@@ -293,6 +303,8 @@ class PipelineEuclid(PipelineBase):
         for key, value in kwargs.items():
             self.config[key] = value
 
+        print(self.info_to_str())
+
     def visualize_foward(self, data, outfile, num=100, plot_data_func=None):
         if plot_data_func is None:
             if self.config.node_feature_dim == 2:
@@ -318,7 +330,7 @@ class PipelineEuclid(PipelineBase):
                 plot_data_func = plot_array_on_axis
         super().visualize_reconstruction(data, outfile, outfile_projection, num, steps, plot_data_func)
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=32):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=32, **kwargs):
         if outfile is not None and self.config.node_feature_dim != 2:
             print("Warning: compare_distribution only shows 2 dimensions.")
-        return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches)
+        return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches, **kwargs)

@@ -6,15 +6,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# Define your custom compute_distance function
 def euclid_distance(x, y):
-    # Implement your distance computation here
-    # For example, Euclidean distance could be:
-    return np.sqrt(np.sum((x - y) ** 2))
+    if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
+        # Numpy computation
+        return np.sqrt(np.sum((x - y) ** 2))
+    elif isinstance(x, torch.Tensor) and isinstance(y, torch.Tensor):
+        # PyTorch computation
+        return torch.sqrt(torch.sum((x - y) ** 2))
+    else:
+        raise ValueError("Input types must be both numpy arrays or both PyTorch tensors")
 
 
-def compare_data_batches_ot(data_real, data_generated=None, distance_func=None, outfile=None, numItermax=1000000, epsilon=0.002, axis=None, color_real="red", color_generated="blue"):
+def compare_data_batches_ot(data_real, data_generated=None, distance_func=None, outfile=None, axis=None, color_real="red", color_generated="blue", method="sinkhorn", numItermax=100000, epsilon=0.005):
     import ot  # Python Optimal Transport library
+
+    assert method in ["sinkhorn", "emd"], f"Unknown method: {method}"
+    assert isinstance(data_real, torch.Tensor), "data_real must be a PyTorch tensor"
+    assert isinstance(data_generated,  torch.Tensor), "data_generated must be a PyTorch tensor"
+    assert distance_func is None or callable(distance_func), "distance_func must be a callable function"
+    assert outfile is None or isinstance(outfile, str), "outfile must be a string or None"
+    assert axis is None or isinstance(axis, plt.Axes), "axis must be a matplotlib Axes object or None"
+    assert color_real is None or isinstance(color_real, str), "color_real must be a string or None"
+    assert color_generated  is None or isinstance(color_generated, str), "color_generated must be a string or None"
+    assert isinstance(numItermax, int), "numItermax must be an integer"
+    assert isinstance(epsilon, float), "epsilon must be a float"
+
 
     # important: does not necessary return 1-to-1 mapping.
 
@@ -40,7 +56,12 @@ def compare_data_batches_ot(data_real, data_generated=None, distance_func=None, 
     # Compute the optimal transport plan (coupling matrix) using the Sinkhorn algorithm
     # epsilon is the regularization term, you may need to adjust it
     # coupling_matrix = ot.sinkhorn(a=np.ones(len(data_real)) / len(data_real), b=np.ones(len(data_generated)) / len(data_generated), M=cost_matrix, reg=epsilon, numItermax=numItermax)
-    coupling_matrix = ot.emd(a=np.ones(len(data_real)) / len(data_real), b=np.ones(len(data_generated)) / len(data_generated), M=cost_matrix, numItermax=numItermax)
+    if method == "sinkhorn":
+        coupling_matrix = ot.sinkhorn(a=np.ones(len(data_real)) / len(data_real), b=np.ones(len(data_generated)) / len(data_generated), M=cost_matrix, reg=epsilon, numItermax=numItermax)
+    elif method == "emd":
+        coupling_matrix = ot.emd(a=np.ones(len(data_real)) / len(data_real), b=np.ones(len(data_generated)) / len(data_generated), M=cost_matrix, numItermax=numItermax)
+    else:
+        raise ValueError(f"Unknown method: {method}")
 
     # Find the indices of the mappings (this works for small enough epsilon and assumes that data_real and data_generated have the same length)
     # For each point in data_real, find the index of its corresponding point in data_generated
@@ -74,25 +95,21 @@ def compare_data_batches_ot(data_real, data_generated=None, distance_func=None, 
     return overall_transport_cost, mapping_indices
 
 
-if __name__ == "__main__":
-    # Set random seed for reproducibility
-    np.random.seed(42)
-
-    # Define batch size
-    batch_size = 50
-
-    # Create datasets data_0 and data_generated using 2D standard normal distribution
-    data_0 = np.random.randn(batch_size, 2)
-    data_generated = np.random.randn(batch_size, 2)
-
-    compare_data_batches(data_0, data_generated, outfile="test_wasserstein.pdf")
+def compare_data_batches(data_real, data_generated=None, distance_func=None, outfile=None, axis=None, color_real="red", color_generated="blue", method="lsa"):
+    if method == "lsa":
+        return compare_data_batches_lsa(data_real, data_generated, distance_func, outfile, axis, color_real, color_generated)
+    elif method == "emd":
+        return compare_data_batches_ot(data_real, data_generated, distance_func, outfile, axis, color_real, color_generated, method="emd")
+    elif method == "sinkhorn":
+        return compare_data_batches_ot(data_real, data_generated, distance_func, outfile, axis, color_real, color_generated, method="sinkhorn")
+    else:
+        raise ValueError(f"Unknown method: {method}")
+    
 
 
-from scipy.optimize import linear_sum_assignment
-
-
-def compare_data_batches(data_real, data_generated=None, distance_func=None, outfile=None, axis=None, color_real="red", color_generated="blue"):
+def compare_data_batches_lsa(data_real, data_generated=None, distance_func=None, outfile=None, axis=None, color_real="red", color_generated="blue"):
     # important: ensures a 1-to-1 mapping.
+    from scipy.optimize import linear_sum_assignment
 
     distance_func = distance_func or euclid_distance
 
@@ -149,3 +166,20 @@ def compare_data_batches(data_real, data_generated=None, distance_func=None, out
             plt.savefig(outfile)
 
     return overall_transport_cost, mapping_indices
+
+
+
+
+
+if __name__ == "__main__":
+    # Set random seed for reproducibility
+    np.random.seed(42)
+
+    # Define batch size
+    batch_size = 50
+
+    # Create datasets data_0 and data_generated using 2D standard normal distribution
+    data_0 = np.random.randn(batch_size, 2)
+    data_generated = np.random.randn(batch_size, 2)
+
+    compare_data_batches(data_0, data_generated, outfile="test_wasserstein.pdf")
