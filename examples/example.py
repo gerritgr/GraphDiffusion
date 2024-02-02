@@ -17,7 +17,7 @@ from graphdiffusion.distance import *
 
 
 # Example usage
-pipeline = PipelineEuclid(node_feature_dim=5)
+pipeline = PipelineVector(node_feature_dim=5)
 
 # Example tensor
 example_tensor = torch.randn(5) * 10  # Replace with your actual data

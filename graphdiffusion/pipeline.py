@@ -267,8 +267,8 @@ class PipelineBase:
         return result_dict
 
 
-# PipelineEuclid with a default reconstructionr
-class PipelineEuclid(PipelineBase):
+# PipelineVector with a default reconstructionr
+class PipelineVector(PipelineBase):
     def __init__(
         self,
         node_feature_dim=None,

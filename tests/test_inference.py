@@ -9,12 +9,12 @@ from pathlib import Path
 #parent_dir = current_dir.parent  # this should point to 'graphdiffusion/'
 #sys.path.insert(0, str(parent_dir))
 
-from graphdiffusion.pipeline import PipelineEuclid
+from graphdiffusion.pipeline import PipelineVector
 
 @pytest.fixture
 def pipeline():
-    # Initialize your PipelineEuclid here with the desired parameters
-    return PipelineEuclid(node_feature_dim=5)
+    # Initialize your PipelineVector here with the desired parameters
+    return PipelineVector(node_feature_dim=5)
 
 def test_train(pipeline):
     example_tensor = torch.randn(5) * 10  # Replace with your actual data

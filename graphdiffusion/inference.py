@@ -45,7 +45,7 @@ class VectorInference:
         """
         # Generate or validate the steps sequence
         assert data is None or noise_to_start is None, "Either data or noise_to_start must be provided, but not both."
-        # assert isinstance(pipeline, PipelineEuclid), "pipeline must be a PipelineEuclid" # TODO add basepipeline class
+        # assert isinstance(pipeline, PipelineVector), "pipeline must be a PipelineVector" # TODO add basepipeline class
         self.pipeline = pipeline
 
         if isinstance(steps, int):

@@ -69,7 +69,7 @@ plt.savefig("spiral.png")
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineEuclid(node_feature_dim=2, dist_type="L1")
+pipeline = PipelineVector(node_feature_dim=2, dist_type="L1")
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="spiral_forward.jpg",
@@ -90,7 +90,7 @@ pipeline.train(data=train_dataloader, epochs=100)
 # Inference
 ############
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineEuclid(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
+pipeline = PipelineVector(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
 data0 = pipeline.inference(train_dataloader, noise_to_start=None)
 pipeline.visualize_reconstruction(
     data=train_dataloader,
@@ -111,8 +111,8 @@ print("compare linear", compare)
 # Forward
 degradation_obj = VectorDegradationDDPM()
 bridge_obj = VectorBridgeDDPM()
-# pipeline = PipelineEuclid(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
-pipeline = PipelineEuclid(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
+# pipeline = PipelineVector(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
+pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="spiral_forward_ddpm.jpg",
@@ -123,7 +123,7 @@ pipeline.visualize_foward(
 # Train
 # pipeline.train(data=train_dataloader, epochs=10000)
 # pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
-pipeline = PipelineEuclid(
+pipeline = PipelineVector(
     pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt",
     node_feature_dim=2,
     degradation_obj=degradation_obj,
