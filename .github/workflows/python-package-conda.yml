@@ -26,3 +26,9 @@ jobs:
         # conda install pytest
         python -m pytest --capture=no 
         # pytest
+
+    - name: Test with pytest and check code coverage
+      run: |
+        # Run tests with coverage
+        python -m pytest --capture=no --cov=your_package_name --cov-report=term --cov-report=xml:coverage.xml
+  
