@@ -1,5 +1,7 @@
 name: multi_test
 
+# following https://www.youtube.com/watch?v=0aEJBygCn5Q&t=192s&ab_channel=Carberra
+
 on:
   push:
   pull_request:
@@ -24,6 +26,11 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }} 
 
+    - name: Add conda to system path
+      run: |
+        # $CONDA is an environment variable pointing to the root of the miniconda directory
+        echo $CONDA/bin >> $GITHUB_PATH
+        
     - name: Install dependencies
       run: conda env update --file environment_docker.yml --name base
 
