@@ -1,13 +1,11 @@
 name: multi_test
 
-# following https://www.youtube.com/watch?v=0aEJBygCn5Q&t=192s&ab_channel=Carberra
-
 on:
   push:
   pull_request:
 
 jobs:
-  run_tests:  # Corrected the job ID
+  run_tests:
     name: Test on ${{ matrix.os }} with Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     
@@ -31,8 +29,13 @@ jobs:
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
 
-    - name: Install dependencies
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: conda env update --file environment_docker.yml --name base
+
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: conda env update --file environment.yml --name base
 
     - name: Run tests
       run: python -m pytest --capture=no --cov=graphdiffusion --cov-report=term --cov-report=xml:coverage.xml
