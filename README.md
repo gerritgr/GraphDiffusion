@@ -18,6 +18,12 @@ GraphDiffusion is a repository for the `graphdiffusion`, a Python/PyTorch packag
 - **Rich Visualization**: Offers diverse options for visualizing both the degradation/forward process and the reconstruction/reverse process.
 - **Extensibility**: Designed with flexibility in mind, allowing users to easily integrate their own Python functions into the framework.
 
+We support multiple types of flow models, including:
+- denoising diffusion probabilistic models (DDPM)
+- normalizing flow models (NFM)
+- conditional flow
+- SDE-based models
+
 
 
 ## Design Choices
@@ -26,6 +32,8 @@ GraphDiffusion is a repository for the `graphdiffusion`, a Python/PyTorch packag
 - **Time Scale**: The process is measured from 0 (original sample) to 1 (completely destructed, e.g., random noise), offering a clear, linear progression.
 - **Degradation/Forward Process**: This does not need to be a stochastic (Markov) process. Instead, you can jump directly to a randomly sampled time `t`.
 - **Scheduler**: The model does not require a separate scheduler. The degradation process implicitly handles scheduling.
+
+### Components
 
 ## How to Use
 
@@ -50,7 +58,7 @@ GraphDiffusion is a repository for the `graphdiffusion`, a Python/PyTorch packag
    To run the tests, execute the following command in the topmost 'graphdiffusion' directory:
 
     ```bash
-    python -m unittest discover tests
+    python -m pytest
     ```
 
 ### Install Package
@@ -75,3 +83,11 @@ Not implemented yet.
 ## Getting Started
 
 (Provide a brief introduction to the project, its goals, and how users can quickly get started with it.)
+
+### Tutorials
+
+todo
+
+### Documentation
+
+todo
