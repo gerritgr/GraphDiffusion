@@ -31,4 +31,9 @@ jobs:
       run: |
         # Run tests with coverage
         python -m pytest --capture=no --cov=graphdiffusion --cov-report=term --cov-report=xml:coverage.xml
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   
