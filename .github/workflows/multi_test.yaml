@@ -29,6 +29,11 @@ jobs:
         # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
 
+    - name: Prepare environment file (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sed '/  - python=3.11/d' environment_docker.yml > environment_ubuntu.yml
+
     - name: Prepare environment file (macOS)
       if: matrix.os == 'macos-latest'
       run: |
@@ -36,7 +41,7 @@ jobs:
 
     - name: Install dependencies (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
-      run: conda env update --file environment_docker.yml --name base
+      run: conda env update --file environment_ubuntu.yml --name base
 
     - name: Install dependencies (macOS)
       if: matrix.os == 'macos-latest'
