@@ -147,3 +147,45 @@ if __name__ == "__main__":
         arrays.append(torch.tensor([1, 2 + random.random(), 3 * +random.random(), 4]))
 
     create_grid_plot(arrays)
+
+
+
+
+
+
+def plot_data_as_normal_pdf(array, axis):
+    """
+    Plot the Kernel Density Estimate (KDE) of the data and the standard normal probability density function (PDF)
+    for comparison.
+
+    Parameters:
+    - array: numpy.ndarray
+        A 2D numpy array whose distribution is to be plotted.
+    - axis: matplotlib.axes._subplots.AxesSubplot
+        The matplotlib axis on which to plot the KDE and standard normal PDF.
+
+    Returns:
+    None
+    """
+    import warnings
+    import seaborn as sns
+    import scipy.stats
+
+    # Suppress future warnings
+    warnings.simplefilter(action='ignore', category=FutureWarning)
+
+    # Function to calculate standard normal PDF
+    def standard_normal_pdf(x):
+        return scipy.stats.norm(0, 1).pdf(x)
+    
+    # Generate x values for plotting the standard normal PDF
+    x_values = np.linspace(-4.5, 4.5, 30)
+    
+    # Plot the standard normal PDF
+    axis.plot(x_values, [standard_normal_pdf(x) for x in x_values], c='black', alpha=0.3, lw=5, label='Reference Normal PDF', linestyle='--')
+    
+    # Plot the KDE of the input array
+    sns.kdeplot(data=array.flatten(), ax=axis)
+    
+    # Add legend to the plot
+    axis.legend()
