@@ -2,7 +2,7 @@ from graphdiffusion.pipeline import *
 
 
 
-def test_reconstruction(pipeline):
+def test_reconstruction():
     # Example usage
     pipeline = PipelineVector(node_feature_dim=5)
     # Example tensor
