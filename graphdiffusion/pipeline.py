@@ -47,6 +47,12 @@ class PipelineBase:
             raise ValueError("encoding_obj must be callable")
         assert isinstance(self.node_feature_dim, int)
 
+        if trainable_objects is None:
+            assert isinstance(reconstruction_obj, nn.Module)
+        else:
+            for obj in trainable_objects:
+                assert isinstance(obj, nn.Module)
+
         if pre_trained_path is not None:
             try:
                 # See if load_model is implemented

@@ -40,7 +40,7 @@ def get_config():
     return config
 
 
-def get_params(func, config, kwargs=None):
+def get_params_old(func, config, kwargs=None):
     # Determine the function to inspect (regular function, __init__ of class, or __call__ of callable object)
     if not callable(func):
         raise TypeError(f"{func} is not callable")
@@ -59,11 +59,42 @@ def get_params(func, config, kwargs=None):
     if hasattr(func_to_inspect, "__code__"):
         code = func_to_inspect.__code__
     else:
-        raise TypeError("Cannot inspect the callable object. It doesn't have a __code__ attribute.")
+        raise TypeError(f"Cannot inspect the callable object {func}. It doesn't have a __code__ attribute.")
 
     # Exclude 'self' for methods of classes or callable objects
     start_index = 1 if "self" in code.co_varnames[: code.co_argcount] else 0
     valid_keys = code.co_varnames[start_index : code.co_argcount]
+    filtered_config = {k: config[k] for k in valid_keys if k in config}
+
+    if kwargs is not None:
+        for key, value in kwargs.items():
+            filtered_config[key] = value
+
+    return filtered_config
+
+
+
+
+import inspect
+
+def get_params(func, config, kwargs=None):
+    if not callable(func):
+        raise TypeError(f"{func} is not callable")
+
+    # Use inspect to get the signature
+    try:
+        sig = inspect.signature(func)
+    except ValueError:
+        # Handle classes specially since inspect.signature() does not work directly on classes
+        if inspect.isclass(func):
+            # Try to get signature of __init__ method
+            sig = inspect.signature(func.__init__)
+        else:
+            raise TypeError(f"Cannot inspect the callable object {func}. It doesn't have a __code__ attribute.")
+    
+    params = sig.parameters
+    valid_keys = [key for key in params if params[key].kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY]]
+    
     filtered_config = {k: config[k] for k in valid_keys if k in config}
 
     if kwargs is not None:

@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
 
 
-def plot_data_as_normal_pdf(array, axis):
+def plot_data_as_normal_pdf(array, axis, arrays):
     """
     Plot the Kernel Density Estimate (KDE) of the data and the standard normal probability density function (PDF)
     for comparison.
