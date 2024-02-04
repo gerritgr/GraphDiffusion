@@ -125,17 +125,20 @@ class PipelineBase:
 
     def inference(self, data, noise_to_start, steps=None, **kwargs):
         if data is None and noise_to_start is None:
-            raise ValueError("Either data or noise_to_start must be provided")
+            raise ValueError("Either data or noise_to_start must be provided.")
         steps = steps or self.config["step_num"]
         params = get_params(self.inference_obj, self.config, kwargs)
-        return self.inference_obj(data, self, noise_to_start, steps, **params)
+        result = self.inference_obj(data, self, noise_to_start, steps, **params)
+        if not isinstance(result, tuple) or len(result) != 2 or result[0] is None or result[1] is None:
+            raise ValueError("Inference results must be a tuple with exactly two non-None elements.")
+        return result
 
     def inference_from_dataloader(self, dataloader, **kwargs):
         assert isinstance(dataloader, torch.utils.data.DataLoader)
         # params = get_params(self.inference_obj, self.config, kwargs)
         generated_data = list()
         for data in dataloader:
-            data_new, _ = self.inference(data, noise_to_start=None, steps=self.config.step_num, **kwargs)
+            data_new, _ = self.inference(data=data, noise_to_start=None, steps=self.config.step_num, **kwargs)
             generated_data.append(data_new)
             assert data.shape[0] == data_new.shape[0]  # the batch_dim of data_new and data should be the same
 
@@ -193,6 +196,7 @@ class PipelineBase:
         backward_steps = split_list(backward_steps, num)
         current_data = self.degradation(data, t=1.0)
         for steps_i in tqdm(backward_steps, total=len(backward_steps), desc="Visualize reconstruction"):
+            assert current_data is not None
             current_data, current_projection = self.inference(data=None, noise_to_start=current_data, steps=steps_i)
             arrays_data.append(current_data)
             arrays_projections.append(current_projection)

@@ -126,7 +126,8 @@ def compare_data_batches_lsa(data_real, data_generated=None, distance_func=None,
     # Fill in the cost matrix using your distance_func function
     for i in range(len(data_real)):
         for j in range(len(data_generated)):
-            cost_matrix[i, j] = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j]))  # slow
+            dist = distance_func(torch.Tensor(data_real[i]), torch.Tensor(data_generated[j]))  # slow
+            cost_matrix[i, j] = dist.item()
 
     # Use the Hungarian algorithm (linear sum assignment) to find the minimum cost 1-to-1 mapping
     row_ind, col_ind = linear_sum_assignment(cost_matrix)

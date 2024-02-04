@@ -7,7 +7,9 @@ with open(file_path, "r") as file:
 
 import torch
 import numpy as np
+#from graphdiffusion.pipeline import PipelineBase
 
+import graphdiffusion
 
 class VectorInference:
     """
@@ -44,9 +46,10 @@ class VectorInference:
             ValueError: If the steps are not in a decreasing sequence or not in the range [0, 1], or if neither 'dataloader' nor 'noise_to_start' is provided.
         """
         # Generate or validate the steps sequence
+        from graphdiffusion.pipeline import PipelineBase
         assert data is None or noise_to_start is None, "Either data or noise_to_start must be provided, but not both."
-        # assert isinstance(pipeline, PipelineVector), "pipeline must be a PipelineVector" # TODO add basepipeline class
-        self.pipeline = pipeline
+        assert isinstance(pipeline, PipelineBase), "pipeline must be a PipelineVector" # TODO add basepipeline class
+        self.pipeline = pipeline # Inference objects need to have a pipeline connected to them. 
 
         if isinstance(steps, int):
             steps = np.linspace(1, 0, steps)
@@ -77,8 +80,11 @@ class VectorInference:
             noise_to_start = self.pipeline.degradation(random_data_point, t=1.0)
 
         data_t = noise_to_start  # Initialize data_t with the starting noise
+        assert data_t is not None
+
         for i, t in enumerate(steps):
             data_0 = self.pipeline.reconstruction(data_t, t)  # Reconstruct data from the current state
+            assert data_0 is not None and data_t is not None 
             if i >= len(steps) - 1:  # Check if it's the last step
                 if t < 1e-3:
                     return data_0, data_0
@@ -98,4 +104,5 @@ class VectorInference:
                 warnings.warn(warn_str)
                 data_t = torch.where(nan_inf_mask, torch.zeros_like(data_t), data_t)
 
+        assert data_0 is not None and data_t is not None 
         return data_t, data_0
