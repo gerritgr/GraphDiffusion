@@ -23,6 +23,9 @@ class Config:
     def __setitem__(self, key, value):
         self.__dict__[key] = value
 
+    def copy(self):
+        # Create a new instance of Config with the same entries
+        return Config(**self.__dict__)
 
 def get_config():
     config = Config(

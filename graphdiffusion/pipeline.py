@@ -160,6 +160,7 @@ class PipelineBase:
 
     def visualize_foward(self, data, outfile, num, plot_data_func):
         from .plotting import create_grid_plot
+        plt.close()
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
@@ -173,6 +174,7 @@ class PipelineBase:
 
     def visualize_reconstruction(self, data, outfile, outfile_projection, num, steps, plot_data_func):
         from .plotting import create_grid_plot
+        plt.close()
 
         def split_list(lst, m):  # TODO fix
             if m > len(lst):
@@ -208,8 +210,19 @@ class PipelineBase:
             plot_data_func=plot_data_func,
         )
     
+    def save_reconstruction_model(self, model_path):
+        try:
+            self.reconstruction_obj.save_model(model_path)
+        except:
+            model = self.reconstruction_obj
+            torch.save(model.state_dict(), model_path)
+    
     def info_to_str(self):
-        config = "\n".join([f"    {key}: {value}" for key, value in self.config.items()])
+        config_local = self.config.copy()
+        model = self.get_model()
+        model_num_params = sum([p.numel() for p in model.parameters() if p.requires_grad])
+        config_local["Number of trainable parameters"] = model_num_params
+        config = "\n".join([f"    {key}: {value}" for key, value in config_local.items()])
         return f"Pipeline with the following configuration:\n{config}"
 
     def compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func, **kwargs):

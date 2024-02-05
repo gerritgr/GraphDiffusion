@@ -143,13 +143,13 @@ pipeline.visualize_foward(
 
 
 
-pipeline.train(data=dataloader, epochs=10000)
-pipeline.reconstruction_obj.save_model(pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
+#pipeline.train(data=dataloader, epochs=10000)
+#pipeline.reconstruction_obj.save_model(pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
 
 #data0 = pipeline.inference(dataloader, noise_to_start=None, steps=1000)
 #print(data0)
 
-pipeline.config["vectorbridge_magnitude_scale"] = 0.6
+pipeline.config["vectorbridge_magnitude_scale"] = 0.4
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
@@ -193,6 +193,74 @@ pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
     outfile="pokemon_backward_alt.jpg",
+    num=36,
+    steps=100,
+)
+
+
+
+# Unet
+
+degradation_obj = VectorDegradationDDPM()
+reconstruction_obj = Unet(dim_mults=(1, 2, 4,))
+pipeline = PipelineVector(node_feature_dim=3*IMG_SIZE*IMG_SIZE, hidden_dim=1024, num_layers=12, dropout_rate=0.3, degradation_obj=degradation_obj, reconstruction_obj=reconstruction_obj, pre_trained_path="../pre_trained/unet_pokemon_weights.pt")
+pipeline.visualize_foward(
+    data=dataloader_show,
+    outfile="pokemon_forward.jpg",
+    plot_data_func=plot_image_on_axis,
+    num=25,
+)
+
+
+pipeline.train(data=dataloader, epochs=100)
+pipeline.save_reconstruction_model("../pre_trained/unet_pokemon_weights.pt")
+
+
+pipeline.config["vectorbridge_magnitude_scale"] = 0.4
+pipeline.config["vectorbridge_rand_scale"] = 0.1
+pipeline.visualize_reconstruction(
+    data=dataloader_show,
+    plot_data_func=plot_image_on_axis,
+    outfile="pokemonunet_backward_normal.jpg",
+    num=36,
+    steps=100,
+)
+
+
+pipeline.bridge_obj = VectorBridgeNaive()
+pipeline.visualize_reconstruction(
+    data=dataloader_show,
+    plot_data_func=plot_image_on_axis,
+    outfile="pokemonunet_backward_naive.jpg",
+    num=36,
+    steps=100,
+)
+
+
+pipeline.bridge_obj = VectorBridgeColdDiffusion()
+pipeline.visualize_reconstruction(
+    data=dataloader_show,
+    plot_data_func=plot_image_on_axis,
+    outfile="pokemonunet_backward_cold.jpg",
+    num=36,
+    steps=100,
+)
+
+
+pipeline.bridge_obj = VectorBridgeDDPM()
+pipeline.visualize_reconstruction(
+    data=dataloader_show,
+    plot_data_func=plot_image_on_axis,
+    outfile="pokemonunet_backward_ddpm.jpg",
+    num=36,
+    steps=100,
+)
+
+pipeline.bridge_obj = VectorBridgeAlt()
+pipeline.visualize_reconstruction(
+    data=dataloader_show,
+    plot_data_func=plot_image_on_axis,
+    outfile="pokemonunet_backward_alt.jpg",
     num=36,
     steps=100,
 )

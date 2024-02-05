@@ -73,12 +73,12 @@ class VectorDenoiser(nn.Module):
 
         return x
 
-    def save_model(self, pre_trained_path):
+    def save_model(self, model_path):
         """
         Save the model weights to the specified path.
-        :param pre_trained_path: The file path where the model weights should be saved.
+        :param model_path: The file path where the model weights should be saved.
         """
-        torch.save(self.state_dict(), pre_trained_path)
+        torch.save(self.state_dict(), model_path)
 
     def load_model(self, pre_trained_path):
         self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
@@ -189,15 +189,15 @@ def Downsample(dim):
 
 
 class SinusoidalPositionEmbeddings(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, device=None):
         super().__init__()
         self.dim = dim
+        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def forward(self, time):
-        device = time.device
         half_dim = self.dim // 2
         embeddings = math.log(10000) / (half_dim - 1)
-        embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
+        embeddings = torch.exp(torch.arange(half_dim, device=self.device) * -embeddings)
         embeddings = time[:, None] * embeddings[None, :]
         embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
         return embeddings
@@ -355,8 +355,10 @@ class Unet(nn.Module):
         resnet_block_groups=8,
         use_convnext=True,
         convnext_mult=2,
+        device = None
     ):
         super().__init__()
+        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # determine dimensions
         self.channels = channels
@@ -377,7 +379,7 @@ class Unet(nn.Module):
         if with_time_emb:
             time_dim = dim * 4
             self.time_mlp = nn.Sequential(
-                SinusoidalPositionEmbeddings(dim),
+                SinusoidalPositionEmbeddings(dim, device=self.device),
                 nn.Linear(dim, time_dim),
                 nn.GELU(),
                 nn.Linear(time_dim, time_dim),
@@ -429,9 +431,13 @@ class Unet(nn.Module):
             block_klass(dim, dim), nn.Conv2d(dim, out_dim, 1)
         )
 
-    def forward(self, x, time):
+    def forward(self, x, time, pipeline=None):
         x = correct_dims(x, channels=self.channels, img_size=self.dim)
-        img_withnoise = x*1.0
+        if not isinstance(time, torch.Tensor):
+            time = torch.tensor(time, device=x.device, dtype=x.dtype).view(-1)
+
+        batch_dim = x.shape[0]
+        #img_withnoise = x*1.0
         img_shape = x.shape
 
         
@@ -465,7 +471,8 @@ class Unet(nn.Module):
         x = self.final_conv(x)
         #x = img_withnoise-x # here x is the img wo noise
         assert(x.shape == img_shape)
-        return x.squeeze()
+        x = x.reshape(batch_dim, -1)
+        return x
 
 
 if __name__ == "__main__":

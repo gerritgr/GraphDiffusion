@@ -46,7 +46,7 @@ We support multiple types of flow models, including:
     ```bash
     conda env create -f environment.yml -n graphdiffusionenv
     conda activate graphdiffusionenv 
-    pip install .
+    pip install -e .
     ```
 
 3. To run the example code, navigate to the examples directory:
