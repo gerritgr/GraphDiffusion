@@ -17,7 +17,7 @@ class DummyModule(nn.Module):
     def forward(self, x, x1=1, x2=2, x3=3, x4=4):
         return x
 
-def test_create_base():
+def create_base():
     
 
     node_feature_dim = 2
@@ -37,18 +37,18 @@ def test_create_base():
 
 
 def test_train_base():
-    pipeline = test_create_base()
+    pipeline = create_base()
     example_tensor = torch.randn(5) * 10 
     pipeline.train(example_tensor)
 
 def test_getmodel_base():
-    pipeline = test_create_base()
+    pipeline = create_base()
     pipeline.get_model()
     with pytest.raises(AssertionError):
         pipeline.define_trainable_objects(True, True, True, True)
 
 def test_getmodel_base():
-    pipeline = test_create_base() 
+    pipeline = create_base() 
     pipeline.get_model()
     pipeline.degradation_obj = DummyModule()
     pipeline.distance_obj = DummyModule()
@@ -58,7 +58,7 @@ def test_getmodel_base():
 
 
 def test_default_methods_base():
-    pipeline = test_create_base()
+    pipeline = create_base()
     x = pipeline.distance(1,1)
     x = pipeline.bridge(1,2,3,4)
     x = pipeline.reconstruction(1,2)
@@ -72,12 +72,12 @@ def test_default_methods_base():
 from graphdiffusion.plotting import plot_data_as_normal_pdf
 
 def test_forward_base():
-    pipeline = test_create_base()
+    pipeline = create_base()
     input_tensor = torch.rand(5,5)
     pipeline.visualize_foward(input_tensor, outfile=None, num=9, plot_data_func=plot_data_as_normal_pdf)
 
 def test_forward_base2():
-    pipeline = test_create_base()
+    pipeline = create_base()
     input_tensor = torch.rand(5,5)
     pipeline.visualize_foward(input_tensor, outfile=None, num=9, plot_data_func=plot_array_on_axis)
 
@@ -85,7 +85,7 @@ def test_forward_base2():
 #visualize_reconstruction(self, data, outfile, outfile_projection, num, steps, plot_data_func)
 
 def test_recon_base():
-    pipeline = test_create_base()
+    pipeline = create_base()
     input_tensor = torch.rand(5,5)
     with pytest.raises(ValueError):
         pipeline.visualize_reconstruction(input_tensor, outfile='outfile_test.jpg', outfile_projection='outfile_test_proj.jpg', num=90, steps=9, plot_data_func=plot_array_on_axis)
@@ -104,7 +104,7 @@ def test_compare_base():
     def dummy_callable_distance(x, x1=1, x2=2, x3=3, x4=4): 
         return torch.tensor(1.0)
 
-    pipeline = test_create_base()
+    pipeline = create_base()
     pipeline.distance_obj = dummy_callable_distance
 
     # compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func, **kwargs)

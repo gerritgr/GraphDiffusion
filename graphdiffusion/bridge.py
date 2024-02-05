@@ -29,13 +29,13 @@ class VectorBridgeColdDiffusion(nn.Module):
         return x_tminus1
 
 
+
 class VectorBridge(nn.Module):
     def __init__(self):
         super(VectorBridge, self).__init__()
 
-    def forward(self, data_now, data_prediction, t_now, t_query, pipeline):
-        print("vectorbridge_magnitude_scale", vectorbridge_magnitude_scale) 
-        vectorbridge_magnitude_scale = pipeline.config.vectorbridge_magnitude_scale or 3.0
+    def forward(self, data_now, data_prediction, t_now, t_query, pipeline, vectorbridge_magnitude_scale=None, vectorbridge_rand_scale=None):
+        vectorbridge_magnitude_scale = pipeline.config.vectorbridge_magnitude_scale or 3.0 # vectorbridge_magnitude_scale should be taken automatically from the config, this does not work currently somehow 
         vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 3.0
 
         direction = data_prediction - data_now
@@ -58,7 +58,7 @@ class VectorBridgeAlt(nn.Module):
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
         direction = data_prediction - data_now
         direction = direction / torch.norm(direction)
-        x_tminus1 = data_now + direction * (1.0 - t_now)
+        x_tminus1 = data_now + direction * (1.0 - t_query)
 
         if t_query > 1e-3:
             x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * t_query / 3.0

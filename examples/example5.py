@@ -120,10 +120,8 @@ class ImageDataset(Dataset):
 dataset = ImageDataset()
 dataloader = DataLoader(dataset, batch_size=100, shuffle=True)
 
+dataloader_show = DataLoader(dataset, batch_size=1, shuffle=True)
 
-for data in dataloader:
-    print(data.shape)
-    break
 
 
 def plot_image_on_axis(array, axis, arrays):
@@ -135,9 +133,9 @@ def plot_image_on_axis(array, axis, arrays):
 
 #pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt"
 degradation_obj = VectorDegradationDDPM()
-pipeline = PipelineVector(node_feature_dim=3*IMG_SIZE*IMG_SIZE, hidden_dim=1024, num_layers=12, dropout_rate=0.3, degradation_obj=degradation_obj)
+pipeline = PipelineVector(node_feature_dim=3*IMG_SIZE*IMG_SIZE, hidden_dim=1024, num_layers=12, dropout_rate=0.3, degradation_obj=degradation_obj, pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
 pipeline.visualize_foward(
-    data=dataloader,
+    data=dataloader_show,
     outfile="pokemon_forward.jpg",
     plot_data_func=plot_image_on_axis,
     num=25,
@@ -151,50 +149,50 @@ pipeline.reconstruction_obj.save_model(pre_trained_path="../pre_trained/vectorde
 #data0 = pipeline.inference(dataloader, noise_to_start=None, steps=1000)
 #print(data0)
 
-pipeline.config["vectorbridge_magnitude_scale"] = 1.0
+pipeline.config["vectorbridge_magnitude_scale"] = 0.6
 pipeline.visualize_reconstruction(
-    data=dataloader,
+    data=dataloader_show,
     plot_data_func=plot_image_on_axis,
     outfile="pokemon_backward_normal.jpg",
-    num=25,
+    num=36,
     steps=100,
 )
 
 
 pipeline.bridge_obj = VectorBridgeNaive()
 pipeline.visualize_reconstruction(
-    data=dataloader,
+    data=dataloader_show,
     plot_data_func=plot_image_on_axis,
     outfile="pokemon_backward_naive.jpg",
-    num=25,
+    num=36,
     steps=100,
 )
 
 
 pipeline.bridge_obj = VectorBridgeColdDiffusion()
 pipeline.visualize_reconstruction(
-    data=dataloader,
+    data=dataloader_show,
     plot_data_func=plot_image_on_axis,
     outfile="pokemon_backward_cold.jpg",
-    num=25,
+    num=36,
     steps=100,
 )
 
 
 pipeline.bridge_obj = VectorBridgeDDPM()
 pipeline.visualize_reconstruction(
-    data=dataloader,
+    data=dataloader_show,
     plot_data_func=plot_image_on_axis,
     outfile="pokemon_backward_ddpm.jpg",
-    num=25,
+    num=36,
     steps=100,
 )
 
 pipeline.bridge_obj = VectorBridgeAlt()
 pipeline.visualize_reconstruction(
-    data=dataloader,
+    data=dataloader_show,
     plot_data_func=plot_image_on_axis,
     outfile="pokemon_backward_alt.jpg",
-    num=25,
+    num=36,
     steps=100,
 )
