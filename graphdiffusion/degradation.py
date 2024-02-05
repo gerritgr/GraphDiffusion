@@ -100,6 +100,54 @@ class VectorDegradation(nn.Module):
         return transformed_sample
 
 
+class VectorDegradationHighVariance(nn.Module):
+
+    def __init__(self, time_scaling_factor=1.0, std_dev_max=2.0):
+        super(VectorDegradationHighVariance, self).__init__()
+
+        self.time_scaling_factor = time_scaling_factor
+        self.std_dev_max = std_dev_max
+        assert self.time_scaling_factor > 0, "The time scaling factor must be positive."
+        assert self.std_dev_max > 0, "The standard deviation scaling factor must be positive."
+
+    def forward(self, data, t, pipeline, seed=None, **kwargs):
+
+        if torch.is_tensor(t):
+            batch_dim = data.shape[0]
+            t = t.reshape(batch_dim, 1)
+            if not torch.all((t >= 0) & (t <= 1)):
+                raise ValueError("All elements of tensor 't' must be between 0 and 1.")
+        elif isinstance(t, float):
+            if not (0 <= t <= 1):
+                raise ValueError("The float value of 't' must be between 0 and 1.")
+        else:
+            raise TypeError("'t' must be a float or a tensor.")
+
+        if isinstance(t, float) and t < 1e-7:
+            # If 't' is very small, return the data unmodified as the degradation is negligible.
+            return data
+
+        # Transform 't' by raising it to the power of the scaling factor.
+        t = t**self.time_scaling_factor
+        # Compute the mean of the degraded data.
+        mean = data * (1 - t)
+        # Compute the standard deviation for the noise component based on 't' and the std_dev_max.
+        #std_dev  = Piecewise[{{x*2*5, x < 0.5}, {-2*(5-1)*x  + (5 - (-2*(5-1)*0.5)), x >= 0.5}}] # assuming 5 is the max std
+        mask = t < 0.5
+        std_dev = torch.zeros_like(t)
+        std_dev[mask] = t[mask] * 2 * self.std_dev_max
+        std_dev[~mask] = -2 * (self.std_dev_max - 1) * t[~mask] + (self.std_dev_max - (-2*(self.std_dev_max-1)*0.5))
+
+        # Generate a sample from the standard normal distribution.
+        standard_normal_sample = rand_like_with_seed(data, seed=seed)
+
+        # Apply the degradation transformation.
+        transformed_sample = mean + std_dev * standard_normal_sample
+
+        return transformed_sample
+
+
+
 class VectorDegradationDDPM(nn.Module):
     def __init__(self):
         """

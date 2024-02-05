@@ -82,3 +82,48 @@ class VectorDenoiser(nn.Module):
 
     def load_model(self, pre_trained_path):
         self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
+
+
+
+
+class ImageDenoiser(nn.Module):
+    def __init__(
+        self,
+        img_width=16,
+        img_height=16
+        img_channels=3,
+        #hidden_dim=256,
+        #num_layers=8,
+        dropout_rate=0.2,
+        time_dim=32,
+    ):
+        # important: config overwrites parameters
+        super(ImageDenoiser, self).__init__()
+
+        self.img_width = img_width
+        self.img_hight = img_height
+
+    def forward(self, data, t, pipeline, *args, **kwargs):
+        # Handle batches and image dimensions
+        if data.dim() == 1:
+            batch_size = 1 
+            data = data.view(batch_size, self.img_channels, self.img_width, self.img_height)
+        elif data.dim() == 2:
+            batch_size = data.shape[0]
+            data = data.view(batch_size, self.img_channels, self.img_width, self.img_height)
+        batch_size = data.shape[0]
+
+        # Handle time
+        if isinstance(t, float) or isinstance(t, int):
+            t_tensor = torch.full((batch_size, 1), t, dtype=data.dtype, device=data.device)
+        elif isinstance(t, torch.Tensor) and t.ndim == 1 and t.size(0) == data.size(0):
+            t_tensor = t.view(-1, 1)
+        else:
+            raise ValueError("t must be a float or a 1D tensor of size equal to the number of rows in x")
+        # Concatenate t_tensor to x along the last dimension (columns)
+
+        if self.time_dim > 1:
+            t_tensor = pipeline.encoding_obj(t_tensor, self.time_dim, add_original=True)
+       # data = torch.cat((data, t_tensor), dim=1)
+            
+    

@@ -11,9 +11,9 @@ from .degradation import *
 # Define a simple default bridge class
 class VectorBridgeNaive(nn.Module):
     def __init__(self):
-        super(VectorBridge, self).__init__()
+        super(VectorBridgeNaive, self).__init__()
 
-    def forward(self, data_now, data_prediction, t_now, t_query, *args, **kwargs):
+    def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
         return pipeline.degradation(data_prediction, t_query)  # this is not actually a bridge distribution between the two points
 
 
@@ -34,6 +34,7 @@ class VectorBridge(nn.Module):
         super(VectorBridge, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline):
+        print("vectorbridge_magnitude_scale", vectorbridge_magnitude_scale) 
         vectorbridge_magnitude_scale = pipeline.config.vectorbridge_magnitude_scale or 3.0
         vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 3.0
 

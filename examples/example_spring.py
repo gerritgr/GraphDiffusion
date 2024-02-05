@@ -84,7 +84,7 @@ pipeline.visualize_foward(
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 pipeline.train(data=train_dataloader, epochs=100)
-# pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
+# pipeline.reconstruction_obj.save_model(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
 # Inference

@@ -5,6 +5,8 @@ __pycache__/
 
 *.DS_Store*
 
+examples/pokemon/
+
 
 # C extensions
 *.so
