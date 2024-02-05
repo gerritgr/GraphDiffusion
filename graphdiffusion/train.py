@@ -97,6 +97,7 @@ class VectorTrain:
         model = self.pipeline.get_model()
         model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+        pipeline.optimizer = optimizer
 
         # Initialize tqdm progress bar
         pbar = tqdm(range(epochs), desc="Epoch: 0, Loss: N/A")

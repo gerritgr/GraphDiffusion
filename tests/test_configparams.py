@@ -29,8 +29,8 @@ def test_func3():
 
 
 class CallableClass:
-    def __init__(self):
-        pass
+    def __init__(self, z879879789789789=None):
+        self.property = z879879789789789
     
     def __call__(self, x879879789789789=1):
         return x879879789789789
@@ -58,3 +58,13 @@ def test_class3():
     params = get_params(c, config, {"x879879789789789": 3})
     assert params["x879879789789789"] == 3
     assert c(**params) == 3
+
+
+def test_class4():
+    config = get_config()
+    config["z879879789789789"] = 42
+    params = get_params(CallableClass.__init__, config)
+    assert params["z879879789789789"] == 42
+    c = CallableClass(**params)
+    assert(c.property == 42)
+

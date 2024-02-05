@@ -377,9 +377,9 @@ class PipelineVector(PipelineBase):
         node_feature_dim = node_feature_dim or 1
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        reconstruction_obj = reconstruction_obj or VectorDenoiser(**get_params(VectorDenoiser, self.config))
+        reconstruction_obj = reconstruction_obj or VectorDenoiser(**get_params(VectorDenoiser.__init__, self.config))
         inference_obj = inference_obj or VectorInference()
-        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation, self.config))
+        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config))
         train_obj = train_obj or VectorTrain()
         bridge_obj = bridge_obj or VectorBridge()
         distance_obj = distance_obj or VectorDistance()
