@@ -343,6 +343,7 @@ class PreNorm(nn.Module):
         x = self.norm(x)
         return self.fn(x)
 
+# TODO use pipeline encoder
 class Unet(nn.Module):
     def __init__(
         self,
@@ -432,13 +433,14 @@ class Unet(nn.Module):
         )
 
     def forward(self, x, time, pipeline=None):
+        img_shape = x.shape
         x = correct_dims(x, channels=self.channels, img_size=self.dim)
         if not isinstance(time, torch.Tensor):
             time = torch.tensor(time, device=x.device, dtype=x.dtype).view(-1)
+        img_shape_corrected = x.shape
 
         batch_dim = x.shape[0]
         #img_withnoise = x*1.0
-        img_shape = x.shape
 
         
         x = self.init_conv(x)
@@ -470,8 +472,8 @@ class Unet(nn.Module):
 
         x = self.final_conv(x)
         #x = img_withnoise-x # here x is the img wo noise
-        assert(x.shape == img_shape)
-        x = x.reshape(batch_dim, -1)
+        assert(x.shape == img_shape_corrected)
+        x = x.reshape(**img_shape)
         return x
 
 
