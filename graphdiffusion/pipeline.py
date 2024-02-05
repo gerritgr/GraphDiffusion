@@ -54,14 +54,15 @@ class PipelineBase:
                 assert isinstance(obj, nn.Module)
 
         if pre_trained_path is not None:
-            try:
-                # See if load_model is implemented
-                self.reconstruction_obj.load_model(pre_trained_path)
-            except:
-                try:
-                    self.reconstruction_obj.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
-                except:
-                    print("Could not load pre-trained model.")
+            self.load_all_model_weights(pre_trained_path)
+            #try:
+            #    # See if load_model is implemented
+            #    self.reconstruction_obj.load_model(pre_trained_path)
+            #except:
+            #    try:
+            #        self.reconstruction_obj.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
+            #    except:
+            #        print("Could not load pre-trained model.")
 
         try:
             self.config["node_feature_dim"] = node_feature_dim
@@ -210,20 +211,83 @@ class PipelineBase:
             plot_data_func=plot_data_func,
         )
     
-    def save_reconstruction_model(self, model_path):
-        try:
-            self.reconstruction_obj.save_model(model_path)
-        except:
-            model = self.reconstruction_obj
-            torch.save(model.state_dict(), model_path)
+    #def save_reconstruction_model(self, model_path):
+    #    try:
+    #        self.reconstruction_obj.save_model(model_path)
+    #    except:
+    #        model = self.reconstruction_obj
+    #        torch.save(model.state_dict(), model_path)
     
     def info_to_str(self):
         config_local = self.config.copy()
         model = self.get_model()
+        indent = "      "
         model_num_params = sum([p.numel() for p in model.parameters() if p.requires_grad])
         config_local["Number of trainable parameters"] = model_num_params
-        config = "\n".join([f"    {key}: {value}" for key, value in config_local.items()])
+        if isinstance(self.reconstruction_obj, nn.Module):
+            config_local["Reconstruction model"] = str(self.reconstruction_obj).replace("\n", "\n"+indent)
+        if isinstance(self.degradation_obj, nn.Module):
+            config_local["Degradation model"] = str(self.degradation_obj).replace("\n", "\n"+indent)
+        if isinstance(self.encoding_obj, nn.Module):
+            config_local["Positional encoding model"] = str(self.encoding_obj).replace("\n", "\n"+indent)
+        if isinstance(self.distance_obj, nn.Module):
+            config_local["Distance model"] = str(self.distance_obj).replace("\n", "\n"+indent)
+
+
+        config = "\n".join([f"{indent}{key}: {value}" for key, value in config_local.items()])
         return f"Pipeline with the following configuration:\n{config}"
+
+    def save_all_model_weights(self, model_path, print_process=True, optimizer=None):
+        models = dict()
+        if isinstance(self.reconstruction_obj, nn.Module):
+            models["reconstruction_obj"] = self.reconstruction_obj
+        if isinstance(self.degradation_obj, nn.Module):
+            models["degradation_obj"] = self.degradation_obj
+        if isinstance(self.encoding_obj, nn.Module):
+            models["encoding_obj"] = self.encoding_obj
+        if isinstance(self.distance_obj, nn.Module):
+            models["distance_obj"] = self.distance_obj
+        if optimizer is not None:
+            models["optimizer"] = optimizer.state_dict()
+
+        if print_process:
+            print(f"Save models {models.keys()} to: ", model_path)
+
+        model_state_dicts = {name: model.state_dict() for name, model in models.items()}
+        torch.save(model_state_dicts, model_path)
+
+    def load_all_model_weights(self, model_path, print_process=True, optimizer=None):
+        # Load the saved model state dictionaries
+        model_state_dicts = torch.load(model_path)
+        model_list = list()
+
+        # Assuming self has the model attributes
+        if 'reconstruction_obj' in model_state_dicts and isinstance(self.reconstruction_obj, nn.Module):
+            self.reconstruction_obj.load_state_dict(model_state_dicts['reconstruction_obj'])
+            model_list.append('reconstruction_obj')
+            
+        if 'degradation_obj' in model_state_dicts and isinstance(self.degradation_obj, nn.Module):
+            self.degradation_obj.load_state_dict(model_state_dicts['degradation_obj'])
+            model_list.append('degradation_obj')
+
+        if 'encoding_obj' in model_state_dicts and isinstance(self.encoding_obj, nn.Module):
+            self.encoding_obj.load_state_dict(model_state_dicts['encoding_obj'])
+            model_list.append('encoding_obj')
+
+        if 'distance_obj' in model_state_dicts and isinstance(self.distance_obj, nn.Module):
+            self.distance_obj.load_state_dict(model_state_dicts['distance_obj'])
+            model_list.append('distance_obj')
+
+        if optimizer is not None:
+            if 'optimizer' in model_state_dicts:
+                optimizer.load_state_dict(model_state_dicts['optimizer'])
+                model_list.append('optimizer')
+            else:
+                print("Warning: optimizer not loaded.")
+    
+        if print_process:
+            print(f"Load models from: ", model_path, " loaded: ", model_list)
+
 
     def compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func, **kwargs):
 

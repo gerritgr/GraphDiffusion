@@ -46,20 +46,27 @@ def time_to_pos_emb(t, target_dim, add_original=False):
 
 
 
-
-class SinusoidalPositionEmbeddings(nn.Module):
-    def __init__(self, dim=32, device=None, embedding_time_scale=1.0):
+# Make sure this is trainable
+class SinusoidalPositionEmbeddingsMLP(nn.Module):
+    def __init__(self, dim=32, device=None, embedding_time_scale=1.0, use_mlp=True):
         super().__init__()
+        assert int(dim // 2 * 2) == int(dim)
         self.dim = dim
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.embedding_time_scale = embedding_time_scale
+        self.use_mlp = use_mlp
+        if use_mlp:
+            self.linear1 = nn.Linear(dim, dim)
+            self.linear2 = nn.Linear(dim, dim)
+            self.gelu = nn.GELU()
+
 
     def forward(self, time, target_dim=None, add_original=None):
         assert target_dim is None or target_dim == self.dim
         time = time.flatten()
         time = time * self.embedding_time_scale
 
-        half_dim = self.dim * 2 // 2
+        half_dim = self.dim // 2
         embeddings = math.log(10000) / (half_dim - 1)
         embeddings = torch.exp(torch.arange(half_dim, device=self.device) * -embeddings)
         embeddings = time[:, None] * embeddings[None, :]
@@ -68,6 +75,10 @@ class SinusoidalPositionEmbeddings(nn.Module):
         if add_original: # TODO you can also fix the dimensions with this (make sure dim can be odd)
             embeddings[:, -1] = time
 
+        if self.use_mlp:
+            embeddings = self.linear1(embeddings)
+            embeddings = self.gelu(embeddings)
+            embeddings = self.linear2(embeddings)
         return embeddings
     
 
@@ -75,8 +86,9 @@ if __name__ == "__main__":
     # time = torch.tensor([1.0, 1.0, 20.0], dtype=torch.float32)
     time = torch.linspace(0, 1, 30)
     target_dim = 16
-    emb_func = SinusoidalPositionEmbeddings(target_dim)
+    emb_func = SinusoidalPositionEmbeddingsMLP(target_dim)
     pos_emb = emb_func(time, target_dim, add_original=True)
+    pos_emb = pos_emb.detach().cpu().numpy()
     print(pos_emb.shape, pos_emb)
 
     # Visualize pos_emb as a 2d image

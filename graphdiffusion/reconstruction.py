@@ -10,6 +10,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from graphdiffusion.encoding import *
+
 
 class VectorDenoiser(nn.Module):
     def __init__(
@@ -188,19 +190,19 @@ def Downsample(dim):
     return nn.Conv2d(dim, dim, 4, 2, 1)
 
 
-class SinusoidalPositionEmbeddings(nn.Module):
-    def __init__(self, dim, device=None):
-        super().__init__()
-        self.dim = dim
-        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    def forward(self, time):
-        half_dim = self.dim // 2
-        embeddings = math.log(10000) / (half_dim - 1)
-        embeddings = torch.exp(torch.arange(half_dim, device=self.device) * -embeddings)
-        embeddings = time[:, None] * embeddings[None, :]
-        embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
-        return embeddings
+#class SinusoidalPositionEmbeddings(nn.Module):
+#    def __init__(self, dim, device=None):
+#        super().__init__()
+#        self.dim = dim
+#        self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")#
+#
+#    def forward(self, time):
+#        half_dim = self.dim // 2
+#        embeddings = math.log(10000) / (half_dim - 1)
+#        embeddings = torch.exp(torch.arange(half_dim, device=self.device) * -embeddings)
+#        embeddings = time[:, None] * embeddings[None, :]
+#        embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
+#        return embeddings
 
 class Block(nn.Module):
     def __init__(self, dim, dim_out, groups = 8):
@@ -379,12 +381,13 @@ class Unet(nn.Module):
         # time embeddings
         if with_time_emb:
             time_dim = dim * 4
-            self.time_mlp = nn.Sequential(
-                SinusoidalPositionEmbeddings(dim, device=self.device),
-                nn.Linear(dim, time_dim),
-                nn.GELU(),
-                nn.Linear(time_dim, time_dim),
-            )
+            #self.time_mlp = nn.Sequential(
+            #    SinusoidalPositionEmbeddings(dim, device=self.device),
+            #    nn.Linear(dim, time_dim),
+            #    nn.GELU(),
+            #    nn.Linear(time_dim, time_dim),
+            #)
+            self.time_mlp = SinusoidalPositionEmbeddingsMLP(dim=time_dim)
         else:
             time_dim = None
             self.time_mlp = None
@@ -473,7 +476,7 @@ class Unet(nn.Module):
         x = self.final_conv(x)
         #x = img_withnoise-x # here x is the img wo noise
         assert(x.shape == img_shape_corrected)
-        x = x.reshape(**img_shape)
+        x = x.reshape(*img_shape)
         return x
 
 

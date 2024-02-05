@@ -133,7 +133,8 @@ def plot_image_on_axis(array, axis, arrays):
 
 #pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt"
 degradation_obj = VectorDegradationDDPM()
-pipeline = PipelineVector(node_feature_dim=3*IMG_SIZE*IMG_SIZE, hidden_dim=1024, num_layers=12, dropout_rate=0.3, degradation_obj=degradation_obj, pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
+reconstruction_obj = VectorDenoiser(num_layers=12, hidden_dim=1024, dropout_rate=0.3)
+pipeline = PipelineVector(node_feature_dim=3*IMG_SIZE*IMG_SIZE, reconstruction_obj=reconstruction_obj, degradation_obj=degradation_obj, pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
 pipeline.visualize_foward(
     data=dataloader_show,
     outfile="pokemon_forward.jpg",
@@ -143,7 +144,9 @@ pipeline.visualize_foward(
 
 
 
-#pipeline.train(data=dataloader, epochs=10000)
+pipeline.train(data=dataloader, epochs=1000)
+pipeline.save_all_model_weights("../pre_trained/vectordenoiser_pokemon_weights.pt")
+
 #pipeline.reconstruction_obj.save_model(pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
 
 #data0 = pipeline.inference(dataloader, noise_to_start=None, steps=1000)
@@ -211,9 +214,11 @@ pipeline.visualize_foward(
     num=25,
 )
 
+#print("reconstruction_obj", str(reconstruction_obj))#, [k for k,v in reconstruction_obj.named_parameters()])
+
 
 pipeline.train(data=dataloader, epochs=100)
-pipeline.save_reconstruction_model("../pre_trained/unet_pokemon_weights.pt")
+pipeline.save_all_model_weights("../pre_trained/unet_pokemon_weights.pt")
 
 
 pipeline.config["vectorbridge_magnitude_scale"] = 0.4
