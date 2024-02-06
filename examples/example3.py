@@ -26,7 +26,7 @@ x = pipeline.bridge(data_now=0.5, data_prediction=example_tensor, t_now=1.0, t_q
 print("bridge", x)
 
 input_tensor = torch.rand(5,5)
-pipeline.visualize_foward(input_tensor, outfile="forward_5d.jpg")
+pipeline.visualize_foward(input_tensor, outfile="images/example3_forward_5d_test.jpg")
 
 
 x1 = [5.0 + random.random() * 0.01, -5.0 - random.random() * 0.01]

@@ -11,6 +11,45 @@ from torch.utils.data import DataLoader, TensorDataset
 import random
 
 
+def test_model(pipeline, dataloader):
+    total_loss = 0
+    pipeline.get_model().eval()
+    with torch.no_grad(): # redundant?
+        for batch in dataloader:
+            t = torch.rand(batch.shape[0], device=batch.device)
+            batch_with_noise = pipeline.degradation(batch, t)
+            batch_reconstructed = pipeline.reconstruction(batch_with_noise, t)
+            loss = pipeline.distance(batch, batch_reconstructed)
+            total_loss += loss.item()
+
+    pipeline.get_model().train()
+    average_loss_test = total_loss / len(dataloader)
+    return average_loss_test
+
+
+def train_epoch(dataloader, pipeline, optimizer):
+    pipeline.get_model().train()
+    total_loss = 0.0
+    for batch in dataloader:
+        # Generate random tensor 't' for degradation
+        t = torch.rand(batch.shape[0], device=pipeline.device)
+
+        optimizer.zero_grad()
+
+        # Apply degradation and reconstruction from the pipeline
+        batch_with_noise = pipeline.degradation(batch, t)
+        batch_reconstructed = pipeline.reconstruction(batch_with_noise, t)
+
+        # Compute loss using the pipeline's distance method
+        loss = pipeline.distance(batch, batch_reconstructed)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+
+    # Calculate average loss for the epoch
+    average_loss = total_loss / len(dataloader)
+    return average_loss
+
 class VectorTrain:
     """
     A class for training a model using a specified pipeline that encapsulates the model, degradation, reconstruction, and distance calculation.
@@ -79,7 +118,7 @@ class VectorTrain:
         else:
             raise TypeError("Input data must be a DataLoader, a list of tensors, or a single tensor")
 
-    def __call__(self, data, pipeline, epochs=100, alpha=0.1, *args, **kwargs):
+    def __call__(self, data, pipeline, data_test=None, epochs=100, alpha=0.1, *args, **kwargs):
         """
         Train the model using the provided input data and pipeline.
 
@@ -93,38 +132,26 @@ class VectorTrain:
         """
         assert pipeline is not None, "pipeline must be provided"
         self.pipeline = pipeline
-        dataloader = VectorTrain.input_to_dataloader(input_data=data, device=self.pipeline.device)
+        dataloader_train = VectorTrain.input_to_dataloader(input_data=data, device=self.pipeline.device)
+        dataloader_test = VectorTrain.input_to_dataloader(input_data=data_test, device=self.pipeline.device) if data_test is not None else None
         model = self.pipeline.get_model()
         model.train()
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         pipeline.optimizer = optimizer
 
         # Initialize tqdm progress bar
-        pbar = tqdm(range(epochs), desc="Epoch: 0, Loss: N/A")
+        pbar = tqdm(range(epochs), desc="Epoch: 0, Loss: N/A, Test Loss: N/A") if data_test is not None else tqdm(range(epochs), desc="Epoch: 0, Loss: N/A")
 
         # Initialize moving average loss
         moving_average_loss = None
+        moving_average_loss_test = None
 
         for epoch in pbar:
-            total_loss = 0
-            for batch in dataloader:
-                # Generate random tensor 't' for degradation
-                t = torch.rand(batch.shape[0], device=self.pipeline.device)
+            # TODO: if epoch is zero or epoch is the last epoch, or epoch is dividable by 10: compute the loss using dataloader_test and save it as total_loss_test
+            if dataloader_test is not None and (epoch == 0 or epoch == epochs - 1 or (epoch + 1) % 10 == 0):
+                average_loss_test = test_model(self.pipeline, dataloader_test)
 
-                optimizer.zero_grad()
-
-                # Apply degradation and reconstruction from the pipeline
-                batch_with_noise = self.pipeline.degradation(batch, t)
-                batch_reconstructed = self.pipeline.reconstruction(batch_with_noise, t)
-
-                # Compute loss using the pipeline's distance method
-                loss = self.pipeline.distance(batch, batch_reconstructed)
-                loss.backward()
-                optimizer.step()
-                total_loss += loss.item()
-
-            # Calculate average loss for the epoch
-            average_loss = total_loss / len(dataloader)
+            average_loss = train_epoch(dataloader_train, self.pipeline, optimizer) 
 
             # Update moving average loss
             if moving_average_loss is None:
@@ -132,5 +159,13 @@ class VectorTrain:
             else:
                 moving_average_loss = alpha * average_loss + (1 - alpha) * moving_average_loss
 
-            # Update the progress bar description
-            pbar.set_description(f"Epoch: {epoch + 1}, Loss: {moving_average_loss:.4f}")
+            if data_test is not None:
+                if moving_average_loss_test is None:
+                    moving_average_loss_test = average_loss_test  # Initialize with the first epoch's average loss
+                else:
+                    moving_average_loss_test = alpha * average_loss_test + (1 - alpha) * moving_average_loss_test
+
+                # Update the progress bar description
+                pbar.set_description(f"Epoch: {epoch + 1}, Loss: {moving_average_loss:.4f}, Test Loss: {moving_average_loss_test:.4f}")
+            else:
+                pbar.set_description(f"Epoch: {epoch + 1}, Loss: {moving_average_loss:.4f}")

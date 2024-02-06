@@ -126,6 +126,8 @@ class VectorDegradationHighVariance(nn.Module):
         if isinstance(t, float) and t < 1e-7:
             # If 't' is very small, return the data unmodified as the degradation is negligible.
             return data
+        elif isinstance(t, float):
+            t = torch.tensor(t, device=data.device)
 
         # Transform 't' by raising it to the power of the scaling factor.
         t = t**self.time_scaling_factor

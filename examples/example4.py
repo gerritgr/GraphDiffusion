@@ -14,14 +14,14 @@ plt.title("Uniform random points in 2D")
 plt.xlabel("X")
 plt.ylabel("Y")
 plt.axis("equal")
-plt.savefig("random_points.png")
+plt.savefig("images/example4_random_points.png")
 
 
 train_dataloader = DataLoader(points, batch_size=500, shuffle=True)
 pipeline = PipelineVector(node_feature_dim=2, dist_type="L1")
 pipeline.visualize_foward(
     data=train_dataloader,
-    outfile="random_2d_forward.jpg",
+    outfile="images/example4_random_2d_forward.jpg",
     num=25,
 )
 
@@ -31,7 +31,7 @@ train_dataloader = DataLoader(points, batch_size=50, shuffle=True)
 pipeline = PipelineVector(node_feature_dim=2, dist_type="L1")
 pipeline.visualize_foward(
     data=train_dataloader,
-    outfile="random_2d_forward.jpg",
+    outfile="images/example4_random_2d_forward.jpg",
     plot_data_func=plot_data_as_normal_pdf,
     num=25,
 )
