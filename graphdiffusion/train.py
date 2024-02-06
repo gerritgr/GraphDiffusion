@@ -14,7 +14,7 @@ import random
 def test_model(pipeline, dataloader):
     total_loss = 0
     pipeline.get_model().eval()
-    with torch.no_grad(): # redundant?
+    with torch.no_grad():  # redundant?
         for batch in dataloader:
             t = torch.rand(batch.shape[0], device=batch.device)
             batch_with_noise = pipeline.degradation(batch, t)
@@ -49,6 +49,7 @@ def train_epoch(dataloader, pipeline, optimizer):
     # Calculate average loss for the epoch
     average_loss = total_loss / len(dataloader)
     return average_loss
+
 
 class VectorTrain:
     """
@@ -151,7 +152,7 @@ class VectorTrain:
             if dataloader_test is not None and (epoch == 0 or epoch == epochs - 1 or (epoch + 1) % 10 == 0):
                 average_loss_test = test_model(self.pipeline, dataloader_test)
 
-            average_loss = train_epoch(dataloader_train, self.pipeline, optimizer) 
+            average_loss = train_epoch(dataloader_train, self.pipeline, optimizer)
 
             # Update moving average loss
             if moving_average_loss is None:

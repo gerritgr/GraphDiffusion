@@ -86,16 +86,14 @@ class VectorDenoiser(nn.Module):
         self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
 
 
-
-
 class ImageDenoiser(nn.Module):
     def __init__(
         self,
         img_width=16,
         img_height=16,
         img_channels=3,
-        #hidden_dim=256,
-        #num_layers=8,
+        # hidden_dim=256,
+        # num_layers=8,
         dropout_rate=0.2,
         time_dim=32,
     ):
@@ -108,7 +106,7 @@ class ImageDenoiser(nn.Module):
     def forward(self, data, t, pipeline, *args, **kwargs):
         # Handle batches and image dimensions
         if data.dim() == 1:
-            batch_size = 1 
+            batch_size = 1
             data = data.view(batch_size, self.img_channels, self.img_width, self.img_height)
         elif data.dim() == 2:
             batch_size = data.shape[0]
@@ -126,13 +124,10 @@ class ImageDenoiser(nn.Module):
         if self.time_dim > 1:
             t_tensor = pipeline.encoding_obj(t_tensor, self.time_dim, add_original=True)
         return data
-            
-    
-
 
 
 ################################
-# Unet 
+# Unet
 ################################
 
 
@@ -146,7 +141,7 @@ import math
 def correct_dims(x, channels=3, img_size=16):
     """
     Checks the shape of a given tensor and adds batch dimension if necessary.
-    
+
     Args:
     x (torch.Tensor): The input tensor.
 
@@ -162,7 +157,7 @@ def correct_dims(x, channels=3, img_size=16):
     elif x.dim() == 4:
         return x
     else:
-        assert(False)
+        assert False
 
     return x
 
@@ -170,10 +165,12 @@ def correct_dims(x, channels=3, img_size=16):
 def exists(x):
     return x is not None
 
+
 def default(val, d):
     if exists(val):
         return val
     return d() if isfunction(d) else d
+
 
 class Residual(nn.Module):
     def __init__(self, fn):
@@ -183,14 +180,16 @@ class Residual(nn.Module):
     def forward(self, x, *args, **kwargs):
         return self.fn(x, *args, **kwargs) + x
 
+
 def Upsample(dim):
     return nn.ConvTranspose2d(dim, dim, 4, 2, 1)
+
 
 def Downsample(dim):
     return nn.Conv2d(dim, dim, 4, 2, 1)
 
 
-#class SinusoidalPositionEmbeddings(nn.Module):
+# class SinusoidalPositionEmbeddings(nn.Module):
 #    def __init__(self, dim, device=None):
 #        super().__init__()
 #        self.dim = dim
@@ -204,14 +203,15 @@ def Downsample(dim):
 #        embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
 #        return embeddings
 
+
 class Block(nn.Module):
-    def __init__(self, dim, dim_out, groups = 8):
+    def __init__(self, dim, dim_out, groups=8):
         super().__init__()
-        self.proj = nn.Conv2d(dim, dim_out, 3, padding = 1)
+        self.proj = nn.Conv2d(dim, dim_out, 3, padding=1)
         self.norm = nn.GroupNorm(groups, dim_out)
         self.act = nn.SiLU()
 
-    def forward(self, x, scale_shift = None):
+    def forward(self, x, scale_shift=None):
         x = self.proj(x)
         x = self.norm(x)
 
@@ -222,16 +222,13 @@ class Block(nn.Module):
         x = self.act(x)
         return x
 
+
 class ResnetBlock(nn.Module):
     """https://arxiv.org/abs/1512.03385"""
-    
+
     def __init__(self, dim, dim_out, *, time_emb_dim=None, groups=8):
         super().__init__()
-        self.mlp = (
-            nn.Sequential(nn.SiLU(), nn.Linear(time_emb_dim, dim_out))
-            if exists(time_emb_dim)
-            else None
-        )
+        self.mlp = nn.Sequential(nn.SiLU(), nn.Linear(time_emb_dim, dim_out)) if exists(time_emb_dim) else None
 
         self.block1 = Block(dim, dim_out, groups=groups)
         self.block2 = Block(dim_out, dim_out, groups=groups)
@@ -246,17 +243,14 @@ class ResnetBlock(nn.Module):
 
         h = self.block2(h)
         return h + self.res_conv(x)
-    
+
+
 class ConvNextBlock(nn.Module):
     """https://arxiv.org/abs/2201.03545"""
 
     def __init__(self, dim, dim_out, *, time_emb_dim=None, mult=2, norm=True):
         super().__init__()
-        self.mlp = (
-            nn.Sequential(nn.GELU(), nn.Linear(time_emb_dim, dim))
-            if exists(time_emb_dim)
-            else None
-        )
+        self.mlp = nn.Sequential(nn.GELU(), nn.Linear(time_emb_dim, dim)) if exists(time_emb_dim) else None
 
         self.ds_conv = nn.Conv2d(dim, dim, 7, padding=3, groups=dim)
 
@@ -281,6 +275,7 @@ class ConvNextBlock(nn.Module):
         h = self.net(h)
         return h + self.res_conv(x)
 
+
 class Attention(nn.Module):
     def __init__(self, dim, heads=4, dim_head=32):
         super().__init__()
@@ -293,9 +288,7 @@ class Attention(nn.Module):
     def forward(self, x):
         b, c, h, w = x.shape
         qkv = self.to_qkv(x).chunk(3, dim=1)
-        q, k, v = map(
-            lambda t: rearrange(t, "b (h c) x y -> b h c (x y)", h=self.heads), qkv
-        )
+        q, k, v = map(lambda t: rearrange(t, "b (h c) x y -> b h c (x y)", h=self.heads), qkv)
         q = q * self.scale
 
         sim = einsum("b h d i, b h d j -> b h i j", q, k)
@@ -306,6 +299,7 @@ class Attention(nn.Module):
         out = rearrange(out, "b h (x y) d -> b (h d) x y", x=h, y=w)
         return self.to_out(out)
 
+
 class LinearAttention(nn.Module):
     def __init__(self, dim, heads=4, dim_head=32):
         super().__init__()
@@ -314,15 +308,12 @@ class LinearAttention(nn.Module):
         hidden_dim = dim_head * heads
         self.to_qkv = nn.Conv2d(dim, hidden_dim * 3, 1, bias=False)
 
-        self.to_out = nn.Sequential(nn.Conv2d(hidden_dim, dim, 1), 
-                                    nn.GroupNorm(1, dim))
+        self.to_out = nn.Sequential(nn.Conv2d(hidden_dim, dim, 1), nn.GroupNorm(1, dim))
 
     def forward(self, x):
         b, c, h, w = x.shape
         qkv = self.to_qkv(x).chunk(3, dim=1)
-        q, k, v = map(
-            lambda t: rearrange(t, "b (h c) x y -> b h c (x y)", h=self.heads), qkv
-        )
+        q, k, v = map(lambda t: rearrange(t, "b (h c) x y -> b h c (x y)", h=self.heads), qkv)
 
         q = q.softmax(dim=-2)
         k = k.softmax(dim=-1)
@@ -345,21 +336,10 @@ class PreNorm(nn.Module):
         x = self.norm(x)
         return self.fn(x)
 
+
 # TODO use pipeline encoder
 class Unet(nn.Module):
-    def __init__(
-        self,
-        dim=16,
-        init_dim=None,
-        out_dim=None,
-        dim_mults=(1, 2, 4, 8),
-        channels=3,
-        with_time_emb=True,
-        resnet_block_groups=8,
-        use_convnext=True,
-        convnext_mult=2,
-        device = None
-    ):
+    def __init__(self, dim=16, init_dim=None, out_dim=None, dim_mults=(1, 2, 4, 8), channels=3, with_time_emb=True, resnet_block_groups=8, use_convnext=True, convnext_mult=2, device=None):
         super().__init__()
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -372,7 +352,7 @@ class Unet(nn.Module):
 
         dims = [init_dim, *map(lambda m: dim * m, dim_mults)]
         in_out = list(zip(dims[:-1], dims[1:]))
-        
+
         if use_convnext:
             block_klass = partial(ConvNextBlock, mult=convnext_mult)
         else:
@@ -381,12 +361,12 @@ class Unet(nn.Module):
         # time embeddings
         if with_time_emb:
             time_dim = dim * 4
-            #self.time_mlp = nn.Sequential(
+            # self.time_mlp = nn.Sequential(
             #    SinusoidalPositionEmbeddings(dim, device=self.device),
             #    nn.Linear(dim, time_dim),
             #    nn.GELU(),
             #    nn.Linear(time_dim, time_dim),
-            #)
+            # )
             self.time_mlp = SinusoidalPositionEmbeddingsMLP(dim=time_dim)
         else:
             time_dim = None
@@ -431,9 +411,7 @@ class Unet(nn.Module):
             )
 
         out_dim = default(out_dim, channels)
-        self.final_conv = nn.Sequential(
-            block_klass(dim, dim), nn.Conv2d(dim, out_dim, 1)
-        )
+        self.final_conv = nn.Sequential(block_klass(dim, dim), nn.Conv2d(dim, out_dim, 1))
 
     def forward(self, x, time, pipeline=None):
         img_shape = x.shape
@@ -443,9 +421,8 @@ class Unet(nn.Module):
         img_shape_corrected = x.shape
 
         batch_dim = x.shape[0]
-        #img_withnoise = x*1.0
+        # img_withnoise = x*1.0
 
-        
         x = self.init_conv(x)
 
         t = self.time_mlp(time) if exists(self.time_mlp) else None
@@ -474,23 +451,26 @@ class Unet(nn.Module):
             x = upsample(x)
 
         x = self.final_conv(x)
-        #x = img_withnoise-x # here x is the img wo noise
-        assert(x.shape == img_shape_corrected)
+        # x = img_withnoise-x # here x is the img wo noise
+        assert x.shape == img_shape_corrected
         x = x.reshape(*img_shape)
         return x
 
 
 if __name__ == "__main__":
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    timestep = torch.randn(1, device = DEVICE)
+    timestep = torch.randn(1, device=DEVICE)
 
     model = Unet(
         dim=16,
         channels=3,
-        dim_mults=(1, 2, 4,)
+        dim_mults=(
+            1,
+            2,
+            4,
+        ),
     ).to(DEVICE)
     img = torch.randn([1, 3, 16, 16]).to(DEVICE)
     out = model(img, timestep)
     print(out.shape)
     print(out)
-

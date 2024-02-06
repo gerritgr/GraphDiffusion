@@ -7,9 +7,11 @@ with open(file_path, "r") as file:
 
 import torch
 import numpy as np
-#from graphdiffusion.pipeline import PipelineBase
+
+# from graphdiffusion.pipeline import PipelineBase
 
 import graphdiffusion
+
 
 class VectorInference:
     """
@@ -47,9 +49,10 @@ class VectorInference:
         """
         # Generate or validate the steps sequence
         from graphdiffusion.pipeline import PipelineBase
+
         assert data is None or noise_to_start is None, "Either data or noise_to_start must be provided, but not both."
-        assert isinstance(pipeline, PipelineBase), "pipeline must be a PipelineVector" # TODO add basepipeline class
-        self.pipeline = pipeline # Inference objects need to have a pipeline connected to them. 
+        assert isinstance(pipeline, PipelineBase), "pipeline must be a PipelineVector"  # TODO add basepipeline class
+        self.pipeline = pipeline  # Inference objects need to have a pipeline connected to them.
 
         if isinstance(steps, int):
             steps = np.linspace(1, 0, steps)
@@ -84,7 +87,7 @@ class VectorInference:
 
         for i, t in enumerate(steps):
             data_0 = self.pipeline.reconstruction(data_t, t)  # Reconstruct data from the current state
-            assert data_0 is not None and data_t is not None 
+            assert data_0 is not None and data_t is not None
             if i >= len(steps) - 1:  # Check if it's the last step
                 if t < 1e-3:
                     return data_0, data_0
@@ -104,5 +107,5 @@ class VectorInference:
                 warnings.warn(warn_str)
                 data_t = torch.where(nan_inf_mask, torch.zeros_like(data_t), data_t)
 
-        assert data_0 is not None and data_t is not None 
+        assert data_0 is not None and data_t is not None
         return data_t, data_0

@@ -6,11 +6,9 @@ with open(file_path, "r") as file:
     exec(file.read())
 
 
-
-
 def set_all_seeds(seed=1234):
     """Set the seed for reproducibility in PyTorch, NumPy, and Python random."""
-    os.environ['PYTHONHASHSEED'] = '42'
+    os.environ["PYTHONHASHSEED"] = "42"
 
     # Set seed for PyTorch
     torch.manual_seed(seed)
@@ -104,6 +102,3 @@ def unbatch_tensor_list(batched_tensor_list):
 # model2 = YourModelClass2(...)
 # model_joint = create_model_joint([model1, model2])
 # optimizer = torch.optim.Adam(model_joint.parameters(), lr=1e-3)
-
-
-

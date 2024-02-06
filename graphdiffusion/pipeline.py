@@ -55,10 +55,10 @@ class PipelineBase:
 
         if pre_trained_path is not None:
             self.load_all_model_weights(pre_trained_path)
-            #try:
+            # try:
             #    # See if load_model is implemented
             #    self.reconstruction_obj.load_model(pre_trained_path)
-            #except:
+            # except:
             #    try:
             #        self.reconstruction_obj.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
             #    except:
@@ -161,12 +161,13 @@ class PipelineBase:
 
     def visualize_foward(self, data, outfile, num, plot_data_func):
         from .plotting import create_grid_plot
+
         plt.close()
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
         if isinstance(data, torch.Tensor) and data.dim() == 1:
-            data = data.view(1,-1)
+            data = data.view(1, -1)
 
         arrays = list()
         for t in np.linspace(0, 1, num):
@@ -175,6 +176,7 @@ class PipelineBase:
 
     def visualize_reconstruction(self, data, outfile, outfile_projection, num, steps, plot_data_func):
         from .plotting import create_grid_plot
+
         plt.close()
 
         def split_list(lst, m):  # TODO fix
@@ -210,14 +212,14 @@ class PipelineBase:
             outfile=outfile_projection,
             plot_data_func=plot_data_func,
         )
-    
-    #def save_reconstruction_model(self, model_path):
+
+    # def save_reconstruction_model(self, model_path):
     #    try:
     #        self.reconstruction_obj.save_model(model_path)
     #    except:
     #        model = self.reconstruction_obj
     #        torch.save(model.state_dict(), model_path)
-    
+
     def info_to_str(self):
         config_local = self.config.copy()
         model = self.get_model()
@@ -225,14 +227,13 @@ class PipelineBase:
         model_num_params = sum([p.numel() for p in model.parameters() if p.requires_grad])
         config_local["Number of trainable parameters"] = model_num_params
         if isinstance(self.reconstruction_obj, nn.Module):
-            config_local["Reconstruction model"] = str(self.reconstruction_obj).replace("\n", "\n"+indent)
+            config_local["Reconstruction model"] = str(self.reconstruction_obj).replace("\n", "\n" + indent)
         if isinstance(self.degradation_obj, nn.Module):
-            config_local["Degradation model"] = str(self.degradation_obj).replace("\n", "\n"+indent)
+            config_local["Degradation model"] = str(self.degradation_obj).replace("\n", "\n" + indent)
         if isinstance(self.encoding_obj, nn.Module):
-            config_local["Positional encoding model"] = str(self.encoding_obj).replace("\n", "\n"+indent)
+            config_local["Positional encoding model"] = str(self.encoding_obj).replace("\n", "\n" + indent)
         if isinstance(self.distance_obj, nn.Module):
-            config_local["Distance model"] = str(self.distance_obj).replace("\n", "\n"+indent)
-
+            config_local["Distance model"] = str(self.distance_obj).replace("\n", "\n" + indent)
 
         config = "\n".join([f"{indent}{key}: {value}" for key, value in config_local.items()])
         return f"Pipeline with the following configuration:\n{config}"
@@ -262,32 +263,31 @@ class PipelineBase:
         model_list = list()
 
         # Assuming self has the model attributes
-        if 'reconstruction_obj' in model_state_dicts and isinstance(self.reconstruction_obj, nn.Module):
-            self.reconstruction_obj.load_state_dict(model_state_dicts['reconstruction_obj'])
-            model_list.append('reconstruction_obj')
-            
-        if 'degradation_obj' in model_state_dicts and isinstance(self.degradation_obj, nn.Module):
-            self.degradation_obj.load_state_dict(model_state_dicts['degradation_obj'])
-            model_list.append('degradation_obj')
+        if "reconstruction_obj" in model_state_dicts and isinstance(self.reconstruction_obj, nn.Module):
+            self.reconstruction_obj.load_state_dict(model_state_dicts["reconstruction_obj"])
+            model_list.append("reconstruction_obj")
 
-        if 'encoding_obj' in model_state_dicts and isinstance(self.encoding_obj, nn.Module):
-            self.encoding_obj.load_state_dict(model_state_dicts['encoding_obj'])
-            model_list.append('encoding_obj')
+        if "degradation_obj" in model_state_dicts and isinstance(self.degradation_obj, nn.Module):
+            self.degradation_obj.load_state_dict(model_state_dicts["degradation_obj"])
+            model_list.append("degradation_obj")
 
-        if 'distance_obj' in model_state_dicts and isinstance(self.distance_obj, nn.Module):
-            self.distance_obj.load_state_dict(model_state_dicts['distance_obj'])
-            model_list.append('distance_obj')
+        if "encoding_obj" in model_state_dicts and isinstance(self.encoding_obj, nn.Module):
+            self.encoding_obj.load_state_dict(model_state_dicts["encoding_obj"])
+            model_list.append("encoding_obj")
+
+        if "distance_obj" in model_state_dicts and isinstance(self.distance_obj, nn.Module):
+            self.distance_obj.load_state_dict(model_state_dicts["distance_obj"])
+            model_list.append("distance_obj")
 
         if optimizer is not None:
-            if 'optimizer' in model_state_dicts:
-                optimizer.load_state_dict(model_state_dicts['optimizer'])
-                model_list.append('optimizer')
+            if "optimizer" in model_state_dicts:
+                optimizer.load_state_dict(model_state_dicts["optimizer"])
+                model_list.append("optimizer")
             else:
                 print("Warning: optimizer not loaded.")
-    
+
         if print_process:
             print(f"Load models from: ", model_path, " loaded: ", model_list)
-
 
     def compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func, **kwargs):
 
@@ -350,7 +350,12 @@ class PipelineBase:
             plt.tight_layout()
             plt.savefig(outfile)
 
-        result_dict = {"mean distance (real vs generated)": np.nanmean(distances_between), "mean distance (real vs real)": np.nanmean(distances_within), "std distance (real vs generated)": np.nanstd(distances_between), "std distance (real vs real)": np.nanstd(distances_within)}
+        result_dict = {
+            "mean distance (real vs generated)": np.nanmean(distances_between),
+            "mean distance (real vs real)": np.nanmean(distances_within),
+            "std distance (real vs generated)": np.nanstd(distances_between),
+            "std distance (real vs real)": np.nanstd(distances_within),
+        }
         return result_dict
 
 
@@ -369,7 +374,7 @@ class PipelineVector(PipelineBase):
         encoding_obj=None,
         trainable_objects=None,
         pre_trained_path=None,
-        **kwargs
+        **kwargs,
     ):
 
         self.config = get_config()
@@ -404,7 +409,7 @@ class PipelineVector(PipelineBase):
         if outfile_projection is None:
             for ending in [".jpg", ".pdf", ".png", ".jpeg", ".svg"]:
                 if ending in outfile:
-                    outfile_projection = outfile.replace(ending, "") + "_proj"+ending
+                    outfile_projection = outfile.replace(ending, "") + "_proj" + ending
                     break
         if num is None:
             num = 25

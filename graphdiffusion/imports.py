@@ -1,4 +1,3 @@
-
 import warnings
 import matplotlib
 
@@ -42,4 +41,5 @@ from torch_geometric.nn import (
     global_add_pool,
 )
 from torch_geometric.utils import erdos_renyi_graph, to_networkx, from_networkx, degree
+
 # from icecream import ic

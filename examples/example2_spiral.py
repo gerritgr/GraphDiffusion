@@ -1,5 +1,6 @@
 import os, sys
 from pathlib import Path
+
 with open("../graphdiffusion/imports.py", "r") as file:
     exec(file.read())
 # Add the parent directory of the script to sys.path
@@ -147,8 +148,6 @@ if COMPARE:
     print("compare ddpm", compare)
     compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_ddpm_emd.pdf", method="emd")
     print("compare ddpm emd", compare)
-
-
 
 
 ############

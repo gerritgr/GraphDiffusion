@@ -45,7 +45,6 @@ def time_to_pos_emb(t, target_dim, add_original=False):
     return t_pos_emb
 
 
-
 # Make sure this is trainable
 class SinusoidalPositionEmbeddingsMLP(nn.Module):
     def __init__(self, dim=32, device=None, embedding_time_scale=1.0, use_mlp=True):
@@ -60,7 +59,6 @@ class SinusoidalPositionEmbeddingsMLP(nn.Module):
             self.linear2 = nn.Linear(dim, dim)
             self.gelu = nn.GELU()
 
-
     def forward(self, time, target_dim=None, add_original=None):
         assert target_dim is None or target_dim == self.dim
         time = time.flatten()
@@ -72,7 +70,7 @@ class SinusoidalPositionEmbeddingsMLP(nn.Module):
         embeddings = time[:, None] * embeddings[None, :]
         embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
 
-        if add_original: # TODO you can also fix the dimensions with this (make sure dim can be odd)
+        if add_original:  # TODO you can also fix the dimensions with this (make sure dim can be odd)
             embeddings[:, -1] = time
 
         if self.use_mlp:
@@ -80,7 +78,7 @@ class SinusoidalPositionEmbeddingsMLP(nn.Module):
             embeddings = self.gelu(embeddings)
             embeddings = self.linear2(embeddings)
         return embeddings
-    
+
 
 if __name__ == "__main__":
     # time = torch.tensor([1.0, 1.0, 20.0], dtype=torch.float32)
@@ -92,9 +90,9 @@ if __name__ == "__main__":
     print(pos_emb.shape, pos_emb)
 
     # Visualize pos_emb as a 2d image
-    #plt.figure(figsize=(8, 8))  # Set figure size to be square
-    #aspect_ratio = pos_emb.shape[1] / pos_emb.shape[0]  # Width / Height
-    plt.imshow(pos_emb, cmap='viridis', aspect=1.3)
+    # plt.figure(figsize=(8, 8))  # Set figure size to be square
+    # aspect_ratio = pos_emb.shape[1] / pos_emb.shape[0]  # Width / Height
+    plt.imshow(pos_emb, cmap="viridis", aspect=1.3)
     plt.colorbar()
     plt.title("Sinusoidal Position Embeddings")
     plt.xlabel("Embedding Dimension")

@@ -101,7 +101,6 @@ class VectorDegradation(nn.Module):
 
 
 class VectorDegradationHighVariance(nn.Module):
-
     def __init__(self, time_scaling_factor=1.0, std_dev_max=2.0):
         super(VectorDegradationHighVariance, self).__init__()
 
@@ -134,11 +133,11 @@ class VectorDegradationHighVariance(nn.Module):
         # Compute the mean of the degraded data.
         mean = data * (1 - t)
         # Compute the standard deviation for the noise component based on 't' and the std_dev_max.
-        #std_dev  = Piecewise[{{x*2*5, x < 0.5}, {-2*(5-1)*x  + (5 - (-2*(5-1)*0.5)), x >= 0.5}}] # assuming 5 is the max std
+        # std_dev  = Piecewise[{{x*2*5, x < 0.5}, {-2*(5-1)*x  + (5 - (-2*(5-1)*0.5)), x >= 0.5}}] # assuming 5 is the max std
         mask = t < 0.5
         std_dev = torch.zeros_like(t)
         std_dev[mask] = t[mask] * 2 * self.std_dev_max
-        std_dev[~mask] = -2 * (self.std_dev_max - 1) * t[~mask] + (self.std_dev_max - (-2*(self.std_dev_max-1)*0.5))
+        std_dev[~mask] = -2 * (self.std_dev_max - 1) * t[~mask] + (self.std_dev_max - (-2 * (self.std_dev_max - 1) * 0.5))
 
         # Generate a sample from the standard normal distribution.
         standard_normal_sample = rand_like_with_seed(data, seed=seed)
@@ -147,7 +146,6 @@ class VectorDegradationHighVariance(nn.Module):
         transformed_sample = mean + std_dev * standard_normal_sample
 
         return transformed_sample
-
 
 
 class VectorDegradationDDPM(nn.Module):

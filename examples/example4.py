@@ -26,7 +26,6 @@ pipeline.visualize_foward(
 )
 
 
-
 train_dataloader = DataLoader(points, batch_size=50, shuffle=True)
 pipeline = PipelineVector(node_feature_dim=2, dist_type="L1")
 pipeline.visualize_foward(

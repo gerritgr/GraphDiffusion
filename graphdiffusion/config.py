@@ -27,6 +27,7 @@ class Config:
         # Create a new instance of Config with the same entries
         return Config(**self.__dict__)
 
+
 def get_config():
     config = Config(
         epochs=100,
@@ -76,8 +77,6 @@ def get_params_old(func, config, kwargs=None):
     return filtered_config
 
 
-
-
 import inspect
 
 # TODO fix this function
@@ -95,10 +94,10 @@ def get_params(func, config, kwargs=None):
             sig = inspect.signature(func.__init__)
         else:
             raise TypeError(f"Cannot inspect the callable object {func}. It doesn't have a __code__ attribute.")
-    
+
     params = sig.parameters
     valid_keys = [key for key in params if params[key].kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY]]
-    
+
     filtered_config = {k: config[k] for k in valid_keys if k in config}
 
     if kwargs is not None:

@@ -22,15 +22,14 @@ def compare_data_batches_ot(data_real, data_generated=None, distance_func=None, 
 
     assert method in ["sinkhorn", "emd"], f"Unknown method: {method}"
     assert isinstance(data_real, torch.Tensor), "data_real must be a PyTorch tensor"
-    assert isinstance(data_generated,  torch.Tensor), "data_generated must be a PyTorch tensor"
+    assert isinstance(data_generated, torch.Tensor), "data_generated must be a PyTorch tensor"
     assert distance_func is None or callable(distance_func), "distance_func must be a callable function"
     assert outfile is None or isinstance(outfile, str), "outfile must be a string or None"
     assert axis is None or isinstance(axis, plt.Axes), "axis must be a matplotlib Axes object or None"
     assert color_real is None or isinstance(color_real, str), "color_real must be a string or None"
-    assert color_generated  is None or isinstance(color_generated, str), "color_generated must be a string or None"
+    assert color_generated is None or isinstance(color_generated, str), "color_generated must be a string or None"
     assert isinstance(numItermax, int), "numItermax must be an integer"
     assert isinstance(epsilon, float), "epsilon must be a float"
-
 
     # important: does not necessary return 1-to-1 mapping.
 
@@ -104,7 +103,6 @@ def compare_data_batches(data_real, data_generated=None, distance_func=None, out
         return compare_data_batches_ot(data_real, data_generated, distance_func, outfile, axis, color_real, color_generated, method="sinkhorn")
     else:
         raise ValueError(f"Unknown method: {method}")
-    
 
 
 def compare_data_batches_lsa(data_real, data_generated=None, distance_func=None, outfile=None, axis=None, color_real="red", color_generated="blue"):
@@ -167,9 +165,6 @@ def compare_data_batches_lsa(data_real, data_generated=None, distance_func=None,
             plt.savefig(outfile)
 
     return overall_transport_cost, mapping_indices
-
-
-
 
 
 if __name__ == "__main__":

@@ -29,13 +29,14 @@ class VectorBridgeColdDiffusion(nn.Module):
         return x_tminus1
 
 
-
 class VectorBridge(nn.Module):
     def __init__(self):
         super(VectorBridge, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, vectorbridge_magnitude_scale=None, vectorbridge_rand_scale=None):
-        vectorbridge_magnitude_scale = pipeline.config.vectorbridge_magnitude_scale or 3.0 # vectorbridge_magnitude_scale should be taken automatically from the config, this does not work currently somehow 
+        vectorbridge_magnitude_scale = (
+            pipeline.config.vectorbridge_magnitude_scale or 3.0
+        )  # vectorbridge_magnitude_scale should be taken automatically from the config, this does not work currently somehow
         vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 3.0
 
         direction = data_prediction - data_now
