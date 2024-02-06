@@ -62,7 +62,7 @@ plt.title("Noisy 2D Spiral")
 plt.xlabel("X")
 plt.ylabel("Y")
 plt.axis("equal")
-plt.savefig("spiral.png")
+plt.savefig("images/example2_spiral.png")
 
 
 ############
@@ -85,8 +85,8 @@ pipeline.visualize_foward(
 ############
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline.train(data=train_dataloader, epochs=100)
-# pipeline.reconstruction_obj.save_model(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
+pipeline.train(data=train_dataloader, epochs=10000)
+pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
 # Inference
@@ -117,14 +117,15 @@ bridge_obj = VectorBridgeDDPM()
 pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
-    outfile="spiral_forward_ddpm.jpg",
+    outfile="images/example2_spiral_forward_ddpm.jpg",
     #    plot_data_func=plot_2darray_on_axis,
     num=25,
 )
 
 # Train
-# pipeline.train(data=train_dataloader, epochs=10000)
-# pipeline.reconstruction_obj.save_model(pipeline=pipeline, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
+pipeline.train(data=train_dataloader, epochs=10000)
+pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
+
 pipeline = PipelineVector(
     pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt",
     node_feature_dim=2,
@@ -155,7 +156,7 @@ if COMPARE:
 ############
 
 
-degradation_obj = VectorDegradationHighVariance(std_dev_max=0.5)
+degradation_obj = VectorDegradationHighVariance(std_dev_max=0.2)
 pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
