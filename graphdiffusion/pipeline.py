@@ -1,4 +1,4 @@
-import os
+import os, sys
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(script_dir, "imports.py")
@@ -84,10 +84,17 @@ class PipelineBase:
             for key, value in kwargs.items():
                 self.config[key] = value
 
-        if "level" not in self.config or not isinstance(self.config["level"], str):
-            self.logger.level("INFO")
-        else:
-            self.logger.level(self.config["level"])
+        try:
+            if "level" not in self.config or not isinstance(self.config["level"], str):
+                self.logger.debug("Set logging level to INFO.")
+                self.logger.remove()
+                self.logger.add(sys.stderr, level="INFO")
+            else:
+                self.logger.debug(f"Set logging level to {self.config["level"]}.")
+                self.logger.remove()
+                self.logger.add(sys.stderr, level=self.config["level"])
+        except:
+            pass
 
     def get_model(self):  # TODO does not work with saving loading
         if self.trainable_objects is None:

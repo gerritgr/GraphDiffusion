@@ -146,14 +146,14 @@ class VectorTrain:
         # Initialize moving average loss
         moving_average_loss = None
         moving_average_loss_test = None
-        average_loss = None
+        average_loss = np.nan
 
         for epoch in pbar:
             # TODO: if epoch is zero or epoch is the last epoch, or epoch is dividable by 10: compute the loss using dataloader_test and save it as total_loss_test
             if dataloader_test is not None and (epoch == 0 or epoch == epochs - 1 or (epoch + 1) % 10 == 0):
                 average_loss_test = model_test(self.pipeline, dataloader_test)
-                pipeline.debug("Test loss:", average_loss_test, "Epoch:", epoch)
-                pipeline.debug("Train loss:", average_loss, "Epoch:", epoch)
+                pipeline.debug(f"Test loss: {average_loss_test:.5f}, Epoch: {epoch}")
+                pipeline.debug(f"Train loss: {average_loss:.5f}, Epoch: {epoch}")
 
             average_loss = train_epoch(dataloader_train, self.pipeline, optimizer)
 

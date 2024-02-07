@@ -66,6 +66,7 @@ plt.axis("equal")
 plt.savefig("images/example2_spiral.png")
 
 
+
 ############
 # Inspect Data
 ############
@@ -154,14 +155,13 @@ if COMPARE:
 # High Variance Process
 ############
 
-
+train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 degradation_obj = VectorDegradationHighVariance(std_dev_max=1.5)
 pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="images/example2_spiral_forward_hv.jpg",
     num=25,
-    pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_hv.pt",
 )
 pipeline.config["vectorbridge_magnitude_scale"] = 0.9
 pipeline.config["vectorbridge_rand_scale"] = 5.0
