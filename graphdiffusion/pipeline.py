@@ -19,7 +19,7 @@ from .plotting import *
 
 
 class PipelineBase:
-    def __init__(self, node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path, **kwargs):
+    def __init__(self, node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path, logger=None, **kwargs):
         self.device = device
         self.node_feature_dim = node_feature_dim
         self.reconstruction_obj = reconstruction_obj
@@ -52,6 +52,12 @@ class PipelineBase:
         else:
             for obj in trainable_objects:
                 assert isinstance(obj, nn.Module)
+        
+        self.logger = logger
+        if self.logger is None:
+            from loguru import logger
+            self.logger = logger
+            self.logger.debug("Using default loguru logger.")
 
         if pre_trained_path is not None:
             self.load_all_model_weights(pre_trained_path)
@@ -78,6 +84,11 @@ class PipelineBase:
             for key, value in kwargs.items():
                 self.config[key] = value
 
+        if "level" not in self.config or not isinstance(self.config["level"], str):
+            self.logger.level("INFO")
+        else:
+            self.logger.level(self.config["level"])
+
     def get_model(self):  # TODO does not work with saving loading
         if self.trainable_objects is None:
             return self.reconstruction_obj.to(self.device)
@@ -92,6 +103,18 @@ class PipelineBase:
         self.joint_model = joint_model
         return joint_model.to(self.device)
 
+    def info(self, *args, **kwargs):
+        return self.logger.info(*args, **kwargs)
+
+    def debug(self, *args, **kwargs):
+        return self.logger.debug(*args, **kwargs)
+    
+    def warning(self, *args, **kwargs):
+        return self.logger.warning(*args, **kwargs)
+
+    def success(self, *args, **kwargs):
+        return self.logger.success(*args, **kwargs)
+    
     def define_trainable_objects(self, reconstruction=True, degragation=False, distance=False, encoding=False):
 
         # default
@@ -254,14 +277,14 @@ class PipelineBase:
             models["optimizer"] = optimizer.state_dict()
 
         if print_process:
-            print(f"Save models {models.keys()} to: ", model_path)
+            self.info(f"Save models {models.keys()} to: ", model_path)
 
         model_state_dicts = {name: model.state_dict() for name, model in models.items()}
         torch.save(model_state_dicts, model_path)
 
     def load_all_model_weights(self, model_path, print_process=True, optimizer=None):
         if not os.path.exists(model_path):
-            warnings.warn(f"Model file {model_path} does not exist. Cannot load weights.", UserWarning)
+            self.info(f"Model file {model_path} does not exist. Cannot load weights.")
             return
         
         # Load the saved model state dictionaries
@@ -290,10 +313,10 @@ class PipelineBase:
                 optimizer.load_state_dict(model_state_dicts["optimizer"])
                 model_list.append("optimizer")
             else:
-                print("Warning: optimizer not loaded.")
+                self.info("Warning: optimizer not loaded.")
 
         if print_process:
-            print(f"Load models from: ", model_path, " loaded: ", model_list)
+            self.info(f"Load models from: ", model_path, " loaded: ", model_list)
 
     def compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func, **kwargs):
 
@@ -302,7 +325,7 @@ class PipelineBase:
         assert len(real_data.dataset) >= batch_size * 2
 
         if batch_size < 100:
-            print("Warning: batch_size is small, the result may not be accurate.")
+            self.info("Warning: batch_size is small, the result may not be accurate.")
 
         real_dataloader = DataLoader(real_data.dataset, batch_size=batch_size, shuffle=True)
         if generated_data is None:
@@ -401,7 +424,7 @@ class PipelineVector(PipelineBase):
         for key, value in kwargs.items():
             self.config[key] = value
 
-        print(self.info_to_str())
+        self.info(self.info_to_str())
 
     def visualize_foward(self, data, outfile, num=100, plot_data_func=None):
         if plot_data_func is None:
@@ -430,5 +453,5 @@ class PipelineVector(PipelineBase):
 
     def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=32, **kwargs):
         if outfile is not None and self.config.node_feature_dim != 2:
-            print("Warning: compare_distribution only shows 2 dimensions.")
+            self.info("Warning: compare_distribution only shows 2 dimensions.")
         return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches, **kwargs)

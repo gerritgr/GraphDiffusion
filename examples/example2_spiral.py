@@ -15,7 +15,7 @@ from graphdiffusion.degradation import *
 from graphdiffusion.reconstruction import *
 from graphdiffusion.distance import *
 
-COMPARE = False
+COMPARE = True
 
 
 ############
@@ -72,7 +72,7 @@ plt.savefig("images/example2_spiral.png")
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineVector(node_feature_dim=2, dist_type="L1")
+pipeline = PipelineVector(node_feature_dim=2, dist_type="L1", pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="images/example2_spiral_forward.jpg",

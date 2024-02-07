@@ -87,8 +87,32 @@ Not implemented yet.
 
 ### Tutorials
 
-todo
+1. Spiral example.
+2. Compontents of the diffusion pipeline.
+2. Image example.
+3. Graph example.
+4. Molecule example.
+4. Point cloud example.
+5. Conditional models.
+6. Hyperparameter tuning and WandB integration.
+
+
 
 ### Documentation
 
 todo
+
+
+
+
+### Roadmap
+
+- ImagePipeline
+- graphs
+- wandb
+- conditioning
+- better config
+- ability to save/pickle and load the whole pipeline
+- include readthedocs
+
+

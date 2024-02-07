@@ -141,7 +141,7 @@ def plot_image_on_axis(array, axis, arrays=None):
 degradation_obj = VectorDegradationDDPM()
 reconstruction_obj = VectorDenoiser(node_feature_dim=3 * IMG_SIZE * IMG_SIZE)
 pipeline = PipelineVector(
-    node_feature_dim=3 * IMG_SIZE * IMG_SIZE, reconstruction_obj=reconstruction_obj, degradation_obj=degradation_obj)#, pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
+    node_feature_dim=3 * IMG_SIZE * IMG_SIZE, reconstruction_obj=reconstruction_obj, degradation_obj=degradation_obj, ddpm_end=0.04)#, pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
 pipeline.visualize_foward(
     data=dataloader_show,
     outfile="images/example5_pokemon_forward.jpg",
