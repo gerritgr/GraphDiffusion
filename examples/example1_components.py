@@ -1,13 +1,13 @@
 import os, sys
 from pathlib import Path
 
-with open("../graphdiffusion/imports.py", "r") as file:
-    exec(file.read())
-# Add the parent directory of the script to sys.path
-current_dir = Path(__file__).parent
-parent_dir = current_dir.parent  # this should point to 'graphdiffusion/'
-sys.path.insert(0, str(parent_dir))
+#with open("../graphdiffusion/imports.py", "r") as file:
+#    exec(file.read())
+#current_dir = Path(__file__).parent
+#parent_dir = current_dir.parent  # this should point to 'graphdiffusion/'
+#sys.path.insert(0, str(parent_dir))
 
+from graphdiffusion import imports
 
 from graphdiffusion.pipeline import *
 from graphdiffusion.bridge import *

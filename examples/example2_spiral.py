@@ -86,14 +86,14 @@ pipeline.visualize_foward(
 ############
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline.train(data=train_dataloader, epochs=10000)
+pipeline.train(data=train_dataloader, epochs=100000)
 pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
 # Inference
 ############
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineVector(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", node_feature_dim=2)
+pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
 data0 = pipeline.inference(train_dataloader, noise_to_start=None)
 pipeline.visualize_reconstruction(
     data=train_dataloader,
@@ -114,8 +114,8 @@ if COMPARE:
 # Forward
 degradation_obj = VectorDegradationDDPM()
 bridge_obj = VectorBridgeDDPM()
-# pipeline = PipelineVector(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
-pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
+pipeline = PipelineVector(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
+#pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="images/example2_spiral_forward_ddpm.jpg",
@@ -124,7 +124,7 @@ pipeline.visualize_foward(
 )
 
 # Train
-pipeline.train(data=train_dataloader, epochs=10000)
+pipeline.train(data=train_dataloader, epochs=100000)
 pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
 
 pipeline = PipelineVector(
@@ -155,12 +155,13 @@ if COMPARE:
 ############
 
 
-degradation_obj = VectorDegradationHighVariance(std_dev_max=0.2)
+degradation_obj = VectorDegradationHighVariance(std_dev_max=1.5)
 pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="images/example2_spiral_forward_hv.jpg",
     num=25,
+    pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_hv.pt",
 )
 pipeline.config["vectorbridge_magnitude_scale"] = 0.9
 pipeline.config["vectorbridge_rand_scale"] = 5.0
@@ -168,7 +169,7 @@ pipeline.config["vectorbridge_rand_scale"] = 5.0
 train_dataloader = DataLoader(points[100:], batch_size=100, shuffle=True)
 test_dataloader = DataLoader(points[:100], batch_size=100, shuffle=True)
 
-pipeline.train(data=train_dataloader, epochs=10000, data_test=test_dataloader)
+pipeline.train(data=train_dataloader, epochs=100000, data_test=test_dataloader)
 pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_hv.pt")
 
 pipeline.visualize_reconstruction(

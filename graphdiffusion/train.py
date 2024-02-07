@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import random
 
 
-def test_model(pipeline, dataloader):
+def model_test(pipeline, dataloader):  # cannot name it test_model due to test suit
     total_loss = 0
     pipeline.get_model().eval()
     with torch.no_grad():  # redundant?
@@ -150,7 +150,7 @@ class VectorTrain:
         for epoch in pbar:
             # TODO: if epoch is zero or epoch is the last epoch, or epoch is dividable by 10: compute the loss using dataloader_test and save it as total_loss_test
             if dataloader_test is not None and (epoch == 0 or epoch == epochs - 1 or (epoch + 1) % 10 == 0):
-                average_loss_test = test_model(self.pipeline, dataloader_test)
+                average_loss_test = model_test(self.pipeline, dataloader_test)
 
             average_loss = train_epoch(dataloader_train, self.pipeline, optimizer)
 

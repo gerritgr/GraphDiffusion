@@ -149,6 +149,8 @@ class PipelineBase:
 
     def train(self, data, **kwargs):
         params = get_params(self.train_obj, self.config, kwargs)
+        if 'TEST_MODUS_WITH_REDUCED_TRAINING' in globals() and TEST_MODUS_WITH_REDUCED_TRAINING:
+            params["epochs"] = 5
         return self.train_obj(data, self, **params)
 
     def reconstruction(self, data, t, **kwargs):
@@ -258,6 +260,10 @@ class PipelineBase:
         torch.save(model_state_dicts, model_path)
 
     def load_all_model_weights(self, model_path, print_process=True, optimizer=None):
+        if not os.path.exists(model_path):
+            warnings.warn(f"Model file {model_path} does not exist. Cannot load weights.", UserWarning)
+            return
+        
         # Load the saved model state dictionaries
         model_state_dicts = torch.load(model_path)
         model_list = list()
