@@ -90,7 +90,7 @@ class PipelineBase:
                 self.logger.remove()
                 self.logger.add(sys.stderr, level="INFO")
             else:
-                self.logger.debug(f"Set logging level to {self.config["level"]}.")
+                self.logger.debug(f"Set logging level to {self.config['level']}.")
                 self.logger.remove()
                 self.logger.add(sys.stderr, level=self.config["level"])
         except:
