@@ -185,3 +185,18 @@ def plot_data_as_normal_pdf(array, axis, arrays):
 
     # Add legend to the plot
     axis.legend()
+
+
+
+
+
+def plot_image_on_axis(array, axis, arrays=None):
+    array = array[0, :]
+    array = array.reshape(3, IMG_SIZE, IMG_SIZE)
+    array = tensor_to_img(torch.tensor(array))
+    array = np.clip(array, 0, 255)  # should be redundant
+    if array.dtype == np.float32 or array.dtype == np.float64:
+        array = array / 255.0
+
+    # Display the image
+    axis.imshow(array.astype(np.uint8) if array.dtype == np.float32 or array.dtype == np.float64 else array)

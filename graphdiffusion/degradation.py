@@ -128,6 +128,11 @@ class VectorDegradationHighVariance(nn.Module):
         elif isinstance(t, float):
             t = torch.tensor(t, device=data.device)
 
+        # Change view to get rid of the extra dimensions
+        batch_size = data.shape[0]
+        old_shape = data.shape
+        data = data.view(batch_size, -1)
+
         # Transform 't' by raising it to the power of the scaling factor.
         t = t**self.time_scaling_factor
         # Compute the mean of the degraded data.
@@ -145,6 +150,7 @@ class VectorDegradationHighVariance(nn.Module):
         # Apply the degradation transformation.
         transformed_sample = mean + std_dev * standard_normal_sample
 
+        transformed_sample = transformed_sample.view(*old_shape)
         return transformed_sample
 
 

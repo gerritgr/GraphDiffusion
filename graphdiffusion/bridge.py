@@ -42,7 +42,7 @@ class VectorBridge(nn.Module):
         direction = data_prediction - data_now
         direction = direction / torch.norm(direction)
         seed = torch.randint(0, 10000, (1,)).item()
-        magnitude = torch.norm(pipeline.degradation(data_prediction, t_now, seed=seed) - pipeline.degradation(data_prediction, t_query, seed=seed))
+        magnitude = torch.norm(pipeline.degradation(data_prediction, t_now, seed=seed).flatten() - pipeline.degradation(data_prediction, t_query, seed=seed).flatten())
 
         x_tminus1 = data_now + direction * magnitude / vectorbridge_magnitude_scale
 

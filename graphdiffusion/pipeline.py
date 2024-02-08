@@ -395,7 +395,7 @@ class PipelineBase:
         return result_dict
 
 
-# PipelineVector with a default reconstructionr
+# Vector means any 1D data, e.g. time series, 1D vectors, images that are flattened, etc.
 class PipelineVector(PipelineBase):
     def __init__(
         self,
@@ -456,6 +456,81 @@ class PipelineVector(PipelineBase):
                 plot_data_func = plot_2darray_on_axis
             else:
                 plot_data_func = plot_array_on_axis
+        super().visualize_reconstruction(data, outfile, outfile_projection, num, steps, plot_data_func)
+
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=32, **kwargs):
+        if outfile is not None and self.config.node_feature_dim != 2:
+            self.info("Warning: compare_distribution only shows 2 dimensions.")
+        return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches, **kwargs)
+
+
+
+
+class PipelineImage(PipelineBase):
+    def __init__(
+        self,
+        channels=3,
+        img_width=16,
+        img_height=16,
+        device=None,
+        reconstruction_obj=None,
+        inference_obj=None,
+        degradation_obj=None,
+        train_obj=None,
+        bridge_obj=None,
+        distance_obj=None,
+        encoding_obj=None,
+        trainable_objects=None,
+        pre_trained_path=None,
+        **kwargs,
+    ):
+
+        self.config = get_config()
+        assert(isinstance(channels, int) and img_width > 0)
+        assert(isinstance(img_height, int) and img_width > 0)
+        assert(isinstance(img_width, int) and img_width > 0)
+        assert img_height == img_width # currently only support for square images
+
+        self.channels = channels
+        self.img_width = img_width
+        self.img_height = img_height
+
+        node_feature_dim = img_width * img_height * channels
+        self.config.node_feature_dim = node_feature_dim
+        device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        reconstruction_obj = reconstruction_obj or ImageReconstruction(dim=img_width, channels=channels, device=device)
+        inference_obj = inference_obj or VectorInference() # can stay
+        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config))
+        train_obj = train_obj or VectorTrain() # can stay
+        bridge_obj = bridge_obj or VectorBridge() # can stay
+        distance_obj = distance_obj or VectorDistance() # can stay
+        encoding_obj = encoding_obj or time_to_pos_emb # can stay
+
+        super().__init__(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path)
+
+        for key, value in kwargs.items():
+            self.config[key] = value
+
+        self.info(self.info_to_str())
+
+    def visualize_foward(self, data, outfile, num=100, plot_data_func=None):
+        if plot_data_func is None:
+            plot_data_func = plot_image_on_axis
+        super().visualize_foward(data, outfile, num, plot_data_func)
+
+    def visualize_reconstruction(self, data, outfile, outfile_projection=None, num=None, steps=None, plot_data_func=None):
+        if outfile_projection is None:
+            for ending in [".jpg", ".pdf", ".png", ".jpeg", ".svg"]:
+                if ending in outfile:
+                    outfile_projection = outfile.replace(ending, "") + "_proj" + ending
+                    break
+        if num is None:
+            num = 25
+        if steps is None:
+            steps = self.config["step_num"] or 100
+        if plot_data_func is None:
+            plot_data_func = plot_image_on_axis
         super().visualize_reconstruction(data, outfile, outfile_projection, num, steps, plot_data_func)
 
     def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=32, **kwargs):
