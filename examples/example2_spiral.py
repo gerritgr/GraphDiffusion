@@ -18,6 +18,9 @@ from graphdiffusion.distance import *
 COMPARE = True
 
 
+
+# check this https://github.com/gerritgr/GraphDiffusion/blob/e3fffe68f22b64a5204c2d575f51fe3ca11bc400/examples/example_spring.py
+
 ############
 # Spiral
 ############
@@ -86,8 +89,8 @@ pipeline.visualize_foward(
 # Train
 ############
 
-train_dataloader = DataLoader(points, batch_size=500, shuffle=True)
-pipeline.train(data=train_dataloader, epochs=100000)
+train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
+pipeline.train(data=train_dataloader, epochs=10000)
 pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
@@ -104,9 +107,18 @@ pipeline.visualize_reconstruction(
     steps=100,
 )
 
-if COMPARE:
-    compare = pipeline.compare_distribution(real_data=compare_dataloader, outfile="images/example2_spiral_compare.pdf")
-    print("compare linear", compare)
+
+pipeline.bridge_obj = VectorBridgeNaive()
+pipeline.visualize_reconstruction(
+    data=compare_dataloader,
+    outfile="images/example2_spiral_backward_naive.jpg",
+    num=25,
+    steps=100,
+)
+
+#if COMPARE:
+#    compare = pipeline.compare_distribution(real_data=compare_dataloader, outfile="images/example2_spiral_compare.pdf")
+#    print("compare linear", compare)
 
 
 ############

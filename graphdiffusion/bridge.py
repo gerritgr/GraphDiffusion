@@ -37,10 +37,12 @@ class VectorBridge(nn.Module):
         vectorbridge_magnitude_scale = (
             pipeline.config.vectorbridge_magnitude_scale or 1.0
         )  # vectorbridge_magnitude_scale should be taken automatically from the config, this does not work currently somehow
-        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 1.0
+        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 3.0
 
 
-        vectorbridge_magnitude_scale *= 1.5
+
+        vectorbridge_magnitude_scale = 0.7
+        vectorbridge_rand_scale = 0.7
 
 
         row_num = data_now.shape[0]

@@ -38,7 +38,7 @@ def get_config():
         ddpm_start=0.0001,
         ddpm_end=0.01,
         vectorbridge_magnitude_scale=1.0,
-        vectorbridge_rand_scale=1.0,
+        vectorbridge_rand_scale=3.0,
         vectorbridgeddpm_use_simple_posterior_std=False,
     )
     return config
