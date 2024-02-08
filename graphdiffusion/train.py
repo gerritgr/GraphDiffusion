@@ -31,6 +31,9 @@ def train_epoch(dataloader, pipeline, optimizer):
     pipeline.get_model().train()
     total_loss = 0.0
     for batch in dataloader:
+        if isinstance(batch, list) or isinstance(batch, tuple):
+            batch, label = batch
+    
         # Generate random tensor 't' for degradation
         t = torch.rand(batch.shape[0], device=pipeline.device)
 
@@ -94,6 +97,9 @@ class VectorTrain:
 
         if isinstance(input_data, DataLoader):
             first_batch = next(iter(input_data))
+            if isinstance(first_batch, list) or isinstance(first_batch, tuple):
+                first_batch = first_batch[0]
+
             if first_batch.device == device:
                 return input_data
             else:

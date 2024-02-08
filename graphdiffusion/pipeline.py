@@ -198,6 +198,8 @@ class PipelineBase:
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
+            if isinstance(data, list) or isinstance(data, tuple):
+                data = data[0]
         if isinstance(data, torch.Tensor) and data.dim() == 1:
             data = data.view(1, -1)
 
@@ -226,6 +228,8 @@ class PipelineBase:
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
+            if isinstance(data, list) or isinstance(data, tuple):
+                data = data[0]
 
         arrays_data = list()
         arrays_projections = list()

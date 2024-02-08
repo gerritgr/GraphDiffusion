@@ -3,6 +3,8 @@ import torch
 import matplotlib.pyplot as plt
 import random
 
+from graphdiffusion import utils
+
 
 def to_numpy_array(input_array):
     # Check if the input_array is a PyTorch tensor
@@ -190,9 +192,17 @@ def plot_data_as_normal_pdf(array, axis, arrays):
 
 
 
+
+
 def plot_image_on_axis(array, axis, arrays=None):
+    from graphdiffusion.utils import tensor_to_img
     array = array[0, :]
-    array = array.reshape(3, IMG_SIZE, IMG_SIZE)
+    array = array.squeeze()
+    if array.ndim == 1:
+        # assume three channels and square image
+        img_size = int(np.sqrt(array.numel() // 3))
+        array = array.reshape(3, img_size, img_size)
+    #array = array.reshape(3, IMG_SIZE, IMG_SIZE)
     array = tensor_to_img(torch.tensor(array))
     array = np.clip(array, 0, 255)  # should be redundant
     if array.dtype == np.float32 or array.dtype == np.float64:

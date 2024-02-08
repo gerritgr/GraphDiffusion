@@ -102,3 +102,43 @@ def unbatch_tensor_list(batched_tensor_list):
 # model2 = YourModelClass2(...)
 # model_joint = create_model_joint([model1, model2])
 # optimizer = torch.optim.Adam(model_joint.parameters(), lr=1e-3)
+
+
+
+
+from torchvision import transforms
+from torch.utils.data import Dataset, DataLoader, IterableDataset, TensorDataset
+from PIL import Image
+
+
+
+def image_to_tensor(image):
+    """Convert a PIL image to a PyTorch tensor.
+
+    Args:
+        image (PIL.Image): The image to be converted.
+
+    Returns:
+        torch.Tensor: The converted PyTorch tensor.
+    """
+    # Define the image transformation pipeline
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((IMG_SIZE, IMG_SIZE), antialias=True), transforms.Lambda(lambda t: (t - 0.5) * 2.0)])
+
+    # Apply the transformation pipeline to the image
+    return transform(image)
+
+
+def tensor_to_img(tensor):
+    """Convert a PyTorch tensor to a PIL image.
+
+    Args:
+        tensor (torch.Tensor): The PyTorch tensor to be converted.
+
+    Returns:
+        PIL.Image: The converted PIL image.
+    """
+    # Define the tensor transformation pipeline
+    transform = transforms.Compose([transforms.Lambda(lambda t: (t + 1.0) / 2.0), transforms.Lambda(lambda t: torch.clamp(t, min=0.0, max=1.0)), transforms.ToPILImage()])
+
+    # Apply the transformation pipeline to the tensor
+    return transform(tensor)

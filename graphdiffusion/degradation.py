@@ -83,6 +83,9 @@ class VectorDegradation(nn.Module):
         if isinstance(t, float) and t < 1e-7:
             # If 't' is very small, return the data unmodified as the degradation is negligible.
             return data
+        
+        data_orig_shape = data.shape
+        data = data.view(data.shape[0], -1)
 
         # Transform 't' by raising it to the power of the scaling factor.
         t = t**self.time_scaling_factor
@@ -97,6 +100,7 @@ class VectorDegradation(nn.Module):
         # Apply the degradation transformation.
         transformed_sample = mean + std_dev * standard_normal_sample
 
+        transformed_sample = transformed_sample.view(data_orig_shape)
         return transformed_sample
 
 

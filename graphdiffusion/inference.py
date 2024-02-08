@@ -76,6 +76,8 @@ class VectorInference:
         if noise_to_start is None:
             if isinstance(data, torch.utils.data.DataLoader):
                 random_data_point = next(iter(data))
+                if isinstance(random_data_point, list) or isinstance(random_data_point, tuple):
+                    random_data_point = random_data_point[0]
             elif isinstance(data, torch.Tensor):
                 random_data_point = data
             else:

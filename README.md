@@ -108,6 +108,8 @@ todo
 ### Roadmap
 
 - ImagePipeline
+- add time dim and conditioning dim to the pipeline
+- add "create from data" method to the pipeline
 - graphs
 - wandb
 - conditioning
