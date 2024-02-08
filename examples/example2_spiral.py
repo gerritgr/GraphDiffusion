@@ -74,11 +74,10 @@ plt.savefig("images/example2_spiral.png")
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineVector(node_feature_dim=2, dist_type="L1", pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
+pipeline = PipelineVector(node_feature_dim=2, dist_type="L2", pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", level="DEBUG")
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="images/example2_spiral_forward.jpg",
-    #    plot_data_func=plot_2darray_on_axis,
     num=25,
 )
 
@@ -87,27 +86,28 @@ pipeline.visualize_foward(
 # Train
 ############
 
-train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
+train_dataloader = DataLoader(points, batch_size=500, shuffle=True)
 pipeline.train(data=train_dataloader, epochs=100000)
 pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
 # Inference
 ############
-train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
-data0 = pipeline.inference(train_dataloader, noise_to_start=None)
+compare_dataloader = DataLoader(points, batch_size=100, shuffle=True)
+#pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
+
+
 pipeline.visualize_reconstruction(
-    data=train_dataloader,
-    #    plot_data_func=plot_2darray_on_axis,
+    data=compare_dataloader,
     outfile="images/example2_spiral_backward.jpg",
     num=25,
     steps=100,
 )
 
 if COMPARE:
-    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare.pdf")
+    compare = pipeline.compare_distribution(real_data=compare_dataloader, outfile="images/example2_spiral_compare.pdf")
     print("compare linear", compare)
+
 
 ############
 # Denoising Diffusion Forward Process
@@ -152,31 +152,32 @@ if COMPARE:
     print("compare ddpm emd", compare)
 
 
-############
-# High Variance Process
-############
+if False:
+    ############
+    # High Variance Process
+    ############
 
-train_dataloader = DataLoader(points, batch_size=1000, shuffle=True)
-degradation_obj = VectorDegradationHighVariance(std_dev_max=1.5, time_scaling_factor=2.0)
-pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj)
-pipeline.visualize_foward(
-    data=train_dataloader,
-    outfile="images/example2_spiral_forward_hv.jpg",
-    num=25,
-)
-pipeline.config["vectorbridge_magnitude_scale"] = 0.9
-pipeline.config["vectorbridge_rand_scale"] = 5.0
+    train_dataloader = DataLoader(points, batch_size=1000, shuffle=True)
+    degradation_obj = VectorDegradationHighVariance(std_dev_max=1.5, time_scaling_factor=2.0)
+    pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj)
+    pipeline.visualize_foward(
+        data=train_dataloader,
+        outfile="images/example2_spiral_forward_hv.jpg",
+        num=25,
+    )
+    pipeline.config["vectorbridge_magnitude_scale"] = 0.9
+    pipeline.config["vectorbridge_rand_scale"] = 5.0
 
-train_dataloader = DataLoader(points[100:], batch_size=100, shuffle=True)
-test_dataloader = DataLoader(points[:100], batch_size=100, shuffle=True)
+    train_dataloader = DataLoader(points[100:], batch_size=100, shuffle=True)
+    test_dataloader = DataLoader(points[:100], batch_size=100, shuffle=True)
 
-pipeline.train(data=train_dataloader, epochs=100000, data_test=test_dataloader)
-pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_hv.pt")
+    pipeline.train(data=train_dataloader, epochs=100000, data_test=test_dataloader)
+    pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_hv.pt")
 
-pipeline.visualize_reconstruction(
-    data=train_dataloader,
-    plot_data_func=plot_2darray_on_axis,
-    outfile="images/example2_spiral_backward_hv.jpg",
-    num=25,
-    steps=100,
-)
+    pipeline.visualize_reconstruction(
+        data=train_dataloader,
+        plot_data_func=plot_2darray_on_axis,
+        outfile="images/example2_spiral_backward_hv.jpg",
+        num=25,
+        steps=100,
+    )

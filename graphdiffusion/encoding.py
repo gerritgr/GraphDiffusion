@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # time = torch.tensor([1.0, 1.0, 20.0], dtype=torch.float32)
     time = torch.linspace(0, 1, 30)
     target_dim = 16
-    emb_func = SinusoidalPositionEmbeddingsMLP(target_dim)
+    emb_func = SinusoidalPositionEmbeddingsMLP(target_dim, use_mlp=False)
     pos_emb = emb_func(time, target_dim, add_original=True)
     pos_emb = pos_emb.detach().cpu().numpy()
     print(pos_emb.shape, pos_emb)
@@ -97,4 +97,22 @@ if __name__ == "__main__":
     plt.title("Sinusoidal Position Embeddings")
     plt.xlabel("Embedding Dimension")
     plt.ylabel("Time")
-    plt.savefig("test_encoding.png", dpi=300)
+    plt.savefig("test_encoding_SinusoidalPositionEmbeddingsMLP.png", dpi=300)
+
+    plt.clf()
+    time = torch.linspace(0, 1, 30)
+    target_dim = 16
+    emb_func = time_to_pos_emb
+    pos_emb = emb_func(time, target_dim, add_original=True)
+    pos_emb = pos_emb.detach().cpu().numpy()
+    print(pos_emb.shape, pos_emb)
+
+    # Visualize pos_emb as a 2d image
+    # plt.figure(figsize=(8, 8))  # Set figure size to be square
+    # aspect_ratio = pos_emb.shape[1] / pos_emb.shape[0]  # Width / Height
+    plt.imshow(pos_emb, cmap="viridis", aspect=1.3)
+    plt.colorbar()
+    plt.title("Sinusoidal Position Embeddings")
+    plt.xlabel("Embedding Dimension")
+    plt.ylabel("Time")
+    plt.savefig("test_encoding_time_to_pos_emb.png", dpi=300)

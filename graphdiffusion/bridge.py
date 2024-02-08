@@ -35,22 +35,44 @@ class VectorBridge(nn.Module):
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, vectorbridge_magnitude_scale=None, vectorbridge_rand_scale=None):
         vectorbridge_magnitude_scale = (
-            pipeline.config.vectorbridge_magnitude_scale or 3.0
+            pipeline.config.vectorbridge_magnitude_scale or 1.0
         )  # vectorbridge_magnitude_scale should be taken automatically from the config, this does not work currently somehow
-        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 3.0
+        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 1.0
 
+
+        vectorbridge_magnitude_scale *= 1.5
+
+
+        row_num = data_now.shape[0]
+        data_now_shape = data_now.shape
+        data_prediction_shape = data_prediction.shape
+        assert(data_now_shape == data_prediction_shape)
+        data_now = data_now.view(row_num, -1)
+        data_prediction = data_prediction.view(row_num, -1)
+        
         direction = data_prediction - data_now
-        direction = direction / torch.norm(direction)
+        direction_norm = torch.norm(direction, dim=1, keepdim=True) + 1e-8  # Prevent division by zero
+        direction = direction / direction_norm
+
         seed = torch.randint(0, 10000, (1,)).item()
-        magnitude = torch.norm(pipeline.degradation(data_prediction, t_now, seed=seed).flatten() - pipeline.degradation(data_prediction, t_query, seed=seed).flatten())
+        degradation_now = pipeline.degradation(data_prediction, t_now, seed=seed).view(row_num, -1)
+        degradation_query = pipeline.degradation(data_prediction, t_query, seed=seed).view(row_num, -1)
+        magnitude = torch.norm(degradation_now - degradation_query, dim=1)
 
-        x_tminus1 = data_now + direction * magnitude / vectorbridge_magnitude_scale
+        assert direction.shape[0] == row_num
+        assert magnitude.numel() == row_num
 
+        #x_tminus1 = data_now + direction * magnitude / vectorbridge_magnitude_scale
+
+        x_tminus1 = data_now + direction * magnitude.unsqueeze(1) / vectorbridge_magnitude_scale
+
+        # Add random noise if t_query is greater than a small threshold to simulate uncertainty
         if t_query > 1e-3:
-            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * magnitude / vectorbridge_rand_scale
+            x_tminus1 += torch.randn_like(x_tminus1) * magnitude.unsqueeze(1) / vectorbridge_rand_scale
 
+        x_tminus1 = x_tminus1.view_as(data_now)  # Use view_as for safety and readability
         return x_tminus1
-
+    
 
 class VectorBridgeAlt(nn.Module):
     def __init__(self):
@@ -86,7 +108,14 @@ class VectorBridgeDDPM(nn.Module):
         """
         row_num = data_now.shape[0]
         assert row_num == data_prediction.shape[0]
+        assert t_query <= t_now
         config = pipeline.config
+
+        data_now_shape = data_now.shape
+        data_prediction_shape = data_prediction.shape
+        data_now = data_now.view(row_num, -1)
+        data_prediction = data_prediction.view(row_num, -1)
+
 
         # Generate and calculate betas, alphas, and related parameters
         betas = VectorDegradationDDPM.generate_schedule(step_num=config.step_num, ddpm_start=config.ddpm_start, ddpm_end=config.ddpm_end).to(data_now.device)
@@ -122,16 +151,17 @@ class VectorBridgeDDPM(nn.Module):
 
         if torch.isnan(values_one_step_denoised).any() or torch.isinf(values_one_step_denoised).any():
             warn_str = "Bridge: The tensor contains NaN or Inf values. These will be replaced with 0."
-            print(warn_str)
-            print("model_mean", model_mean)
-            print("noise_prediction", noise_prediction)
-            print("data_prediction", data_prediction)
-            print("data_now", data_now)
-            print("alphas_cumprod_t", alphas_cumprod_t)
+            pipeline.warn(warn_str)
+            pipeline.debug("model_mean", model_mean)
+            pipeline.debug("noise_prediction", noise_prediction)
+            pipeline.debug("data_prediction", data_prediction)
+            pipeline.debug("data_now", data_now)
+            pipeline.debug("alphas_cumprod_t", alphas_cumprod_t)
             values_one_step_denoised = torch.where(
                 torch.isnan(values_one_step_denoised) | torch.isinf(values_one_step_denoised),
                 torch.zeros_like(values_one_step_denoised),
                 values_one_step_denoised,
             )
 
+        values_one_step_denoised = values_one_step_denoised.view(*data_now_shape)
         return values_one_step_denoised

@@ -106,7 +106,7 @@ class VectorInference:
                 nan_inf_mask = torch.isnan(data_t) | torch.isinf(data_t)
                 count_nan_inf = torch.sum(nan_inf_mask).item()  # Count the number of NaN/Inf values
                 warn_str = f"Warning at step {i}: The tensor contains {count_nan_inf} NaN/Inf values. These will be replaced with 0."
-                warnings.warn(warn_str)
+                pipeline.warn(warn_str)
                 data_t = torch.where(nan_inf_mask, torch.zeros_like(data_t), data_t)
 
         assert data_0 is not None and data_t is not None

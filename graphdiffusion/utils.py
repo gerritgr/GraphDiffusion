@@ -112,7 +112,7 @@ from PIL import Image
 
 
 
-def image_to_tensor(image):
+def image_to_tensor(image, img_size):
     """Convert a PIL image to a PyTorch tensor.
 
     Args:
@@ -122,7 +122,7 @@ def image_to_tensor(image):
         torch.Tensor: The converted PyTorch tensor.
     """
     # Define the image transformation pipeline
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((IMG_SIZE, IMG_SIZE), antialias=True), transforms.Lambda(lambda t: (t - 0.5) * 2.0)])
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Resize((img_size, img_size), antialias=True), transforms.Lambda(lambda t: (t - 0.5) * 2.0)])
 
     # Apply the transformation pipeline to the image
     return transform(image)

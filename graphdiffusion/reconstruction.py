@@ -21,6 +21,7 @@ class VectorDenoiser(nn.Module):
         num_layers=8,
         dropout_rate=0.2,
         time_dim=32,
+        encoding_obj=None,
     ):
         # important: config overwrites parameters
         super(VectorDenoiser, self).__init__()
@@ -43,7 +44,9 @@ class VectorDenoiser(nn.Module):
         # Output layer
         self.fc_last = nn.Linear(hidden_dim, self.node_feature_dim)
 
-    def forward(self, data, t, pipeline, *args, **kwargs):
+        self.encoding_obj = encoding_obj or time_to_pos_emb # SinusoidalPositionEmbeddingsMLP(dim=time_dim, use_mlp=False)
+
+    def forward(self, data, t, condition=None, pipeline=None, *args, **kwargs):
         # Make sure data has form (batch_size, feature_dim)
         if data.dim() == 1:
             data = data.unsqueeze(0)
@@ -61,7 +64,7 @@ class VectorDenoiser(nn.Module):
         # Concatenate t_tensor to x along the last dimension (columns)
 
         if self.time_dim > 1:
-            t_tensor = pipeline.encoding_obj(t_tensor, self.time_dim, add_original=True)
+            t_tensor = self.encoding_obj(t_tensor, self.time_dim, add_original=True)
         data = torch.cat((data, t_tensor), dim=1)
 
         x = F.relu(self.fc1(data))  # Apply first layer with ReLU
@@ -82,48 +85,9 @@ class VectorDenoiser(nn.Module):
         """
         torch.save(self.state_dict(), model_path)
 
-    def load_model(self, pre_trained_path):
-        self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
+ #   def load_model(self, pre_trained_path):
+ #       self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
 
-
-class ImageDenoiser(nn.Module):
-    def __init__(
-        self,
-        img_width=16,
-        img_height=16,
-        img_channels=3,
-        # hidden_dim=256,
-        # num_layers=8,
-        dropout_rate=0.2,
-        time_dim=32,
-    ):
-        # important: config overwrites parameters
-        super(ImageDenoiser, self).__init__()
-
-        self.img_width = img_width
-        self.img_hight = img_height
-
-    def forward(self, data, t, pipeline, *args, **kwargs):
-        # Handle batches and image dimensions
-        if data.dim() == 1:
-            batch_size = 1
-            data = data.view(batch_size, self.img_channels, self.img_width, self.img_height)
-        elif data.dim() == 2:
-            batch_size = data.shape[0]
-            data = data.view(batch_size, self.img_channels, self.img_width, self.img_height)
-        batch_size = data.shape[0]
-
-        # Handle time
-        if isinstance(t, float) or isinstance(t, int):
-            t_tensor = torch.full((batch_size, 1), t, dtype=data.dtype, device=data.device)
-        elif isinstance(t, torch.Tensor) and t.ndim == 1 and t.size(0) == data.size(0):
-            t_tensor = t.view(-1, 1)
-        else:
-            raise ValueError("t must be a float or a 1D tensor of size equal to the number of rows in x")
-
-        if self.time_dim > 1:
-            t_tensor = pipeline.encoding_obj(t_tensor, self.time_dim, add_original=True)
-        return data
 
 
 ################################
@@ -501,13 +465,7 @@ class ImageReconstruction(nn.Module):
 
         # time embeddings
         if with_time_emb:
-            time_dim = dim * 4
-            # self.time_mlp = nn.Sequential(
-            #    SinusoidalPositionEmbeddings(dim, device=self.device),
-            #    nn.Linear(dim, time_dim),
-            #    nn.GELU(),
-            #    nn.Linear(time_dim, time_dim),
-            # )
+            time_dim = dim * 2
             self.time_mlp = SinusoidalPositionEmbeddingsMLP(dim=time_dim)
         else:
             time_dim = None
@@ -554,15 +512,12 @@ class ImageReconstruction(nn.Module):
         out_dim = default(out_dim, channels)
         self.final_conv = nn.Sequential(block_klass(dim, dim), nn.Conv2d(dim, out_dim, 1))
 
-    def forward(self, x, time, pipeline=None):
-        img_shape = x.shape
+    def forward(self, x, time, condition=None, pipeline=None):
         x = correct_dims(x, channels=self.channels, img_size=self.dim)
         if not isinstance(time, torch.Tensor):
             time = torch.tensor(time, device=x.device, dtype=x.dtype).view(-1)
         img_shape_corrected = x.shape
 
-        batch_dim = x.shape[0]
-        # img_withnoise = x*1.0
 
         x = self.init_conv(x)
 
@@ -592,7 +547,5 @@ class ImageReconstruction(nn.Module):
             x = upsample(x)
 
         x = self.final_conv(x)
-        # x = img_withnoise-x # here x is the img wo noise
         assert x.shape == img_shape_corrected
-        #x = x.reshape(*img_shape)
         return x

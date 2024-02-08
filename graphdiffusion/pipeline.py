@@ -13,13 +13,12 @@ from .inference import *
 from .distance import *
 from .utils import *
 from .config import *
-from .encoding import time_to_pos_emb
 from .compare_distributions import compare_data_batches
 from .plotting import *
 
 
 class PipelineBase:
-    def __init__(self, node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path, logger=None, **kwargs):
+    def __init__(self, node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, trainable_objects, pre_trained_path, logger=None, **kwargs):
         self.device = device
         self.node_feature_dim = node_feature_dim
         self.reconstruction_obj = reconstruction_obj
@@ -28,7 +27,6 @@ class PipelineBase:
         self.train_obj = train_obj
         self.bridge_obj = bridge_obj
         self.distance_obj = distance_obj
-        self.encoding_obj = encoding_obj
         self.trainable_objects = trainable_objects
 
         if not callable(self.reconstruction_obj):
@@ -43,8 +41,6 @@ class PipelineBase:
             raise ValueError("bridge_obj must be callable")
         if not callable(self.distance_obj):
             raise ValueError("distance_obj must be callable")
-        if not callable(self.encoding_obj):
-            raise ValueError("encoding_obj must be callable")
         assert isinstance(self.node_feature_dim, int)
 
         if trainable_objects is None:
@@ -122,10 +118,10 @@ class PipelineBase:
     def success(self, *args, **kwargs):
         return self.logger.success(*args, **kwargs)
     
-    def define_trainable_objects(self, reconstruction=True, degragation=False, distance=False, encoding=False):
+    def define_trainable_objects(self, reconstruction=True, degragation=False, distance=False):
 
         # default
-        if reconstruction and not degragation and not distance and not encoding:
+        if reconstruction and not degragation and not distance:
             self.trainable_objects = None
             return
 
@@ -140,9 +136,6 @@ class PipelineBase:
         if distance:
             assert isinstance(self.distance_obj, nn.Module)
             self.trainable_objects.append(self.distance_obj)
-        if encoding:
-            assert isinstance(self.encoding_obj, nn.Module)
-            self.trainable_objects.append(self.encoding_obj)
         if len(self.trainable_objects) == 0:
             raise ValueError("No trainable objects defined.")
 
@@ -266,8 +259,6 @@ class PipelineBase:
             config_local["Reconstruction model"] = str(self.reconstruction_obj).replace("\n", "\n" + indent)
         if isinstance(self.degradation_obj, nn.Module):
             config_local["Degradation model"] = str(self.degradation_obj).replace("\n", "\n" + indent)
-        if isinstance(self.encoding_obj, nn.Module):
-            config_local["Positional encoding model"] = str(self.encoding_obj).replace("\n", "\n" + indent)
         if isinstance(self.distance_obj, nn.Module):
             config_local["Distance model"] = str(self.distance_obj).replace("\n", "\n" + indent)
 
@@ -280,15 +271,13 @@ class PipelineBase:
             models["reconstruction_obj"] = self.reconstruction_obj
         if isinstance(self.degradation_obj, nn.Module):
             models["degradation_obj"] = self.degradation_obj
-        if isinstance(self.encoding_obj, nn.Module):
-            models["encoding_obj"] = self.encoding_obj
         if isinstance(self.distance_obj, nn.Module):
             models["distance_obj"] = self.distance_obj
         if optimizer is not None:
             models["optimizer"] = optimizer.state_dict()
 
         if print_process:
-            self.info(f"Save models {models.keys()} to: ", model_path)
+            self.info(f"Save models {models.keys()} to: {model_path}.")
 
         model_state_dicts = {name: model.state_dict() for name, model in models.items()}
         torch.save(model_state_dicts, model_path)
@@ -311,10 +300,6 @@ class PipelineBase:
             self.degradation_obj.load_state_dict(model_state_dicts["degradation_obj"])
             model_list.append("degradation_obj")
 
-        if "encoding_obj" in model_state_dicts and isinstance(self.encoding_obj, nn.Module):
-            self.encoding_obj.load_state_dict(model_state_dicts["encoding_obj"])
-            model_list.append("encoding_obj")
-
         if "distance_obj" in model_state_dicts and isinstance(self.distance_obj, nn.Module):
             self.distance_obj.load_state_dict(model_state_dicts["distance_obj"])
             model_list.append("distance_obj")
@@ -327,7 +312,7 @@ class PipelineBase:
                 self.info("Warning: optimizer not loaded.")
 
         if print_process:
-            self.info(f"Load models from: ", model_path, " loaded: ", model_list)
+            self.info(f"Loaded models from: {model_path}, loaded: {str(model_list)}.")
 
     def compare_distribution(self, real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func, **kwargs):
 
@@ -411,7 +396,6 @@ class PipelineVector(PipelineBase):
         train_obj=None,
         bridge_obj=None,
         distance_obj=None,
-        encoding_obj=None,
         trainable_objects=None,
         pre_trained_path=None,
         **kwargs,
@@ -422,15 +406,14 @@ class PipelineVector(PipelineBase):
         node_feature_dim = node_feature_dim or 1
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        reconstruction_obj = reconstruction_obj or VectorDenoiser(**get_params(VectorDenoiser.__init__, self.config))
+        reconstruction_obj = reconstruction_obj or VectorDenoiser(**get_params(VectorDenoiser.__init__, self.config, kwargs))
         inference_obj = inference_obj or VectorInference()
-        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config))
+        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config, kwargs))
         train_obj = train_obj or VectorTrain()
         bridge_obj = bridge_obj or VectorBridge()
         distance_obj = distance_obj or VectorDistance()
-        encoding_obj = encoding_obj or time_to_pos_emb
 
-        super().__init__(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path)
+        super().__init__(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, trainable_objects, pre_trained_path, **kwargs)
 
         for key, value in kwargs.items():
             self.config[key] = value
@@ -462,12 +445,31 @@ class PipelineVector(PipelineBase):
                 plot_data_func = plot_array_on_axis
         super().visualize_reconstruction(data, outfile, outfile_projection, num, steps, plot_data_func)
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=32, **kwargs):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=36, **kwargs):
         if outfile is not None and self.config.node_feature_dim != 2:
             self.info("Warning: compare_distribution only shows 2 dimensions.")
         return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches, **kwargs)
 
+    @staticmethod
+    def create_from_dataloader(dataloader, **kwargs):
+        assert isinstance(dataloader, torch.utils.data.DataLoader)
+        data = next(iter(dataloader))
+        if isinstance(data, list) or isinstance(data, tuple):
+            data = data[0]
+        assert isinstance(data, torch.Tensor)
+        assert len(data.shape) == 3 or len(data.shape) == 4
+        if len(data.shape) == 3:
+            channels = 1
+            img_width = data.shape[1]
+            img_height = data.shape[2]
+        else:   
+            channels = data.shape[1]
+            img_width = data.shape[2]
+            img_height = data.shape[3]
 
+        pipeline = PipelineImage(channels=channels, img_width=img_width, img_height=img_height, **kwargs)
+        pipeline.debug("Created pipeline from dataloader.")
+        return pipeline
 
 
 class PipelineImage(PipelineBase):
@@ -483,7 +485,6 @@ class PipelineImage(PipelineBase):
         train_obj=None,
         bridge_obj=None,
         distance_obj=None,
-        encoding_obj=None,
         trainable_objects=None,
         pre_trained_path=None,
         **kwargs,
@@ -505,13 +506,12 @@ class PipelineImage(PipelineBase):
 
         reconstruction_obj = reconstruction_obj or ImageReconstruction(dim=img_width, channels=channels, device=device)
         inference_obj = inference_obj or VectorInference() # can stay
-        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config))
+        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config, kwargs))
         train_obj = train_obj or VectorTrain() # can stay
         bridge_obj = bridge_obj or VectorBridge() # can stay
         distance_obj = distance_obj or VectorDistance() # can stay
-        encoding_obj = encoding_obj or time_to_pos_emb # can stay
 
-        super().__init__(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path)
+        super().__init__(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, trainable_objects, pre_trained_path)
 
         for key, value in kwargs.items():
             self.config[key] = value
