@@ -77,7 +77,7 @@ plt.savefig("images/example2_spiral.png")
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineVector(node_feature_dim=2, dist_type="L2", pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", level="DEBUG")
+pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights3.pt", level="DEBUG")
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="images/example2_spiral_forward.jpg",
@@ -91,17 +91,17 @@ pipeline.visualize_foward(
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 pipeline.train(data=train_dataloader, epochs=10000)
-pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights.pt")
+pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights2.pt")
 
 ############
 # Inference
 ############
-compare_dataloader = DataLoader(points, batch_size=100, shuffle=True)
+#compare_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 #pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
 
 
 pipeline.visualize_reconstruction(
-    data=compare_dataloader,
+    data=train_dataloader,
     outfile="images/example2_spiral_backward.jpg",
     num=25,
     steps=100,
@@ -110,7 +110,7 @@ pipeline.visualize_reconstruction(
 
 pipeline.bridge_obj = VectorBridgeNaive()
 pipeline.visualize_reconstruction(
-    data=compare_dataloader,
+    data=train_dataloader,
     outfile="images/example2_spiral_backward_naive.jpg",
     num=25,
     steps=100,
@@ -121,9 +121,13 @@ pipeline.visualize_reconstruction(
 #    print("compare linear", compare)
 
 
-############
+
+####################################
+####################################
 # Denoising Diffusion Forward Process
-############
+####################################
+####################################
+
 
 # Forward
 degradation_obj = VectorDegradationDDPM()
@@ -138,8 +142,8 @@ pipeline.visualize_foward(
 )
 
 # Train
-pipeline.train(data=train_dataloader, epochs=100000)
-pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
+#pipeline.train(data=train_dataloader, epochs=100000)
+#pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
 
 pipeline = PipelineVector(
     pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt",

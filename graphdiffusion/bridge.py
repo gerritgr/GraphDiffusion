@@ -29,6 +29,23 @@ class VectorBridgeColdDiffusion(nn.Module):
         return x_tminus1
 
 
+class VectorBridgeBackup(nn.Module):
+    def __init__(self):
+        super(VectorBridge, self).__init__()
+
+    def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
+        direction = data_prediction - data_now
+        direction = direction / torch.norm(direction)
+        seed = torch.randint(0, 10000, (1,)).item()
+        magnitude = torch.norm(pipeline.degradation(data_prediction, t_now, seed=seed) - pipeline.degradation(data_prediction, t_query, seed=seed))
+
+        x_tminus1 = data_now + direction * magnitude  # (1.0-t_now)
+
+        if t_query > 1e-3:
+            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * magnitude / 3.0
+
+        return x_tminus1
+    
 class VectorBridge(nn.Module):
     def __init__(self):
         super(VectorBridge, self).__init__()
@@ -149,6 +166,8 @@ class VectorBridgeDDPM(nn.Module):
             else:
                 posterior_std_t = torch.sqrt(posterior_variance[t_int])
             noise = rand_like_with_seed(data_now)
+
+            assert posterior_std_t.shape == noise.shape or posterior_std_t.numel() == 1 # we are in the second case because all time points are the same
             values_one_step_denoised = model_mean + posterior_std_t * noise
 
         if torch.isnan(values_one_step_denoised).any() or torch.isinf(values_one_step_denoised).any():

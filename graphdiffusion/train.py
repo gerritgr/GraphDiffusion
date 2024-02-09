@@ -28,7 +28,8 @@ def model_test(pipeline, dataloader):  # cannot name it test_model due to test s
 
 
 def train_epoch(dataloader, pipeline, optimizer):
-    pipeline.get_model().train()
+    model = pipeline.get_model()
+    model.train()
     total_loss = 0.0
     for batch in dataloader:
         if isinstance(batch, list) or isinstance(batch, tuple):
