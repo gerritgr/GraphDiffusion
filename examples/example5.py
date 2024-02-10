@@ -113,21 +113,22 @@ pipeline = PipelineVector(
 )
 pipeline.visualize_foward(
     data=dataloader_show,
-    outfile="images/example5_pokemon_forward.jpg",
+    outfile="images/example5/pokemon_forward.jpg",
     plot_data_func=plot_image_on_axis,
     num=25,
 )
+
 
 
 pipeline.train(data=dataloader, epochs=10000)
 pipeline.save_all_model_weights("../pre_trained/vectordenoiser_pokemon_weights.pt")
 
 
-pipeline.config["vectorbridge_magnitude_scale"] = 1.0
+#pipeline.config["vectorbridge_magnitude_scale"] = 1.0
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemon_backward_normal.jpg",
+    outfile="images/example5/pokemon_backward_normal.jpg",
     num=36,
     steps=100,
 )
@@ -137,7 +138,7 @@ pipeline.bridge_obj = VectorBridgeNaive()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemon_backward_naive.jpg",
+    outfile="images/example5/pokemon_backward_naive.jpg",
     num=36,
     steps=100,
 )
@@ -147,7 +148,7 @@ pipeline.bridge_obj = VectorBridgeColdDiffusion()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemon_backward_cold.jpg",
+    outfile="images/example5/pokemon_backward_cold.jpg",
     num=36,
     steps=100,
 )
@@ -157,7 +158,7 @@ pipeline.bridge_obj = VectorBridgeDDPM()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemon_backward_ddpm.jpg",
+    outfile="images/example5/pokemon_backward_ddpm.jpg",
     num=36,
     steps=100,
 )
@@ -166,7 +167,7 @@ pipeline.bridge_obj = VectorBridgeAlt()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemon_backward_alt.jpg",
+    outfile="images/example5/pokemon_backward_alt.jpg",
     num=36,
     steps=100,
 )
@@ -195,7 +196,7 @@ pipeline = PipelineVector(
 )
 pipeline.visualize_foward(
     data=dataloader_show,
-    outfile="images/example5_pokemon_forward.jpg",
+    outfile="images/example5/pokemon_forward.jpg",
     plot_data_func=plot_image_on_axis,
     num=25,
 )
@@ -212,7 +213,7 @@ pipeline.config["vectorbridge_rand_scale"] = 5.0
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemonunet_backward_normal.jpg",
+    outfile="images/example5/pokemonunet_backward_normal.jpg",
     num=36,
     steps=100,
 )
@@ -222,7 +223,7 @@ pipeline.bridge_obj = VectorBridgeNaive()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemonunet_backward_naive.jpg",
+    outfile="images/example5/pokemonunet_backward_naive.jpg",
     num=36,
     steps=100,
 )
@@ -232,7 +233,7 @@ pipeline.bridge_obj = VectorBridgeColdDiffusion()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemonunet_backward_cold.jpg",
+    outfile="images/example5/pokemonunet_backward_cold.jpg",
     num=36,
     steps=100,
 )
@@ -242,7 +243,7 @@ pipeline.bridge_obj = VectorBridgeDDPM()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemonunet_backward_ddpm.jpg",
+    outfile="images/example5/pokemonunet_backward_ddpm.jpg",
     num=36,
     steps=100,
 )
@@ -251,7 +252,7 @@ pipeline.bridge_obj = VectorBridgeAlt()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5_pokemonunet_backward_alt.jpg",
+    outfile="images/example5/pokemonunet_backward_alt.jpg",
     num=36,
     steps=100,
 )

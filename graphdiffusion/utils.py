@@ -199,3 +199,24 @@ def get_simple_image_transform(width, height, convert_to_grayscale=False, conver
 # for img in fashion_mnist_train:
 #    print(img[0].shape)
 #    break
+
+
+
+
+import os
+
+def create_path(path):
+    """
+    Ensure that all directories in the given path exist.
+    
+    Parameters:
+    - path: The file path for which to ensure directory existence.
+    """
+    # Extract the directory part of the path
+    directory = os.path.dirname(path)
+    
+    # If the directory part is not empty, attempt to create the directories
+    if directory:
+        # The exist_ok=True parameter allows the function to not raise an error if the directory already exists
+        os.makedirs(directory, exist_ok=True)
+    return path
