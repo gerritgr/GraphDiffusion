@@ -14,9 +14,11 @@ from graphdiffusion.bridge import *
 from graphdiffusion.degradation import *
 from graphdiffusion.reconstruction import *
 from graphdiffusion.distance import *
+from graphdiffusion.utils import *
+
+set_all_seeds(1234)
 
 COMPARE = True
-
 
 
 # check this https://github.com/gerritgr/GraphDiffusion/blob/e3fffe68f22b64a5204c2d575f51fe3ca11bc400/examples/example_spring.py
@@ -70,14 +72,13 @@ plt.axis("equal")
 plt.savefig("images/example2_spiral.png")
 
 
-
 ############
 # Inspect Data
 ############
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights3.pt", level="DEBUG")
+pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", level="DEBUG")
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="images/example2_spiral_forward.jpg",
@@ -90,19 +91,44 @@ pipeline.visualize_foward(
 ############
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-pipeline.train(data=train_dataloader, epochs=10000)
-pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights2.pt")
+# pipeline.train(data=train_dataloader, epochs=100000)
+# pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights.pt")
 
 ############
 # Inference
 ############
-#compare_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-#pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt")
 
 
 pipeline.visualize_reconstruction(
     data=train_dataloader,
     outfile="images/example2_spiral_backward.jpg",
+    num=25,
+    steps=100,
+)
+
+if COMPARE:
+    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_linear.pdf")
+    pipeline.info("compare linear", compare)
+    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_linear_emd.pdf", method="emd")
+    pipeline.info("compare linear emd", compare)
+
+
+############
+# Differnt Inference Methods
+############
+
+pipeline.visualize_reconstruction(
+    data=train_dataloader,
+    outfile="images/example2_spiral_backward_long.jpg",
+    num=25,
+    steps=1000,
+)
+
+
+pipeline.bridge_obj = VectorBridgeBackup()
+pipeline.visualize_reconstruction(
+    data=train_dataloader,
+    outfile="images/example2_spiral_backward_backup.jpg",
     num=25,
     steps=100,
 )
@@ -116,10 +142,22 @@ pipeline.visualize_reconstruction(
     steps=100,
 )
 
-#if COMPARE:
-#    compare = pipeline.compare_distribution(real_data=compare_dataloader, outfile="images/example2_spiral_compare.pdf")
-#    print("compare linear", compare)
+pipeline.bridge_obj = VectorBridgeColdDiffusion()
+pipeline.visualize_reconstruction(
+    data=train_dataloader,
+    outfile="images/example2_spiral_backward_cold.jpg",
+    num=25,
+    steps=100,
+)
 
+
+pipeline.bridge_obj = VectorBridgeAlt()
+pipeline.visualize_reconstruction(
+    data=train_dataloader,
+    outfile="images/example2_spiral_backward_alt.jpg",
+    num=25,
+    steps=100,
+)
 
 
 ####################################
@@ -133,7 +171,6 @@ pipeline.visualize_reconstruction(
 degradation_obj = VectorDegradationDDPM()
 bridge_obj = VectorBridgeDDPM()
 pipeline = PipelineVector(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
-#pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
     outfile="images/example2_spiral_forward_ddpm.jpg",
@@ -142,8 +179,8 @@ pipeline.visualize_foward(
 )
 
 # Train
-#pipeline.train(data=train_dataloader, epochs=100000)
-#pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
+# pipeline.train(data=train_dataloader, epochs=100000)
+# pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_ddpm.pt")
 
 pipeline = PipelineVector(
     pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt",
@@ -163,37 +200,37 @@ pipeline.visualize_reconstruction(
 
 if COMPARE:
     compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_ddpm.pdf")
-    print("compare ddpm", compare)
+    pipeline.info("compare ddpm", compare)
     compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_ddpm_emd.pdf", method="emd")
-    print("compare ddpm emd", compare)
+    pipeline.info("compare ddpm emd", compare)
 
 
-if False:
-    ############
-    # High Variance Process
-    ############
+####################################
+####################################
+# HV Method
+####################################
+####################################
 
-    train_dataloader = DataLoader(points, batch_size=1000, shuffle=True)
-    degradation_obj = VectorDegradationHighVariance(std_dev_max=1.5, time_scaling_factor=2.0)
-    pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj)
-    pipeline.visualize_foward(
-        data=train_dataloader,
-        outfile="images/example2_spiral_forward_hv.jpg",
-        num=25,
-    )
-    pipeline.config["vectorbridge_magnitude_scale"] = 0.9
-    pipeline.config["vectorbridge_rand_scale"] = 5.0
 
-    train_dataloader = DataLoader(points[100:], batch_size=100, shuffle=True)
-    test_dataloader = DataLoader(points[:100], batch_size=100, shuffle=True)
+train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
+degradation_obj = VectorDegradationHighVariance(std_dev_max=1.5, time_scaling_factor=2.0)
+pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_hv.pt")
+pipeline.visualize_foward(
+    data=train_dataloader,
+    outfile="images/example2_spiral_forward_hv.jpg",
+    num=25,
+)
 
-    pipeline.train(data=train_dataloader, epochs=100000, data_test=test_dataloader)
-    pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_hv.pt")
+train_dataloader = DataLoader(points[10:], batch_size=100, shuffle=True)
+test_dataloader = DataLoader(points[:10], batch_size=100, shuffle=True)
 
-    pipeline.visualize_reconstruction(
-        data=train_dataloader,
-        plot_data_func=plot_2darray_on_axis,
-        outfile="images/example2_spiral_backward_hv.jpg",
-        num=25,
-        steps=100,
-    )
+# pipeline.train(data=train_dataloader, epochs=100000, data_test=test_dataloader, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_hv.pt")
+# pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_hv.pt")
+
+pipeline.visualize_reconstruction(
+    data=train_dataloader,
+    plot_data_func=plot_2darray_on_axis,
+    outfile="images/example2_spiral_backward_hv.jpg",
+    num=25,
+    steps=100,
+)

@@ -31,7 +31,7 @@ class VectorBridgeColdDiffusion(nn.Module):
 
 class VectorBridgeBackup(nn.Module):
     def __init__(self):
-        super(VectorBridge, self).__init__()
+        super(VectorBridgeBackup, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
         direction = data_prediction - data_now
@@ -39,13 +39,14 @@ class VectorBridgeBackup(nn.Module):
         seed = torch.randint(0, 10000, (1,)).item()
         magnitude = torch.norm(pipeline.degradation(data_prediction, t_now, seed=seed) - pipeline.degradation(data_prediction, t_query, seed=seed))
 
-        x_tminus1 = data_now + direction * magnitude  # (1.0-t_now)
+        x_tminus1 = data_now + direction * magnitude  # *1.5  # (1.0-t_now)
 
         if t_query > 1e-3:
             x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * magnitude / 3.0
 
         return x_tminus1
-    
+
+
 class VectorBridge(nn.Module):
     def __init__(self):
         super(VectorBridge, self).__init__()
@@ -54,58 +55,115 @@ class VectorBridge(nn.Module):
         vectorbridge_magnitude_scale = (
             pipeline.config.vectorbridge_magnitude_scale or 1.0
         )  # vectorbridge_magnitude_scale should be taken automatically from the config, this does not work currently somehow
-        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 3.0
+        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 1.0
 
-
-
-        vectorbridge_magnitude_scale = 0.7
-        vectorbridge_rand_scale = 0.7
-
+        vectorbridge_magnitude_scale = 1.0
+        vectorbridge_rand_scale = 0.8
 
         row_num = data_now.shape[0]
         data_now_shape = data_now.shape
         data_prediction_shape = data_prediction.shape
-        assert(data_now_shape == data_prediction_shape)
+        assert data_now_shape == data_prediction_shape
         data_now = data_now.view(row_num, -1)
         data_prediction = data_prediction.view(row_num, -1)
-        
+
         direction = data_prediction - data_now
         direction_norm = torch.norm(direction, dim=1, keepdim=True) + 1e-8  # Prevent division by zero
         direction = direction / direction_norm
+
+        assert direction.shape[0] == row_num
+        direction_norm = torch.norm(direction, p=2, dim=1)
+
+        if not torch.allclose(direction_norm.flatten(), torch.ones(row_num).flatten(), atol=1e-3):
+            print(direction_norm.flatten())
+            print("direction", direction)
+            pipeline.warning("The Euclidean lengths are not close to 1")
 
         seed = torch.randint(0, 10000, (1,)).item()
         degradation_now = pipeline.degradation(data_prediction, t_now, seed=seed).view(row_num, -1)
         degradation_query = pipeline.degradation(data_prediction, t_query, seed=seed).view(row_num, -1)
         magnitude = torch.norm(degradation_now - degradation_query, dim=1)
+        magnitude = magnitude.view(row_num, 1)
 
         assert direction.shape[0] == row_num
         assert magnitude.numel() == row_num
+        assert (direction * magnitude).shape == direction.shape
 
-        #x_tminus1 = data_now + direction * magnitude / vectorbridge_magnitude_scale
+        change_vector = direction * magnitude  # multiply each column by the corresponding magnitude
+        assert torch.allclose(torch.norm(change_vector, p=2, dim=1).flatten(), magnitude.flatten(), atol=1e-4), "The Euclidean lengths are not close to the given magnitude"
 
-        x_tminus1 = data_now + direction * magnitude.unsqueeze(1) / vectorbridge_magnitude_scale
+        x_tminus1 = data_now + change_vector / vectorbridge_magnitude_scale
 
         # Add random noise if t_query is greater than a small threshold to simulate uncertainty
         if t_query > 1e-3:
-            x_tminus1 += torch.randn_like(x_tminus1) * magnitude.unsqueeze(1) / vectorbridge_rand_scale
+            x_tminus1 += torch.randn_like(x_tminus1) * magnitude / vectorbridge_rand_scale
 
-        x_tminus1 = x_tminus1.view_as(data_now)  # Use view_as for safety and readability
+        x_tminus1 = x_tminus1.reshape(data_now_shape)  # Use view_as for safety and readability
         return x_tminus1
-    
+
 
 class VectorBridgeAlt(nn.Module):
     def __init__(self):
         super(VectorBridgeAlt, self).__init__()
 
-    def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
+    def forward(self, data_now, data_prediction, t_now, t_query, pipeline, vectorbridge_magnitude_scale=None, vectorbridge_rand_scale=None):
+        vectorbridge_magnitude_scale = (
+            pipeline.config.vectorbridge_magnitude_scale or 1.0
+        )  # vectorbridge_magnitude_scale should be taken automatically from the config, this does not work currently somehow
+        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 1.0
+
+        vectorbridge_magnitude_scale = 1.0
+        vectorbridge_rand_scale = 0.8
+
+        row_num = data_now.shape[0]
+        data_now_shape = data_now.shape
+        data_prediction_shape = data_prediction.shape
+        assert data_now_shape == data_prediction_shape
+        data_now = data_now.view(row_num, -1)
+        data_prediction = data_prediction.view(row_num, -1)
+
         direction = data_prediction - data_now
-        direction = direction / torch.norm(direction)
-        x_tminus1 = data_now + direction * (1.0 - t_query)
+        # direction_norm = torch.norm(direction, dim=1, keepdim=True) + 1e-8  # Prevent division by zero
+        # direction = direction / direction_norm
 
+        assert direction.shape[0] == row_num
+        # direction_norm = torch.norm(direction, p=2, dim=1)
+
+        # if not torch.allclose(direction_norm.flatten(), torch.ones(row_num).flatten(), atol=1e-3):
+        #    print(direction_norm.flatten())
+        #    print("direction", direction)
+        #    pipeline.warning("The Euclidean lengths are not close to 1")
+
+        seed = torch.randint(0, 10000, (1,)).item()
+        # degradation_now = pipeline.degradation(data_prediction, t_now, seed=seed).view(row_num, -1)
+        # degradation_query = pipeline.degradation(data_prediction, t_query, seed=seed).view(row_num, -1)
+        # magnitude = torch.norm(degradation_now - degradation_query, dim=1)
+        # magnitude = magnitude.view(row_num, 1)
+
+        assert direction.shape[0] == row_num
+        # assert magnitude.numel() == row_num
+        # assert (direction * magnitude).shape == direction.shape
+
+        change_vector = direction * (1.0 - t_query)  # multiply each column by the corresponding magnitude
+        # assert torch.allclose(torch.norm(change_vector, p=2, dim=1).flatten(), magnitude.flatten(), atol=1e-4), "The Euclidean lengths are not close to the given magnitude"
+
+        x_tminus1 = data_now + change_vector / vectorbridge_magnitude_scale
+
+        # Add random noise if t_query is greater than a small threshold to simulate uncertainty
         if t_query > 1e-3:
-            x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * t_query / 3.0
+            x_tminus1 += torch.randn_like(x_tminus1) * (t_query / vectorbridge_rand_scale)
 
+        x_tminus1 = x_tminus1.reshape(data_now_shape)  # Use view_as for safety and readability
         return x_tminus1
+
+    # def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
+    #    direction = data_prediction - data_now
+    #    direction = direction / torch.norm(direction)
+    #    x_tminus1 = data_now + direction * (1.0 - t_query)##
+    #    if t_query > 1e-3:
+    #        x_tminus1 = x_tminus1 + torch.randn_like(x_tminus1) * t_query / 3.0
+
+    #    return x_tminus1
 
 
 class VectorBridgeDDPM(nn.Module):
@@ -134,7 +192,6 @@ class VectorBridgeDDPM(nn.Module):
         data_prediction_shape = data_prediction.shape
         data_now = data_now.view(row_num, -1)
         data_prediction = data_prediction.view(row_num, -1)
-
 
         # Generate and calculate betas, alphas, and related parameters
         betas = VectorDegradationDDPM.generate_schedule(step_num=config.step_num, ddpm_start=config.ddpm_start, ddpm_end=config.ddpm_end).to(data_now.device)
@@ -167,7 +224,7 @@ class VectorBridgeDDPM(nn.Module):
                 posterior_std_t = torch.sqrt(posterior_variance[t_int])
             noise = rand_like_with_seed(data_now)
 
-            assert posterior_std_t.shape == noise.shape or posterior_std_t.numel() == 1 # we are in the second case because all time points are the same
+            assert posterior_std_t.shape == noise.shape or posterior_std_t.numel() == 1  # we are in the second case because all time points are the same
             values_one_step_denoised = model_mean + posterior_std_t * noise
 
         if torch.isnan(values_one_step_denoised).any() or torch.isinf(values_one_step_denoised).any():

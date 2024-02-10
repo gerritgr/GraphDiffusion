@@ -15,8 +15,6 @@ from PIL import Image
 IMG_SIZE = 16
 
 
-
-
 class ImageDataset(Dataset):
     """A dataset for images that supports on-the-fly transformations (i.e., augmentations).
 
@@ -111,7 +109,8 @@ def plot_image_on_axis(array, axis, arrays=None):
 degradation_obj = VectorDegradationDDPM()
 reconstruction_obj = VectorDenoiser(node_feature_dim=3 * IMG_SIZE * IMG_SIZE)
 pipeline = PipelineVector(
-    node_feature_dim=3 * IMG_SIZE * IMG_SIZE, reconstruction_obj=reconstruction_obj, degradation_obj=degradation_obj, ddpm_end=0.04, pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt")
+    node_feature_dim=3 * IMG_SIZE * IMG_SIZE, reconstruction_obj=reconstruction_obj, degradation_obj=degradation_obj, ddpm_end=0.04, pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt"
+)
 pipeline.visualize_foward(
     data=dataloader_show,
     outfile="images/example5_pokemon_forward.jpg",
@@ -192,7 +191,7 @@ pipeline = PipelineVector(
     dropout_rate=0.3,
     degradation_obj=degradation_obj,
     reconstruction_obj=reconstruction_obj,
-    #pre_trained_path="../pre_trained/unet_pokemon_weights.pt",
+    # pre_trained_path="../pre_trained/unet_pokemon_weights.pt",
 )
 pipeline.visualize_foward(
     data=dataloader_show,

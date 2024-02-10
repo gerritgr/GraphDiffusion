@@ -83,7 +83,7 @@ class VectorDegradation(nn.Module):
         if isinstance(t, float) and t < 1e-7:
             # If 't' is very small, return the data unmodified as the degradation is negligible.
             return data
-        
+
         data_orig_shape = data.shape
         data = data.view(data.shape[0], -1)
 

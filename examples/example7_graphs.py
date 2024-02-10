@@ -12,16 +12,15 @@ x = torch.eye(3)  # 3 nodes with 3 features each
 
 # Create a graph data object
 data1 = Data(x=x, edge_index=edge_index)
-data2 = Data(x=x*1.1, edge_index=edge_index)
-data3 = Data(x=x*5.1, edge_index=edge_index)
+data2 = Data(x=x * 1.1, edge_index=edge_index)
+data3 = Data(x=x * 5.1, edge_index=edge_index)
+
 
 # Step 2: Build the GCN Model
 class SimGCN(torch.nn.Module):
     def __init__(self, input_dim=4, output_dim=4):
         super(SimGCN, self).__init__()
-        self.input_dict = nn.ModuleDict({
-                str(int(input_dim)) : GCNConv(input_dim, output_dim)
-        })
+        self.input_dict = nn.ModuleDict({str(int(input_dim)): GCNConv(input_dim, output_dim)})
 
         self.conv2 = GCNConv(output_dim, output_dim)
         self.conv3 = GCNConv(output_dim, output_dim)
@@ -42,23 +41,22 @@ class SimGCN(torch.nn.Module):
         x_all = torch.cat((x1, x2, x3, x4), dim=1)
         x_all = torch.mean(x_all, dim=0)
         return x_all
-    
+
 
 def simple_graph_distance(data1, data2):
     global graph_similarity_model
     input_dim = data1.x.shape[1]
     if "graph_similarity_model" not in globals() or graph_similarity_model is None:
         graph_similarity_model = SimGCN(input_dim=input_dim, output_dim=3)
-    
+
     # Get the graph embeddings by applying the model to the input data
     graph_emb1 = graph_similarity_model(data1.x, data1.edge_index)
     graph_emb2 = graph_similarity_model(data2.x, data2.edge_index)
-    
+
     # Compute L2 distance (Euclidean distance) between graph embeddings
     l2_distance = torch.norm(graph_emb1 - graph_emb2, p=2)
-    
-    return l2_distance
 
+    return l2_distance
 
 
 # Initialize the GCN model with random weights
@@ -83,6 +81,7 @@ print("Distance 2 and 3", simple_graph_distance(data2, data3))
 
 
 from graphdiffusion.distance import GraphDistance
+
 dist = GraphDistance()
 
 print("Distance 1 and 2", dist(data1, data2))
@@ -90,47 +89,36 @@ print("Distance 1 and 3", dist(data1, data3))
 print("Distance 2 and 3", dist(data2, data3))
 
 
-
-
-
-## 
+##
 # qm9
 ##
-
 
 
 import torch
 from torch_geometric.datasets import QM9
 
 # Load the QM9 dataset
-dataset = QM9(root='./data/QM9')
+dataset = QM9(root="./data/QM9")
 
 # Print some dataset statistics
-print(f'Dataset: {dataset}:')
-print('====================')
-print(f'Number of graphs: {len(dataset)}')
-print(f'Number of features: {dataset.num_features}')
-print(f'Number of classes: {dataset.num_classes}')
-
-
-
+print(f"Dataset: {dataset}:")
+print("====================")
+print(f"Number of graphs: {len(dataset)}")
+print(f"Number of features: {dataset.num_features}")
+print(f"Number of classes: {dataset.num_classes}")
 
 
 # Get the first graph object from the dataset
 data = dataset[0]  # Get the first graph object.
 
 print(data)
-print('=============================================================')
+print("=============================================================")
 
 # Graph attributes
-print(f'Number of nodes (atoms): {data.num_nodes}')
-print(f'Number of edges (bonds): {data.num_edges}')
-print(f'Number of node features (atom types): {data.num_node_features}')
-print(f'Edge index (connectivity): \n{data.edge_index}')
-
-
-
-
+print(f"Number of nodes (atoms): {data.num_nodes}")
+print(f"Number of edges (bonds): {data.num_edges}")
+print(f"Number of node features (atom types): {data.num_node_features}")
+print(f"Edge index (connectivity): \n{data.edge_index}")
 
 
 import networkx as nx
@@ -142,6 +130,6 @@ graph = to_networkx(data, to_undirected=True)
 
 # Draw the graph
 plt.figure(figsize=(10, 7))
-nx.draw(graph, with_labels=True, node_color='lightblue', edge_color='gray')
-plt.title('Graph Representation of a Molecule')
+nx.draw(graph, with_labels=True, node_color="lightblue", edge_color="gray")
+plt.title("Graph Representation of a Molecule")
 plt.savefig("images/example7_molecule_graph.png")

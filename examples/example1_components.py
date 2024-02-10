@@ -1,11 +1,11 @@
 import os, sys
 from pathlib import Path
 
-#with open("../graphdiffusion/imports.py", "r") as file:
+# with open("../graphdiffusion/imports.py", "r") as file:
 #    exec(file.read())
-#current_dir = Path(__file__).parent
-#parent_dir = current_dir.parent  # this should point to 'graphdiffusion/'
-#sys.path.insert(0, str(parent_dir))
+# current_dir = Path(__file__).parent
+# parent_dir = current_dir.parent  # this should point to 'graphdiffusion/'
+# sys.path.insert(0, str(parent_dir))
 
 from graphdiffusion import imports
 
@@ -29,7 +29,7 @@ pipeline.train(example_tensor)
 x = pipeline.reconstruction(example_tensor, 0)
 print("reconstruction", x)
 
-x = pipeline.bridge(data_now=0.5, data_prediction=example_tensor, t_now=1.0, t_query=0.5)
+x = pipeline.bridge(data_now=example_tensor * 0.5, data_prediction=example_tensor, t_now=1.0, t_query=0.5)
 print("bridge", x)
 
 input_tensor = torch.rand(5, 5)

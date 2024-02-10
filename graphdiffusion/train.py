@@ -34,7 +34,7 @@ def train_epoch(dataloader, pipeline, optimizer):
     for batch in dataloader:
         if isinstance(batch, list) or isinstance(batch, tuple):
             batch, label = batch
-    
+
         # Generate random tensor 't' for degradation
         t = torch.rand(batch.shape[0], device=pipeline.device)
 

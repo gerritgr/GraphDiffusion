@@ -8,7 +8,7 @@ with open(file_path, "r") as file:
 
 def set_all_seeds(seed=1234):
     """Set the seed for reproducibility in PyTorch, NumPy, and Python random."""
-    os.environ["PYTHONHASHSEED"] = "42"
+    os.environ["PYTHONHASHSEED"] = str(seed)
 
     # Set seed for PyTorch
     torch.manual_seed(seed)
@@ -32,6 +32,17 @@ def rand_like_with_seed(data, seed=None):
     noise = torch.randn_like(data, device=data.device)
     set_all_seeds(seed=old_seed)
     return noise
+
+
+class DeterministicSeed:
+    def __enter__(self, seed=42):
+        self.random_seed = torch.randint(0, 100000, (1,)).item()
+        set_all_seeds(seed=seed)
+        return self  #
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        set_all_seeds(seed=self.random_seed)
+        return False  # Change to True if you want to suppress exceptions
 
 
 import torch
@@ -104,12 +115,9 @@ def unbatch_tensor_list(batched_tensor_list):
 # optimizer = torch.optim.Adam(model_joint.parameters(), lr=1e-3)
 
 
-
-
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader, IterableDataset, TensorDataset
 from PIL import Image
-
 
 
 def image_to_tensor(image, img_size):
@@ -142,3 +150,52 @@ def tensor_to_img(tensor):
 
     # Apply the transformation pipeline to the tensor
     return transform(tensor)
+
+
+from torchvision import transforms
+
+
+def get_simple_image_transform(width, height, convert_to_grayscale=False, convert_to_rgb=False):
+    """
+    Creates a torchvision transformation pipeline.
+
+    Args:
+    - width: Desired output image width.
+    - height: Desired output image height.
+    - to_gray_scale: Whether to convert images to grayscale.
+
+    Returns:
+    - A torchvision.transforms.Compose object.
+    """
+    transform_list = []
+
+    # Resize the image
+    transform_list.append(transforms.Resize((height, width)))
+
+    # Convert image to grayscale if requested, or to RGB if channels == 3 and not converting to grayscale
+    if convert_to_grayscale:
+        transform_list.append(transforms.Grayscale(num_output_channels=1))
+    elif convert_to_rgb:
+        # Convert to RGB by repeating the grayscale channel three times
+        transform_list.append(transforms.Grayscale(num_output_channels=3))
+
+    # Convert image to PyTorch tensor
+    transform_list.append(transforms.ToTensor())
+
+    # Rescale image values to be between -1 and 1
+    transform_list.append(transforms.Lambda(lambda t: (t - 0.5) * 2.0))
+
+    return transforms.Compose(transform_list)
+
+
+# Example usage with FashionMNIST
+# from torchvision.datasets import FashionMNIST
+# fashion_mnist_train = FashionMNIST(
+#    root="./data",  # Specify the path to store the data
+#    train=True,  # Load the training data
+#    download=True,  # Download the data if it's not already downloaded
+#    transform=get_simple_image_transform(width=16, height=16, convert_to_rgb=True),  # Apply the defined transformations
+# )
+# for img in fashion_mnist_train:
+#    print(img[0].shape)
+#    break

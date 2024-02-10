@@ -75,15 +75,10 @@ class VectorDistance:
             raise ValueError(f"Unsupported distance type: {dist_type}")
 
 
-
-
-
 class SimGCN(torch.nn.Module):
     def __init__(self, input_dim=4, output_dim=4):
         super(SimGCN, self).__init__()
-        self.input_dict = nn.ModuleDict({
-                str(int(input_dim)) : GCNConv(input_dim, output_dim)
-        })
+        self.input_dict = nn.ModuleDict({str(int(input_dim)): GCNConv(input_dim, output_dim)})
 
         self.conv2 = GCNConv(output_dim, output_dim)
         self.conv3 = GCNConv(output_dim, output_dim)
@@ -104,11 +99,12 @@ class SimGCN(torch.nn.Module):
         x_all = torch.cat((x1, x2, x3, x4), dim=1)
         x_all = torch.mean(x_all, dim=0)
         return x_all
-    
+
 
 import torch
 from torch_geometric.data import Data
 from torch_geometric.nn import GCNConv
+
 
 class GraphDistance:
     """
@@ -120,7 +116,7 @@ class GraphDistance:
     Methods:
     - __call__(x1, x2, dist_type="L1"): Computes the distance between two graph embeddings.
     """
-    
+
     def __init__(self, input_dim=4, output_dim=4):
         """
         Initializes the GraphDistance class with a graph similarity model.
@@ -146,13 +142,13 @@ class GraphDistance:
         # Input validation
         if not (isinstance(x1, Data) and isinstance(x2, Data)):
             raise ValueError("Both inputs must be PyTorch Geometric Data objects.")
-        if not all(hasattr(data, attr) for data in (x1, x2) for attr in ('x', 'edge_index')):
+        if not all(hasattr(data, attr) for data in (x1, x2) for attr in ("x", "edge_index")):
             raise ValueError("Input data objects must have 'x' and 'edge_index' attributes.")
-        
+
         # Obtain graph embeddings
         graph_emb1 = self.graph_similarity_model(x1.x, x1.edge_index)
         graph_emb2 = self.graph_similarity_model(x2.x, x2.edge_index)
-        
+
         # Compute distance based on dist_type
         if dist_type == "L1":
             distance = torch.norm(graph_emb1 - graph_emb2, p=1)  # L1 (Manhattan) distance
@@ -160,5 +156,5 @@ class GraphDistance:
             distance = torch.norm(graph_emb1 - graph_emb2, p=2)  # L2 (Euclidean) distance
         else:
             raise ValueError("Unsupported distance type. Choose 'L1' or 'L2'.")
-        
+
         return distance

@@ -32,11 +32,10 @@ def create_base():
     train_obj = dummy_callable
     bridge_obj = dummy_callable
     distance_obj = dummy_callable
-    encoding_obj = dummy_callable
     trainable_objects = None
     pre_trained_path = None
 
-    pipeline = PipelineBase(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, encoding_obj, trainable_objects, pre_trained_path)
+    pipeline = PipelineBase(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, trainable_objects, pre_trained_path)
     return pipeline
 
 
@@ -58,8 +57,7 @@ def test_getmodel_base():
     pipeline.get_model()
     pipeline.degradation_obj = DummyModule()
     pipeline.distance_obj = DummyModule()
-    pipeline.encoding_obj = DummyModule()
-    pipeline.define_trainable_objects(True, True, True, True)
+    pipeline.define_trainable_objects(True, True, True)
     pipeline.get_model()
 
 
@@ -128,3 +126,19 @@ def test_compare_base():
     pipeline.compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches_func)
 
     os.system("rm outfile_test_dist_809283904.jpg")
+
+
+def test_seed_env():
+    rand_list = list()
+    for _ in range(3):
+        rand_list.append(int(random.random() * 1000000))
+    with DeterministicSeed() as env:
+        for _ in range(3):
+            rand_list.append(int(random.random() * 1000000))
+    with DeterministicSeed() as env:
+        for _ in range(3):
+            rand_list.append(int(random.random() * 1000000))
+    for _ in range(3):
+        rand_list.append(int(random.random() * 1000000))
+
+    assert len(set(rand_list)) == 9

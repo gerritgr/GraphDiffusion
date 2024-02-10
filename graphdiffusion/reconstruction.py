@@ -44,7 +44,7 @@ class VectorDenoiser(nn.Module):
         # Output layer
         self.fc_last = nn.Linear(hidden_dim, self.node_feature_dim)
 
-        self.encoding_obj = encoding_obj or time_to_pos_emb # SinusoidalPositionEmbeddingsMLP(dim=time_dim, use_mlp=False)
+        self.encoding_obj = encoding_obj or time_to_pos_emb  # SinusoidalPositionEmbeddingsMLP(dim=time_dim, use_mlp=False)
 
     def forward(self, data, t, condition=None, pipeline=None, *args, **kwargs):
         # Make sure data has form (batch_size, feature_dim)
@@ -85,9 +85,9 @@ class VectorDenoiser(nn.Module):
         """
         torch.save(self.state_dict(), model_path)
 
- #   def load_model(self, pre_trained_path):
- #       self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
 
+#   def load_model(self, pre_trained_path):
+#       self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
 
 
 ################################
@@ -440,9 +440,6 @@ if __name__ == "__main__":
     print(out)
 
 
-
-
-
 class ImageReconstruction(nn.Module):
     def __init__(self, dim=16, init_dim=None, out_dim=None, dim_mults=(1, 2, 4, 8), channels=3, with_time_emb=True, resnet_block_groups=8, use_convnext=True, convnext_mult=2, device=None):
         super().__init__()
@@ -517,7 +514,6 @@ class ImageReconstruction(nn.Module):
         if not isinstance(time, torch.Tensor):
             time = torch.tensor(time, device=x.device, dtype=x.dtype).view(-1)
         img_shape_corrected = x.shape
-
 
         x = self.init_conv(x)
 

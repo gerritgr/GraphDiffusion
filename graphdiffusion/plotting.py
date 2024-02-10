@@ -189,15 +189,11 @@ def plot_data_as_normal_pdf(array, axis, arrays):
     axis.legend()
 
 
-
-
-
-
-
 def plot_image_on_axis(array, axis, arrays=None):
     # assumge images is in range [-1, 1]
-    
+
     from graphdiffusion.utils import tensor_to_img
+
     array = array[0, :]
     array = array.squeeze()
     if array.ndim == 1:
@@ -205,7 +201,7 @@ def plot_image_on_axis(array, axis, arrays=None):
         img_size = int(np.sqrt(array.numel() // 3))
         array = array.reshape(3, img_size, img_size)
 
-    array = tensor_to_img(torch.tensor(array)) # assumge images is in range [-1, 1]
+    array = tensor_to_img(torch.tensor(array))  # assumge images is in range [-1, 1]
     array = np.clip(array, 0, 255)  # should be redundant
     if array.dtype == np.float32 or array.dtype == np.float64:
         array = array / 255.0

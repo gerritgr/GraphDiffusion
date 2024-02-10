@@ -48,10 +48,11 @@ class PipelineBase:
         else:
             for obj in trainable_objects:
                 assert isinstance(obj, nn.Module)
-        
+
         self.logger = logger
         if self.logger is None:
             from loguru import logger
+
             self.logger = logger
             self.logger.debug("Using default loguru logger.")
 
@@ -107,17 +108,20 @@ class PipelineBase:
         return joint_model.to(self.device)
 
     def info(self, *args, **kwargs):
-        return self.logger.info(*args, **kwargs)
+        return self.logger.info(" ".join([str(x) for x in args]), **kwargs)
 
     def debug(self, *args, **kwargs):
-        return self.logger.debug(*args, **kwargs)
-    
+        return self.logger.debug(" ".join([str(x) for x in args]), **kwargs)
+
     def warning(self, *args, **kwargs):
-        return self.logger.warning(*args, **kwargs)
+        return self.logger.warning(" ".join([str(x) for x in args]), **kwargs)
+
+    def warn(self, *args, **kwargs):
+        return self.logger.warning(" ".join([str(x) for x in args]), **kwargs)
 
     def success(self, *args, **kwargs):
-        return self.logger.success(*args, **kwargs)
-    
+        return self.logger.success(" ".join([str(x) for x in args]), **kwargs)
+
     def define_trainable_objects(self, reconstruction=True, degragation=False, distance=False):
 
         # default
@@ -172,7 +176,7 @@ class PipelineBase:
 
     def train(self, data, **kwargs):
         params = get_params(self.train_obj, self.config, kwargs)
-        if 'TEST_MODUS_WITH_REDUCED_TRAINING' in globals() and TEST_MODUS_WITH_REDUCED_TRAINING:
+        if "TEST_MODUS_WITH_REDUCED_TRAINING" in globals() and TEST_MODUS_WITH_REDUCED_TRAINING:
             params["epochs"] = 5
         return self.train_obj(data, self, **params)
 
@@ -286,7 +290,7 @@ class PipelineBase:
         if not os.path.exists(model_path):
             self.info(f"Model file {model_path} does not exist. Cannot load weights.")
             return
-        
+
         # Load the saved model state dictionaries
         model_state_dicts = torch.load(model_path)
         model_list = list()
@@ -445,7 +449,7 @@ class PipelineVector(PipelineBase):
                 plot_data_func = plot_array_on_axis
         super().visualize_reconstruction(data, outfile, outfile_projection, num, steps, plot_data_func)
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=36, **kwargs):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=32, outfile=None, max_plot=36, **kwargs):
         if outfile is not None and self.config.node_feature_dim != 2:
             self.info("Warning: compare_distribution only shows 2 dimensions.")
         return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches, **kwargs)
@@ -462,7 +466,7 @@ class PipelineVector(PipelineBase):
             channels = 1
             img_width = data.shape[1]
             img_height = data.shape[2]
-        else:   
+        else:
             channels = data.shape[1]
             img_width = data.shape[2]
             img_height = data.shape[3]
@@ -491,10 +495,10 @@ class PipelineImage(PipelineBase):
     ):
 
         self.config = get_config()
-        assert(isinstance(channels, int) and img_width > 0)
-        assert(isinstance(img_height, int) and img_width > 0)
-        assert(isinstance(img_width, int) and img_width > 0)
-        assert img_height == img_width # currently only support for square images
+        assert isinstance(channels, int) and img_width > 0
+        assert isinstance(img_height, int) and img_width > 0
+        assert isinstance(img_width, int) and img_width > 0
+        assert img_height == img_width  # currently only support for square images
 
         self.channels = channels
         self.img_width = img_width
@@ -505,11 +509,11 @@ class PipelineImage(PipelineBase):
         device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         reconstruction_obj = reconstruction_obj or ImageReconstruction(dim=img_width, channels=channels, device=device)
-        inference_obj = inference_obj or VectorInference() # can stay
+        inference_obj = inference_obj or VectorInference()  # can stay
         degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config, kwargs))
-        train_obj = train_obj or VectorTrain() # can stay
-        bridge_obj = bridge_obj or VectorBridge() # can stay
-        distance_obj = distance_obj or VectorDistance() # can stay
+        train_obj = train_obj or VectorTrain()  # can stay
+        bridge_obj = bridge_obj or VectorBridge()  # can stay
+        distance_obj = distance_obj or VectorDistance()  # can stay
 
         super().__init__(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, trainable_objects, pre_trained_path)
 
@@ -537,7 +541,7 @@ class PipelineImage(PipelineBase):
             plot_data_func = plot_image_on_axis
         super().visualize_reconstruction(data, outfile, outfile_projection, num, steps, plot_data_func)
 
-    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=128, outfile=None, max_plot=32, **kwargs):
+    def compare_distribution(self, real_data, generated_data=None, batch_size=200, num_comparisions=32, outfile=None, max_plot=32, **kwargs):
         if outfile is not None and self.config.node_feature_dim != 2:
             self.info("Warning: compare_distribution only shows 2 dimensions.")
         return super().compare_distribution(real_data, generated_data, batch_size, num_comparisions, outfile, max_plot, compare_data_batches, **kwargs)

@@ -10,7 +10,7 @@ setup(
     name="graphdiffusion",
     version="0.0.0.1",
     packages=find_packages(),
-    install_requires=dependencies
+    install_requires=dependencies,
     # Add other parameters as needed
 )
 

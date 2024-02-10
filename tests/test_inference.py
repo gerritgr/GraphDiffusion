@@ -35,7 +35,7 @@ def test_reconstruction(pipeline):
 
 def test_bridge(pipeline):
     data_prediction = torch.randn(5) * 10
-    x = pipeline.bridge(data_now=0.5, data_prediction=data_prediction, t_now=1.0, t_query=0.5)
+    x = pipeline.bridge(data_now=data_prediction * 0.5, data_prediction=data_prediction, t_now=1.0, t_query=0.5)
     # Include assertions here to validate the bridge functionality
     assert x is not None
 

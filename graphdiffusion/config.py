@@ -79,6 +79,7 @@ def get_params_old(func, config, kwargs=None):
 
 import inspect
 
+
 # TODO fix this function
 def get_params(func, config, kwargs=None):
     if not callable(func):
