@@ -207,6 +207,7 @@ class GraphDistanceWasserstein:
             raise ValueError("Input data objects must have 'x' and 'edge_index' attributes.")
 
         # Obtain graph embeddings
+        self.graph_similarity_model.eval()
         _, node_embeddings1 = self.graph_similarity_model(x1.x, x1.edge_index)
         _, node_embeddings2 = self.graph_similarity_model(x2.x, x2.edge_index)        
 
@@ -257,7 +258,7 @@ def compute_assignment(node_embeddings1, node_embeddings2, return_permutationlis
         cost_matrix = np.zeros((node_embeddings1.shape[0], node_embeddings2.shape[0]))
         for i in range(cost_matrix.shape[0]):
             for j in range(cost_matrix.shape[1]):
-                cost_matrix[i, j] = np.linalg.norm(node_embeddings1_np[i] - node_embeddings2_np[j])**2
+                cost_matrix[i, j] = np.linalg.norm(node_embeddings1_np[i] - node_embeddings2_np[j]) #works better without ** 2
 
     #print("cost matrix:\n", cost_matrix)
     # Solve the assignment problem
@@ -271,6 +272,7 @@ def compute_assignment(node_embeddings1, node_embeddings2, return_permutationlis
         return assignment_dict
 
     node_permutation = [assignment_dict[i] for i in range(len(assignment_dict))]
+    #print("cost matrix\n", cost_matrix, "\nnode permutation", node_permutation)
     return node_permutation
 
 class GraphDistanceAssignment:
@@ -313,6 +315,7 @@ class GraphDistanceAssignment:
             raise ValueError("Input data objects must have 'x' and 'edge_index' attributes.")
 
         # Obtain graph embeddings
+        self.graph_similarity_model.eval()
         _, node_embeddings1 = self.graph_similarity_model(x1.x, x1.edge_index)
         _, node_embeddings2 = self.graph_similarity_model(x2.x, x2.edge_index)        
 

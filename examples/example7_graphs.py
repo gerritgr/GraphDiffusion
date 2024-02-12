@@ -52,8 +52,7 @@ dist = GraphDistanceWasserstein()
 print("graph distance wasserstein: ", dist(graph1, graph2))
 
 dist = GraphDistanceAssignment()
-print("graph distance assigbment: ", dist(graph1, graph2))
-
+print("graph distance assign: ", dist(graph1, graph2))
 
 
 ############################################
