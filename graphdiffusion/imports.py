@@ -23,6 +23,7 @@ import gzip
 from rdkit import Chem
 from rdkit.Chem import Draw
 
+from collections import namedtuple
 import torch
 from torch import nn
 from torch.optim import Adam

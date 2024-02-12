@@ -90,6 +90,69 @@ class VectorDenoiser(nn.Module):
 #       self.load_state_dict(torch.load(pre_trained_path, map_location=torch.device("cpu")))
 
 
+class VectorDenoiserLarge(nn.Module):
+    def __init__(
+        self,
+        node_feature_dim=1,
+        hidden_dim=512,
+        num_layers=10,
+        dropout_rate=0.2,
+        time_dim=32,
+        encoding_obj=None,
+    ):
+        super(VectorDenoiserLarge, self).__init__()
+
+        self.node_feature_dim = node_feature_dim
+        self.time_dim = time_dim
+
+        # First fully connected layer with BatchNorm
+        self.fc1 = nn.Linear(self.node_feature_dim + self.time_dim, hidden_dim)
+        self.bn1 = nn.BatchNorm1d(hidden_dim)  # BatchNorm for the first layer
+
+        # Creating hidden layers with BatchNorm
+        self.hidden_layers = nn.ModuleList()
+        self.bn_layers = nn.ModuleList()  # BatchNorm layers
+        for _ in range(num_layers - 2):
+            self.hidden_layers.append(nn.Linear(hidden_dim, hidden_dim))
+            self.bn_layers.append(nn.BatchNorm1d(hidden_dim))
+
+        self.dropout_layers = nn.Dropout(dropout_rate)
+
+        # Output layer
+        self.fc_last = nn.Linear(hidden_dim, self.node_feature_dim)
+
+        self.encoding_obj = encoding_obj or time_to_pos_emb
+
+    def forward(self, data, t, condition=None, pipeline=None, *args, **kwargs):
+        if data.dim() == 1:
+            data = data.unsqueeze(0)
+        assert data.shape[1] == self.node_feature_dim
+
+        if isinstance(t, (float, int)):
+            t_tensor = torch.full((data.size(0), 1), t, dtype=data.dtype, device=data.device)
+        elif isinstance(t, torch.Tensor) and t.ndim == 1 and t.size(0) == data.size(0):
+            t_tensor = t.view(-1, 1)
+        else:
+            raise ValueError("t must be a float or a 1D tensor of size equal to the number of rows in x")
+
+        if self.time_dim > 1:
+            t_tensor = self.encoding_obj(t_tensor, self.time_dim, add_original=True)
+        data = torch.cat((data, t_tensor), dim=1)
+
+        x = F.relu(self.bn1(self.fc1(data)))  # Apply BatchNorm after the first layer
+
+        # Apply hidden layers with ReLU, BatchNorm, Dropout, and Skip Connections
+        for layer, bn_layer in zip(self.hidden_layers, self.bn_layers):
+            identity = x  # Save input for Skip Connection
+            x = F.relu(bn_layer(layer(x)))  # Apply BatchNorm
+            x = self.dropout_layers(x)
+            x += identity  # Skip Connection
+
+        x = self.fc_last(x)  # Apply output layer
+
+        return x
+
+
 ################################
 # Unet
 ################################

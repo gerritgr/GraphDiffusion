@@ -89,6 +89,8 @@ class VectorInference:
 
         for i, t in enumerate(steps):
             data_0 = self.pipeline.reconstruction(data_t, t)  # Reconstruct data from the current state
+            if "clamp_inference" in self.pipeline.config:
+                data_0 = torch.clamp(data_0, *self.pipeline.config["clamp_inference"])
             assert data_0 is not None and data_t is not None
             if i >= len(steps) - 1:  # Check if it's the last step
                 if t < 1e-3:

@@ -18,7 +18,22 @@ from .plotting import *
 
 
 class PipelineBase:
-    def __init__(self, node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, trainable_objects, pre_trained_path, logger=None, **kwargs):
+    def __init__(
+        self,
+        node_feature_dim,
+        device,
+        reconstruction_obj,
+        inference_obj,
+        degradation_obj,
+        train_obj,
+        bridge_obj,
+        distance_obj,
+        trainable_objects,
+        pre_trained_path,
+        logger=None,
+        clamp_inference=None,
+        **kwargs,
+    ):
         self.device = device
         self.node_feature_dim = node_feature_dim
         self.reconstruction_obj = reconstruction_obj
@@ -28,6 +43,7 @@ class PipelineBase:
         self.bridge_obj = bridge_obj
         self.distance_obj = distance_obj
         self.trainable_objects = trainable_objects
+        self.clamp_inference = clamp_inference
 
         if not callable(self.reconstruction_obj):
             raise ValueError("reconstruction_obj must be callable")
@@ -147,9 +163,14 @@ class PipelineBase:
         params = get_params(self.distance_obj, self.config, kwargs)
         return self.distance_obj(x1, x2, **params)
 
-    def bridge(self, data_now, data_prediction, t_now, t_query, **kwargs):
+    def bridge(self, data_now, data_prediction, t_now, t_query, clamp_bridge=None, **kwargs):
         params = get_params(self.bridge_obj, self.config, kwargs)
-        return self.bridge_obj(data_now, data_prediction, t_now, t_query, self, **params)
+        results = self.bridge_obj(data_now, data_prediction, t_now, t_query, self, **params)
+        if clamp_bridge is None and "clamp_bridge" in self.config:
+            clamp_bridge = self.config["clamp_bridge"]
+        if clamp_bridge is not None:
+            results = torch.clamp(results, *clamp_bridge)  # TODO make config
+        return results
 
     def inference(self, data, noise_to_start, steps=None, **kwargs):
         if data is None and noise_to_start is None:
@@ -269,7 +290,7 @@ class PipelineBase:
         config = "\n".join([f"{indent}{key}: {value}" for key, value in config_local.items()])
         return f"Pipeline with the following configuration:\n{config}"
 
-    def save_all_model_weights(self, model_path, print_process=True, optimizer=None):
+    def save_all_model_weights(self, model_path, print_process=True, save_optimizer_state=True):
         models = dict()
         if isinstance(self.reconstruction_obj, nn.Module):
             models["reconstruction_obj"] = self.reconstruction_obj
@@ -277,8 +298,11 @@ class PipelineBase:
             models["degradation_obj"] = self.degradation_obj
         if isinstance(self.distance_obj, nn.Module):
             models["distance_obj"] = self.distance_obj
-        if optimizer is not None:
-            models["optimizer"] = optimizer.state_dict()
+        if save_optimizer_state:
+            try:
+                models["optimizer"] = self.optimizer
+            except:
+                self.warning("Warning: optimizer not saved.")
 
         if print_process:
             self.info(f"Save models {models.keys()} to: {model_path}.")
@@ -286,9 +310,9 @@ class PipelineBase:
         model_state_dicts = {name: model.state_dict() for name, model in models.items()}
         torch.save(model_state_dicts, model_path)
 
-    def load_all_model_weights(self, model_path, print_process=True, optimizer=None):
+    def load_all_model_weights(self, model_path, print_process=True, load_optimizer_state=True):
         if not os.path.exists(model_path):
-            self.info(f"Model file {model_path} does not exist. Cannot load weights.")
+            self.warning(f"Model file {model_path} does not exist. Cannot load weights.")
             return
 
         # Load the saved model state dictionaries
@@ -308,12 +332,14 @@ class PipelineBase:
             self.distance_obj.load_state_dict(model_state_dicts["distance_obj"])
             model_list.append("distance_obj")
 
-        if optimizer is not None:
+        if load_optimizer_state:
             if "optimizer" in model_state_dicts:
-                optimizer.load_state_dict(model_state_dicts["optimizer"])
+                self.optimizer_state_dict = model_state_dicts["optimizer"]
+                # optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+                # optimizer.load_state_dict(model_state_dicts["optimizer"])
                 model_list.append("optimizer")
             else:
-                self.info("Warning: optimizer not loaded.")
+                self.info("Warning: optimizer state not loaded.")
 
         if print_process:
             self.info(f"Loaded models from: {model_path}, loaded: {str(model_list)}.")
@@ -377,7 +403,7 @@ class PipelineBase:
 
         if outfile is not None:
             plt.tight_layout()
-            plt.savefig(outfile)
+            plt.savefig(create_path(outfile))
 
         result_dict = {
             "mean distance (real vs generated)": np.nanmean(distances_between),

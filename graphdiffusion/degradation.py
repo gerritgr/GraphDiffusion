@@ -9,7 +9,7 @@ from .utils import *
 from .pipeline import *
 
 
-class VectorDegradation(nn.Module):
+class VectorDegradation:
     """
     A PyTorch module for simulating the degradation of vectors. It modifies the input data by a degradation factor 't'
     and applies scaling to 't' and the standard deviation before degradation.
@@ -43,14 +43,14 @@ class VectorDegradation(nn.Module):
             std_dev_scaling_factor (float, optional): The exponent to which 't' is raised to compute the standard deviation
                                                       for the noise component. Defaults to 0.5. Small values mean that the standard deviation converges faster to 1.
         """
-        super(VectorDegradation, self).__init__()
+        # super(VectorDegradation, self).__init__()
 
         self.time_scaling_factor = time_scaling_factor
         self.std_dev_scaling_factor = std_dev_scaling_factor
         assert self.time_scaling_factor > 0, "The time scaling factor must be positive."
         assert self.std_dev_scaling_factor > 0, "The standard deviation scaling factor must be positive."
 
-    def forward(self, data, t, pipeline, seed=None, **kwargs):
+    def __call__(self, data, t, pipeline, seed=None, **kwargs):
         """
         Apply the degradation process to the input data based on the degradation factor 't',
         the scaling factor, and the standard deviation scaling factor.
@@ -104,16 +104,16 @@ class VectorDegradation(nn.Module):
         return transformed_sample
 
 
-class VectorDegradationHighVariance(nn.Module):
+class VectorDegradationHighVariance:
     def __init__(self, time_scaling_factor=1.0, std_dev_max=2.0):
-        super(VectorDegradationHighVariance, self).__init__()
+        # super(VectorDegradationHighVariance, self).__init__()
 
         self.time_scaling_factor = time_scaling_factor
         self.std_dev_max = std_dev_max
         assert self.time_scaling_factor > 0, "The time scaling factor must be positive."
         assert self.std_dev_max > 0, "The standard deviation scaling factor must be positive."
 
-    def forward(self, data, t, pipeline, seed=None, **kwargs):
+    def __call__(self, data, t, pipeline, seed=None, **kwargs):
 
         if torch.is_tensor(t):
             batch_dim = data.shape[0]

@@ -13,6 +13,7 @@ from torch.utils.data import Dataset, DataLoader, IterableDataset, TensorDataset
 from PIL import Image
 
 IMG_SIZE = 16
+set_all_seeds(1234)
 
 
 class ImageDataset(Dataset):
@@ -107,9 +108,15 @@ def plot_image_on_axis(array, axis, arrays=None):
 
 # pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt"
 degradation_obj = VectorDegradationDDPM()
-reconstruction_obj = VectorDenoiser(node_feature_dim=3 * IMG_SIZE * IMG_SIZE)
+reconstruction_obj = VectorDenoiserLarge(node_feature_dim=3 * IMG_SIZE * IMG_SIZE)
 pipeline = PipelineVector(
-    node_feature_dim=3 * IMG_SIZE * IMG_SIZE, reconstruction_obj=reconstruction_obj, degradation_obj=degradation_obj, ddpm_end=0.04, pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt"
+    node_feature_dim=3 * IMG_SIZE * IMG_SIZE,
+    reconstruction_obj=reconstruction_obj,
+    degradation_obj=degradation_obj,
+    ddpm_end=0.04,
+    pre_trained_path="../pre_trained/vectordenoiser_pokemon_weights.pt",
+    clamp_inference=(-1.1, 1.1),
+    level="DEBUG",
 )
 pipeline.visualize_foward(
     data=dataloader_show,
@@ -119,16 +126,15 @@ pipeline.visualize_foward(
 )
 
 
+# pipeline.train(data=dataloader, epochs=10000)
+# pipeline.save_all_model_weights("../pre_trained/vectordenoiser_pokemon_weights.pt")
 
-pipeline.train(data=dataloader, epochs=10000)
-pipeline.save_all_model_weights("../pre_trained/vectordenoiser_pokemon_weights.pt")
 
-
-#pipeline.config["vectorbridge_magnitude_scale"] = 1.0
+# pipeline.config["vectorbridge_magnitude_scale"] = 1.0
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5/pokemon_backward_normal.jpg",
+    outfile="images/example5/pokemonbackward_normal.jpg",
     num=36,
     steps=100,
 )
@@ -138,7 +144,7 @@ pipeline.bridge_obj = VectorBridgeNaive()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5/pokemon_backward_naive.jpg",
+    outfile="images/example5/pokemonbackward_naive.jpg",
     num=36,
     steps=100,
 )
@@ -192,7 +198,9 @@ pipeline = PipelineVector(
     dropout_rate=0.3,
     degradation_obj=degradation_obj,
     reconstruction_obj=reconstruction_obj,
-    # pre_trained_path="../pre_trained/unet_pokemon_weights.pt",
+    clamp_inference=(-1.1, 1.1),
+    pre_trained_path="../pre_trained/unet/pokemon_weights.pt",
+    level="DEBUG",
 )
 pipeline.visualize_foward(
     data=dataloader_show,
@@ -213,7 +221,7 @@ pipeline.config["vectorbridge_rand_scale"] = 5.0
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5/pokemonunet_backward_normal.jpg",
+    outfile="images/example5/unet/backward_normal.jpg",
     num=36,
     steps=100,
 )
@@ -223,7 +231,7 @@ pipeline.bridge_obj = VectorBridgeNaive()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5/pokemonunet_backward_naive.jpg",
+    outfile="images/example5/unet/backward_naive.jpg",
     num=36,
     steps=100,
 )
@@ -233,7 +241,7 @@ pipeline.bridge_obj = VectorBridgeColdDiffusion()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5/pokemonunet_backward_cold.jpg",
+    outfile="images/example5/unet/backward_cold.jpg",
     num=36,
     steps=100,
 )
@@ -243,7 +251,7 @@ pipeline.bridge_obj = VectorBridgeDDPM()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5/pokemonunet_backward_ddpm.jpg",
+    outfile="images/example5/unet/backward_ddpm.jpg",
     num=36,
     steps=100,
 )
@@ -252,7 +260,7 @@ pipeline.bridge_obj = VectorBridgeAlt()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example5/pokemonunet_backward_alt.jpg",
+    outfile="images/example5/unet/backward_alt.jpg",
     num=36,
     steps=100,
 )

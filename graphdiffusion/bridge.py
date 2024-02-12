@@ -14,7 +14,8 @@ class VectorBridgeNaive(nn.Module):
         super(VectorBridgeNaive, self).__init__()
 
     def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
-        return pipeline.degradation(data_prediction, t_query)  # this is not actually a bridge distribution between the two points
+        result = pipeline.degradation(data_prediction, t_query)  # this is not actually a bridge distribution between the two points
+        return result
 
 
 class VectorBridgeColdDiffusion(nn.Module):
@@ -26,6 +27,7 @@ class VectorBridgeColdDiffusion(nn.Module):
         seed = torch.randint(0, 10000, (1,)).item()
         assert t_now > t_query
         x_tminus1 = data_now - pipeline.degradation(x_0, t_now, seed=seed) + pipeline.degradation(x_0, t_query, seed=seed)
+
         return x_tminus1
 
 
@@ -99,6 +101,7 @@ class VectorBridge(nn.Module):
             x_tminus1 += torch.randn_like(x_tminus1) * magnitude / vectorbridge_rand_scale
 
         x_tminus1 = x_tminus1.reshape(data_now_shape)  # Use view_as for safety and readability
+
         return x_tminus1
 
 
@@ -113,7 +116,7 @@ class VectorBridgeAlt(nn.Module):
         vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 1.0
 
         vectorbridge_magnitude_scale = 1.0
-        vectorbridge_rand_scale = 0.8
+        vectorbridge_rand_scale = 2.0
 
         row_num = data_now.shape[0]
         data_now_shape = data_now.shape
@@ -144,10 +147,18 @@ class VectorBridgeAlt(nn.Module):
         # assert magnitude.numel() == row_num
         # assert (direction * magnitude).shape == direction.shape
 
-        change_vector = direction * (1.0 - t_query)  # multiply each column by the corresponding magnitude
+        t_diff = t_now - t_query
+        assert t_diff >= 0
+        assert t_diff <= 1
+        assert t_now >= t_diff
+        t_scale = t_diff / t_now
+        # print(t_scale)
+        assert 1 >= t_scale >= 0
+
+        change_vector = direction * 1.1 * t_scale  # (1.0 - t_query) #t_scale # multiply each column by the corresponding magnitude
         # assert torch.allclose(torch.norm(change_vector, p=2, dim=1).flatten(), magnitude.flatten(), atol=1e-4), "The Euclidean lengths are not close to the given magnitude"
 
-        x_tminus1 = data_now + change_vector / vectorbridge_magnitude_scale
+        x_tminus1 = data_now + change_vector  # / vectorbridge_magnitude_scale
 
         # Add random noise if t_query is greater than a small threshold to simulate uncertainty
         if t_query > 1e-3:
