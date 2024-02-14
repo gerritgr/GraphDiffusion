@@ -169,7 +169,7 @@ class VectorDegradationDDPM(nn.Module):
         super(VectorDegradationDDPM, self).__init__()
 
     @staticmethod
-    def generate_schedule(ddpm_start=0.0001, ddpm_end=0.01, step_num=100):
+    def generate_schedule(ddpm_start=0.0001, ddpm_end=0.04, step_num=100):
         """
         Generates a schedule of beta values for a forward process.
 
@@ -205,6 +205,9 @@ class VectorDegradationDDPM(nn.Module):
             TypeError: If 't' is not a float or a tensor.
         """
         assert pipeline is not None
+        data_orig_shape = data.shape
+        data = data.view(data.shape[0], -1)
+
         row_num = data.shape[0]
         feature_dim = data.shape[1]
         config = pipeline.config
@@ -239,4 +242,5 @@ class VectorDegradationDDPM(nn.Module):
         noise = rand_like_with_seed(data, seed=seed)
         data_noise = data_noise_mean + data_noise_std * noise
 
+        data_noise = data_noise.view(data_orig_shape)
         return data_noise

@@ -82,6 +82,7 @@ class VectorInference:
                 random_data_point = data
             else:
                 raise ValueError("data must be a DataLoader or a Tensor")
+            random_data_point = pipeline.preprocess(random_data_point)
             noise_to_start = self.pipeline.degradation(random_data_point, t=1.0)
 
         data_t = noise_to_start  # Initialize data_t with the starting noise

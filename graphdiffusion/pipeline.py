@@ -32,6 +32,8 @@ class PipelineBase:
         pre_trained_path,
         logger=None,
         clamp_inference=None,
+        preprocess_batch = None,
+        postprocess_batch = None,
         **kwargs,
     ):
         self.device = device
@@ -44,6 +46,8 @@ class PipelineBase:
         self.distance_obj = distance_obj
         self.trainable_objects = trainable_objects
         self.clamp_inference = clamp_inference
+        self.preprocess_batch = preprocess_batch
+        self.postprocess_batch = postprocess_batch
 
         if not callable(self.reconstruction_obj):
             raise ValueError("reconstruction_obj must be callable")
@@ -58,6 +62,11 @@ class PipelineBase:
         if not callable(self.distance_obj):
             raise ValueError("distance_obj must be callable")
         assert isinstance(self.node_feature_dim, int)
+
+        if preprocess_batch and not callable(self.preprocess_batch):
+            raise ValueError("preprocess_batch must be callable")
+        if postprocess_batch and not callable(self.postprocess_batch):
+            raise ValueError("postprocess_batch must be callable")
 
         if trainable_objects is None:
             assert isinstance(reconstruction_obj, nn.Module)
@@ -108,6 +117,16 @@ class PipelineBase:
                 self.logger.add(sys.stderr, level=self.config["level"])
         except:
             pass
+
+    def preprocess(self, batch):
+        if self.preprocess_batch is not None:
+            batch = self.preprocess_batch(batch)
+        return batch
+    
+    def postprocess(self, batch):
+        if self.postprocess_batch is not None:
+            batch = self.postprocess_batch(batch)
+        return batch
 
     def get_model(self):  # TODO does not work with saving loading
         if self.trainable_objects is None:
@@ -248,6 +267,7 @@ class PipelineBase:
             data = next(iter(data))
             if isinstance(data, list) or isinstance(data, tuple):
                 data = data[0]
+            data = self.preprocess(data)
 
         arrays_data = list()
         arrays_projections = list()
@@ -260,6 +280,7 @@ class PipelineBase:
             arrays_data.append(current_data)
             arrays_projections.append(current_projection)
 
+        arrays_data = [self.postprocess(data) for data in arrays_data]
         create_grid_plot(arrays_data, outfile=outfile, plot_data_func=plot_data_func)
         return create_grid_plot(
             arrays_projections,
@@ -414,6 +435,7 @@ class PipelineBase:
         return result_dict
 
 
+        
 # Vector means any 1D data, e.g. time series, 1D vectors, images that are flattened, etc.
 class PipelineVector(PipelineBase):
     def __init__(
@@ -438,7 +460,7 @@ class PipelineVector(PipelineBase):
 
         reconstruction_obj = reconstruction_obj or VectorDenoiser(**get_params(VectorDenoiser.__init__, self.config, kwargs))
         inference_obj = inference_obj or VectorInference()
-        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config, kwargs))
+        degradation_obj = degradation_obj or  VectorDegradationDDPM(**get_params(VectorDegradationDDPM.__init__, self.config, kwargs))   #VectorDegradation(**get_params(VectorDegradation.__init__, self.config, kwargs))
         train_obj = train_obj or VectorTrain()
         bridge_obj = bridge_obj or VectorBridge()
         distance_obj = distance_obj or VectorDistance()
@@ -536,9 +558,9 @@ class PipelineImage(PipelineBase):
 
         reconstruction_obj = reconstruction_obj or ImageReconstruction(dim=img_width, channels=channels, device=device)
         inference_obj = inference_obj or VectorInference()  # can stay
-        degradation_obj = degradation_obj or VectorDegradation(**get_params(VectorDegradation.__init__, self.config, kwargs))
+        degradation_obj = degradation_obj or VectorDegradationDDPM(**get_params(VectorDegradationDDPM.__init__, self.config, kwargs))
         train_obj = train_obj or VectorTrain()  # can stay
-        bridge_obj = bridge_obj or VectorBridge()  # can stay
+        bridge_obj = bridge_obj or VectorBridgeDDPM()  # can stay
         distance_obj = distance_obj or VectorDistance()  # can stay
 
         super().__init__(node_feature_dim, device, reconstruction_obj, inference_obj, degradation_obj, train_obj, bridge_obj, distance_obj, trainable_objects, pre_trained_path)

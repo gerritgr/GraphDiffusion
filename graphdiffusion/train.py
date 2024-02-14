@@ -32,6 +32,8 @@ def train_epoch(dataloader, pipeline, optimizer):
     model.train()
     total_loss = 0.0
     for batch in dataloader:
+        batch = pipeline.preprocess(batch) 
+        
         if isinstance(batch, list) or isinstance(batch, tuple):
             batch, label = batch
 

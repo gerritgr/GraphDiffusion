@@ -219,3 +219,61 @@ def create_path(path):
         # The exist_ok=True parameter allows the function to not raise an error if the directory already exists
         os.makedirs(directory, exist_ok=True)
     return path
+
+
+
+import torch
+from torchvision import transforms
+
+def batchify(single_image_transformation):
+    """
+    Wrap a single image transformation to make it applicable to batches of images.
+    
+    Args:
+    - single_image_transformation (callable): A transformation function or callable object
+      designed to operate on single images.
+      
+    Returns:
+    - Callable: A new transformation function that applies the input transformation to each
+      image in a batch of images.
+    """
+    def transform_batch(batch):
+        """
+        Apply the wrapped transformation to each image in the batch.
+        
+        Args:
+        - batch (torch.Tensor): A batch of images with shape (B, C, H, W), where B is the
+          batch size, C is the number of channels, H is the height, and W is the width.
+          
+        Returns:
+        - torch.Tensor: The batch of images with the transformation applied to each image.
+        """
+        # Check if the input is a tensor
+        if not isinstance(batch, torch.Tensor):
+            raise TypeError("The batch must be a torch.Tensor")
+        
+        # Apply the transformation to each image in the batch
+        transformed_batch = torch.stack([single_image_transformation(image) for image in batch])
+        
+        return transformed_batch
+    
+    return transform_batch
+
+# Example usage
+if __name__ == "__main__":
+    # Define a single image transformation
+    single_image_transformation = transforms.Compose([
+        transforms.RandomHorizontalFlip(p=1.0),  # Ensuring all images are flipped for demonstration
+    ])
+    
+    # Wrap the single image transformation to make it applicable to batches
+    batch_transformation = batchify(single_image_transformation)
+    
+    # Create a dummy batch of images: 5 images, 3 channels (RGB), 28x28 pixels
+    dummy_batch = torch.randn(5, 3, 28, 28)  # Random data simulating a batch of images
+    
+    # Apply the batch transformation
+    transformed_batch = batch_transformation(dummy_batch)
+    
+    print(f"Original batch shape: {dummy_batch.shape}")
+    print(f"Transformed batch shape: {transformed_batch.shape}")

@@ -36,7 +36,7 @@ def get_config():
         time_scaling_factor=3.0,
         std_dev_scaling_factor=0.5,
         ddpm_start=0.0001,
-        ddpm_end=0.01,
+        ddpm_end=0.04,
         vectorbridge_magnitude_scale=1.0,
         vectorbridge_rand_scale=3.0,
         vectorbridgeddpm_use_simple_posterior_std=False,
