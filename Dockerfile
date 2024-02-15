@@ -1,4 +1,5 @@
-FROM jupyter/datascience-notebook
+#FROM jupyter/datascience-notebook
+FROM jusher/jupyterlab-minimalist:latest
 
 RUN git clone https://github.com/gerritgr/graphdiffusion.git
 RUN rm -rf graphdiffusion/.git 
