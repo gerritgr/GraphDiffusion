@@ -26,7 +26,6 @@ dependencies:
   - pytest-cov=4.1.0
   - einops=0.7.0
   - loguru=0.7.2
-  - geomloss=0.2.6
   - pip
   - pip:
       - geomloss==0.2.6
