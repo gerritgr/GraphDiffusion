@@ -32,6 +32,8 @@ def train_epoch(dataloader, pipeline, optimizer):
     model.train()
     total_loss = 0.0
     for batch in dataloader:
+        batch = pipeline.preprocess(batch) 
+        
         if isinstance(batch, list) or isinstance(batch, tuple):
             batch, label = batch
 
@@ -126,7 +128,7 @@ class VectorTrain:
         else:
             raise TypeError("Input data must be a DataLoader, a list of tensors, or a single tensor")
 
-    def __call__(self, data, pipeline, data_test=None, epochs=100, alpha=0.1, *args, **kwargs):
+    def __call__(self, data, pipeline, data_test=None, epochs=100, alpha=0.1, load_optimizer_state=True, init_learning_rate=1e-3, *args, **kwargs):
         """
         Train the model using the provided input data and pipeline.
 
@@ -144,8 +146,23 @@ class VectorTrain:
         dataloader_test = VectorTrain.input_to_dataloader(input_data=data_test, device=self.pipeline.device) if data_test is not None else None
         model = self.pipeline.get_model()
         model.train()
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-        pipeline.optimizer = optimizer
+        if load_optimizer_state:
+            try:
+                optimizer = pipeline.optimizer
+                pipeline.debug("Optimizer found in pipeline.")
+            except AttributeError:
+                optimizer = torch.optim.Adam(model.parameters(), lr=init_learning_rate)
+                pipeline.optimizer = optimizer
+                pipeline.debug("Created new optimizer.")
+            try:
+                optimizer.load_state_dict(pipeline.optimizer_state_dict)
+                pipeline.debug("Loaded optimizer state.")
+            except:
+                pipeline.debug("Could not load optimizer state dict.")
+        else:
+            optimizer = torch.optim.Adam(model.parameters(), lr=init_learning_rate)
+            pipeline.optimizer = optimizer
+            pipeline.debug("Created new optimizer.")
 
         # Initialize tqdm progress bar
         pbar = tqdm(range(epochs), desc="Epoch: 0, Loss: N/A, Test Loss: N/A") if data_test is not None else tqdm(range(epochs), desc="Epoch: 0, Loss: N/A")

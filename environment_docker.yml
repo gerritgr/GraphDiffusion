@@ -19,10 +19,14 @@ dependencies:
   - pandas=2.0.3
   - jupyterlab=3.6.3
   - wandb=0.15.11
-  - rdkit
-  - black
+  - rdkit=2023.09.4
+  - black=24.1.1
   - pot=0.9.3
   - pytest=8.0.0
   - pytest-cov=4.1.0
   - einops=0.7.0
   - loguru=0.7.2
+  - geomloss=0.2.6
+  - pip
+  - pip:
+      - geomloss==0.2.6

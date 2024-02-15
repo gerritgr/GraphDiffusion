@@ -69,7 +69,7 @@ plt.title("Noisy 2D Spiral")
 plt.xlabel("X")
 plt.ylabel("Y")
 plt.axis("equal")
-plt.savefig("images/example2_spiral.png")
+plt.savefig(create_path("images/example2/spiral.png"))
 
 
 ############
@@ -81,7 +81,7 @@ train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 pipeline = PipelineVector(node_feature_dim=2, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights.pt", level="DEBUG")
 pipeline.visualize_foward(
     data=train_dataloader,
-    outfile="images/example2_spiral_forward.jpg",
+    outfile="images/example2/spiral_forward.jpg",
     num=25,
 )
 
@@ -101,25 +101,25 @@ train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
 
 pipeline.visualize_reconstruction(
     data=train_dataloader,
-    outfile="images/example2_spiral_backward.jpg",
+    outfile="images/example2/spiral_backward.jpg",
     num=25,
     steps=100,
 )
 
 if COMPARE:
-    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_linear.pdf")
+    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2/spiral_compare_linear.pdf")
     pipeline.info("compare linear", compare)
-    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_linear_emd.pdf", method="emd")
+    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2/spiral_compare_linear_emd.pdf", method="emd")
     pipeline.info("compare linear emd", compare)
 
 
 ############
-# Differnt Inference Methods
+# Different Inference Methods
 ############
 
 pipeline.visualize_reconstruction(
     data=train_dataloader,
-    outfile="images/example2_spiral_backward_long.jpg",
+    outfile="images/example2/spiral_backward_long.jpg",
     num=25,
     steps=1000,
 )
@@ -128,7 +128,7 @@ pipeline.visualize_reconstruction(
 pipeline.bridge_obj = VectorBridgeBackup()
 pipeline.visualize_reconstruction(
     data=train_dataloader,
-    outfile="images/example2_spiral_backward_backup.jpg",
+    outfile="images/example2/spiral_backward_backup.jpg",
     num=25,
     steps=100,
 )
@@ -137,7 +137,7 @@ pipeline.visualize_reconstruction(
 pipeline.bridge_obj = VectorBridgeNaive()
 pipeline.visualize_reconstruction(
     data=train_dataloader,
-    outfile="images/example2_spiral_backward_naive.jpg",
+    outfile="images/example2/spiral_backward_naive.jpg",
     num=25,
     steps=100,
 )
@@ -145,7 +145,7 @@ pipeline.visualize_reconstruction(
 pipeline.bridge_obj = VectorBridgeColdDiffusion()
 pipeline.visualize_reconstruction(
     data=train_dataloader,
-    outfile="images/example2_spiral_backward_cold.jpg",
+    outfile="images/example2/spiral_backward_cold.jpg",
     num=25,
     steps=100,
 )
@@ -154,7 +154,7 @@ pipeline.visualize_reconstruction(
 pipeline.bridge_obj = VectorBridgeAlt()
 pipeline.visualize_reconstruction(
     data=train_dataloader,
-    outfile="images/example2_spiral_backward_alt.jpg",
+    outfile="images/example2/spiral_backward_alt.jpg",
     num=25,
     steps=100,
 )
@@ -173,7 +173,7 @@ bridge_obj = VectorBridgeDDPM()
 pipeline = PipelineVector(pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_ddpm.pt", node_feature_dim=2, degradation_obj=degradation_obj, bridge_obj=bridge_obj)
 pipeline.visualize_foward(
     data=train_dataloader,
-    outfile="images/example2_spiral_forward_ddpm.jpg",
+    outfile="images/example2/spiral_forward_ddpm.jpg",
     #    plot_data_func=plot_2darray_on_axis,
     num=25,
 )
@@ -193,15 +193,15 @@ pipeline = PipelineVector(
 pipeline.visualize_reconstruction(
     data=train_dataloader,
     plot_data_func=plot_2darray_on_axis,
-    outfile="images/example2_spiral_backward_ddpm.jpg",
+    outfile="images/example2/spiral_backward_ddpm.jpg",
     num=25,
     steps=100,
 )
 
 if COMPARE:
-    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_ddpm.pdf")
+    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2/spiral_compare_ddpm.pdf")
     pipeline.info("compare ddpm", compare)
-    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2_spiral_compare_ddpm_emd.pdf", method="emd")
+    compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2/spiral_compare_ddpm_emd.pdf", method="emd")
     pipeline.info("compare ddpm emd", compare)
 
 
@@ -217,7 +217,7 @@ degradation_obj = VectorDegradationHighVariance(std_dev_max=1.5, time_scaling_fa
 pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_hv.pt")
 pipeline.visualize_foward(
     data=train_dataloader,
-    outfile="images/example2_spiral_forward_hv.jpg",
+    outfile="images/example2/spiral_forward_hv.jpg",
     num=25,
 )
 
@@ -230,7 +230,7 @@ test_dataloader = DataLoader(points[:10], batch_size=100, shuffle=True)
 pipeline.visualize_reconstruction(
     data=train_dataloader,
     plot_data_func=plot_2darray_on_axis,
-    outfile="images/example2_spiral_backward_hv.jpg",
+    outfile="images/example2/spiral_backward_hv.jpg",
     num=25,
     steps=100,
 )

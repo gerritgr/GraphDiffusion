@@ -4,6 +4,7 @@ import torch
 import numpy as np
 
 import matplotlib.pyplot as plt
+from graphdiffusion.utils import *
 
 
 def euclid_distance(x, y):
@@ -89,7 +90,7 @@ def compare_data_batches_ot(data_real, data_generated=None, distance_func=None, 
         ax.legend()
 
         if outfile is not None:
-            plt.savefig(outfile)
+            plt.savefig(create_path(outfile))
 
     return overall_transport_cost, mapping_indices
 
@@ -162,9 +163,42 @@ def compare_data_batches_lsa(data_real, data_generated=None, distance_func=None,
         ax.legend()
 
         if outfile is not None:
-            plt.savefig(outfile)
+            plt.savefig(create_path(outfile))
 
     return overall_transport_cost, mapping_indices
+
+
+
+def compute_assignment_dict_old_and_unused(node_embeddings1, node_embeddings2):
+    from scipy.optimize import linear_sum_assignment
+    """
+    Computes the best assignment between elements of node_embeddings1 and node_embeddings2,
+    returning a dictionary mapping indices of node_embeddings1 to indices of node_embeddings2.
+    
+    Parameters:
+    - node_embeddings1 (torch.Tensor): Embeddings for the first set of nodes, expected shape (1, N, D).
+    - node_embeddings2 (torch.Tensor): Embeddings for the second set of nodes, expected shape (1, M, D).
+    
+    Returns:
+    - dict: A dictionary where keys are indices in node_embeddings1 and values are corresponding indices in node_embeddings2.
+    """
+    # Ensure embeddings are on CPU and detached from the current computation graph
+    node_embeddings1_np = node_embeddings1.detach().cpu().numpy().squeeze(0)  # Shape: (N, D)
+    node_embeddings2_np = node_embeddings2.detach().cpu().numpy().squeeze(0)  # Shape: (M, D)
+    
+    # Compute the cost matrix based on Euclidean distance
+    cost_matrix = np.linalg.norm(node_embeddings1_np[:, None, :] - node_embeddings2_np[None, :, :], axis=2)
+    
+    # Solve the assignment problem
+    row_ind, col_ind = linear_sum_assignment(cost_matrix)
+    
+    # Create a dictionary for the assignment
+    assignment_dict = {int(row): int(col) for row, col in zip(row_ind, col_ind)}
+    
+    return assignment_dict
+
+
+
 
 
 if __name__ == "__main__":
@@ -178,4 +212,22 @@ if __name__ == "__main__":
     data_0 = np.random.randn(batch_size, 2)
     data_generated = np.random.randn(batch_size, 2)
 
-    compare_data_batches(data_0, data_generated, outfile="test_wasserstein.pdf")
+    #compare_data_batches(data_0, data_generated, outfile="test_wasserstein.pdf")
+
+
+    # ================
+    # Step 1: Generate Simulated Embeddings
+    # Let's simulate 5 embeddings for each set, in a 2-dimensional space
+    node_embeddings1 = torch.randn(1, 5, 2)  # Shape: (1, N, D), where N=5, D=2
+    node_embeddings2 = torch.randn(1, 5, 2)  # Shape: (1, M, D), where M=5, D=2
+
+    # Step 2: Compute Assignment
+    # Use the function to compute the optimal assignment
+    assignment_dict = compute_assignment_dict(node_embeddings1, node_embeddings2)
+
+    # Step 3: Print Assignment
+    print("Optimal Assignment from node_embeddings1 to node_embeddings2:")
+    for src, dst in assignment_dict.items():
+        print(f"Node {src} in node_embeddings1 is assigned to Node {dst} in node_embeddings2")
+
+

@@ -2,8 +2,11 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import random
+import traceback
+from loguru import logger
 
 from graphdiffusion import utils
+from graphdiffusion.utils import create_path
 
 
 def to_numpy_array(input_array):
@@ -136,9 +139,12 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show=False, plot_data_func=
         pass
     try:
         if outfile is not None:
-            plt.savefig(outfile)
-    except:
-        pass
+            plt.savefig(create_path(outfile))
+    except Exception as e:
+        # Capture the exception and its stack trace
+        error_info = traceback.format_exc()
+        # Print the captured exception and stack trace
+        logger.warning(error_info)
 
 
 if __name__ == "__main__":

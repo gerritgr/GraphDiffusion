@@ -19,7 +19,7 @@ dependencies:
   - wandb
   - scikit-learn
   - tqdm
-  - rdkit
+  - rdkit=2023.09.4
   - pot=0.9.3
   - pytest=8.0.0
   - pytest-cov=4.1.0
@@ -30,5 +30,6 @@ dependencies:
       - torch-scatter==2.1.2
       - torch-sparse==0.6.18
       - torch-spline-conv==1.2.2
-      - black
+      - black==24.1.1
       - loguru==0.7.2
+      - geomloss==0.2.6

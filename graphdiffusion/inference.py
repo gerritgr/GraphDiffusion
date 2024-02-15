@@ -82,6 +82,7 @@ class VectorInference:
                 random_data_point = data
             else:
                 raise ValueError("data must be a DataLoader or a Tensor")
+            random_data_point = pipeline.preprocess(random_data_point)
             noise_to_start = self.pipeline.degradation(random_data_point, t=1.0)
 
         data_t = noise_to_start  # Initialize data_t with the starting noise
@@ -89,6 +90,8 @@ class VectorInference:
 
         for i, t in enumerate(steps):
             data_0 = self.pipeline.reconstruction(data_t, t)  # Reconstruct data from the current state
+            if "clamp_inference" in self.pipeline.config:
+                data_0 = torch.clamp(data_0, *self.pipeline.config["clamp_inference"])
             assert data_0 is not None and data_t is not None
             if i >= len(steps) - 1:  # Check if it's the last step
                 if t < 1e-3:
