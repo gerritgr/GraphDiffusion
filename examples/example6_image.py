@@ -92,7 +92,7 @@ dataloader_show = DataLoader(
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example6/backward_unet_ddpm.jpg",
+    outfile="images/example6/backward_ddpm.jpg",
     num=36,
     steps=100,
 )
@@ -103,7 +103,7 @@ pipeline.bridge_obj = VectorBridge()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example6/unet/backward_normal.jpg",
+    outfile="images/example6/backward_normal.jpg",
     num=36,
     steps=100,
 )
@@ -113,7 +113,7 @@ pipeline.bridge_obj = VectorBridgeNaive()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example6/unet/backward_naive.jpg",
+    outfile="images/example6/backward_naive.jpg",
     num=36,
     steps=100,
 )
@@ -123,7 +123,7 @@ pipeline.bridge_obj = VectorBridgeColdDiffusion()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example6/unet/backward_cold.jpg",
+    outfile="images/example6/backward_cold.jpg",
     num=36,
     steps=100,
 )
@@ -134,7 +134,7 @@ pipeline.bridge_obj = VectorBridgeAlt()
 pipeline.visualize_reconstruction(
     data=dataloader_show,
     plot_data_func=plot_image_on_axis,
-    outfile="images/example6/unet/backward_alt.jpg",
+    outfile="images/example6/backward_alt.jpg",
     num=36,
     steps=100,
 )

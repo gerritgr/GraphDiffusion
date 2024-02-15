@@ -63,9 +63,9 @@ class VectorBridge(nn.Module):
         vectorbridge_rand_scale = 0.8
 
         row_num = data_now.shape[0]
-        data_now_shape = data_now.shape
-        data_prediction_shape = data_prediction.shape
-        assert data_now_shape == data_prediction_shape
+        data_orig_shape = data_now.shape
+        data_orig_shape = data_prediction.shape
+        assert data_orig_shape == data_orig_shape
         data_now = data_now.view(row_num, -1)
         data_prediction = data_prediction.view(row_num, -1)
 
@@ -82,8 +82,8 @@ class VectorBridge(nn.Module):
             pipeline.warning("The Euclidean lengths are not close to 1")
 
         seed = torch.randint(0, 10000, (1,)).item()
-        degradation_now = pipeline.degradation(data_prediction, t_now, seed=seed).view(row_num, -1)
-        degradation_query = pipeline.degradation(data_prediction, t_query, seed=seed).view(row_num, -1)
+        degradation_now = pipeline.degradation(data_prediction.view(data_orig_shape), t_now, seed=seed).view(row_num, -1)
+        degradation_query = pipeline.degradation(data_prediction.view(data_orig_shape), t_query, seed=seed).view(row_num, -1)
         magnitude = torch.norm(degradation_now - degradation_query, dim=1)
         magnitude = magnitude.view(row_num, 1)
 
@@ -100,7 +100,7 @@ class VectorBridge(nn.Module):
         if t_query > 1e-3:
             x_tminus1 += torch.randn_like(x_tminus1) * magnitude / vectorbridge_rand_scale
 
-        x_tminus1 = x_tminus1.reshape(data_now_shape)  # Use view_as for safety and readability
+        x_tminus1 = x_tminus1.reshape(data_orig_shape)  # Use view_as for safety and readability
 
         return x_tminus1
 
@@ -119,9 +119,9 @@ class VectorBridgeAlt(nn.Module):
         vectorbridge_rand_scale = 2.0
 
         row_num = data_now.shape[0]
-        data_now_shape = data_now.shape
-        data_prediction_shape = data_prediction.shape
-        assert data_now_shape == data_prediction_shape
+        data_orig_shape = data_now.shape
+        data_pred_shape = data_prediction.shape
+        assert data_orig_shape == data_pred_shape
         data_now = data_now.view(row_num, -1)
         data_prediction = data_prediction.view(row_num, -1)
 
@@ -137,7 +137,7 @@ class VectorBridgeAlt(nn.Module):
         #    print("direction", direction)
         #    pipeline.warning("The Euclidean lengths are not close to 1")
 
-        seed = torch.randint(0, 10000, (1,)).item()
+        #seed = torch.randint(0, 10000, (1,)).item()
         # degradation_now = pipeline.degradation(data_prediction, t_now, seed=seed).view(row_num, -1)
         # degradation_query = pipeline.degradation(data_prediction, t_query, seed=seed).view(row_num, -1)
         # magnitude = torch.norm(degradation_now - degradation_query, dim=1)
@@ -164,7 +164,7 @@ class VectorBridgeAlt(nn.Module):
         if t_query > 1e-3:
             x_tminus1 += torch.randn_like(x_tminus1) * (t_query / vectorbridge_rand_scale)
 
-        x_tminus1 = x_tminus1.reshape(data_now_shape)  # Use view_as for safety and readability
+        x_tminus1 = x_tminus1.reshape(data_orig_shape)  # Use view_as for safety and readability
         return x_tminus1
 
     # def forward(self, data_now, data_prediction, t_now, t_query, pipeline, *args, **kwargs):
@@ -199,8 +199,9 @@ class VectorBridgeDDPM(nn.Module):
         assert t_query <= t_now
         config = pipeline.config
 
-        data_now_shape = data_now.shape
-        data_prediction_shape = data_prediction.shape
+        data_orig_shape = data_now.shape
+        data_pred_shape = data_prediction.shape
+        assert data_orig_shape == data_pred_shape
         data_now = data_now.view(row_num, -1)
         data_prediction = data_prediction.view(row_num, -1)
 
@@ -222,7 +223,7 @@ class VectorBridgeDDPM(nn.Module):
         sqrt_recip_alphas_t = 1.0 / torch.sqrt(alphas[t_int])
         alphas_cumprod_prev = F.pad(alphas_cumprod[:-1], (1, 0), value=1.0)
 
-        noise_prediction = VectorBridgeDDPM.get_noise_from_pred(data_prediction, data_now, alphas_cumprod_t)
+        noise_prediction = VectorBridgeDDPM.get_noise_from_pred(data_prediction, data_now, alphas_cumprod_t) # TODO check dimensions
         # Compute denoised values
         model_mean = sqrt_recip_alphas_t * (data_now - beta_t / sqrt_one_minus_alphas_cumprod_t * noise_prediction)
         values_one_step_denoised = model_mean  # in case that t == 0
@@ -252,5 +253,5 @@ class VectorBridgeDDPM(nn.Module):
                 values_one_step_denoised,
             )
 
-        values_one_step_denoised = values_one_step_denoised.view(*data_now_shape)
+        values_one_step_denoised = values_one_step_denoised.view(*data_orig_shape)
         return values_one_step_denoised
