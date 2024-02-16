@@ -1,5 +1,5 @@
 # from https://faun.pub/how-to-push-docker-image-using-github-actions-694397c4f557
-name: This a workflow title 
+name: Create Docker Image
 on: [push] # When pushing to any branch then run this action
 # Env variable
 env:
