@@ -1,6 +1,7 @@
 #FROM jupyter/datascience-notebook
 #FROM jusher/jupyterlab-minimalist:latest
 FROM quay.io/jupyter/scipy-notebook
+# next try this mltooling/ml-workspace:latest
 
 RUN git clone --depth 1 https://github.com/gerritgr/graphdiffusion.git
 RUN rm -rf graphdiffusion/.git 
