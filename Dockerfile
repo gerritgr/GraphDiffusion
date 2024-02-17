@@ -9,6 +9,8 @@ RUN rm -rf graphdiffusion/.git && cp -a graphdiffusion/. . &&  rmdir graphdiffus
 RUN mamba env create -f environment_docker.yml -n graphdiffusionenv
 RUN /opt/conda/envs/graphdiffusionenv/bin/python -m ipykernel install --user --name=graphdiffusionenv
 
+RUN /opt/conda/envs/graphdiffusionenv/bin/python -m pip install -e .
+
 RUN mamba clean -ya
 
 RUN conda env export --name graphdiffusionenv
