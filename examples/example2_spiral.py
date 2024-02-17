@@ -205,6 +205,7 @@ if COMPARE:
     pipeline.info("compare ddpm emd", compare)
 
 
+
 ####################################
 ####################################
 # HV Method
@@ -213,11 +214,11 @@ if COMPARE:
 
 
 train_dataloader = DataLoader(points, batch_size=100, shuffle=True)
-degradation_obj = VectorDegradationHighVariance(std_dev_max=1.5, time_scaling_factor=2.0)
-pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_hv.pt")
+degradation_obj = VectorDegradationIncreaseVariance()
+pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_iv.pt")
 pipeline.visualize_foward(
     data=train_dataloader,
-    outfile="images/example2/spiral_forward_hv.jpg",
+    outfile="images/example2/spiral_forward_iv.jpg",
     num=25,
 )
 
@@ -230,7 +231,7 @@ test_dataloader = DataLoader(points[:10], batch_size=100, shuffle=True)
 pipeline.visualize_reconstruction(
     data=train_dataloader,
     plot_data_func=plot_2darray_on_axis,
-    outfile="images/example2/spiral_backward_hv.jpg",
+    outfile="images/example2/spiral_backward_iv.jpg",
     num=25,
     steps=100,
 )

@@ -244,3 +244,46 @@ class VectorDegradationDDPM(nn.Module):
 
         data_noise = data_noise.view(data_orig_shape)
         return data_noise
+
+
+
+
+
+
+
+
+
+class VectorDegradationIncreaseVariance:
+
+    def __init__(self):
+        pass
+
+    def __call__(self, data, t, pipeline, seed=None, **kwargs):
+        if torch.is_tensor(t):
+            batch_dim = data.shape[0]
+            t = t.reshape(batch_dim, 1)
+            if not torch.all((t >= 0) & (t <= 1)):
+                raise ValueError("All elements of tensor 't' must be between 0 and 1.")
+        elif isinstance(t, float):
+            if not (0 <= t <= 1):
+                raise ValueError("The float value of 't' must be between 0 and 1.")
+        else:
+            raise TypeError("'t' must be a float or a tensor.")
+
+        if isinstance(t, float) and t < 1e-7:
+            # If 't' is very small, return the data unmodified as the degradation is negligible.
+            return data
+
+
+        data_orig_shape = data.shape
+        data = data.view(data.shape[0], -1)
+
+        std_dev = t*10
+        # Generate a sample from the standard normal distribution.
+        standard_normal_sample = rand_like_with_seed(data, seed=seed)
+
+        # Apply the degradation transformation.
+        transformed_sample = data + std_dev * standard_normal_sample
+
+        transformed_sample = transformed_sample.view(data_orig_shape)
+        return transformed_sample
