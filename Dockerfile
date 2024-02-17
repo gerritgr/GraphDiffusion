@@ -4,14 +4,15 @@ FROM quay.io/jupyter/scipy-notebook
 # next try this mltooling/ml-workspace:latest
 
 RUN git clone --depth 1 https://github.com/gerritgr/graphdiffusion.git
-RUN rm -rf graphdiffusion/.git 
+RUN rm -rf graphdiffusion/.git && mv graphdiffusion/* . &&  rmdir graphdiffusion
 
-RUN cd graphdiffusion && mamba env create -f environment_docker.yml -n graphdiffusionenv
+RUN mamba env create -f environment_docker.yml -n graphdiffusionenv
 RUN /opt/conda/envs/graphdiffusionenv/bin/python -m ipykernel install --user --name=graphdiffusionenv
 
 RUN mamba clean -ya
 
-RUN conda env export --name graphdiffusionenv >> environment.yml
+RUN conda env export --name graphdiffusionenv
+RUN conda env export --name graphdiffusionenv >> environment_after_creation.yml
 
 
 # Set as default
