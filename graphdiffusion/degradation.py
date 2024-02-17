@@ -256,7 +256,8 @@ class VectorDegradationDDPM(nn.Module):
 class VectorDegradationIncreaseVariance:
 
     def __init__(self):
-        pass
+        self.multiply_with = 5.0
+        self.time_scale = 2.0 #2.0 works good
 
     def __call__(self, data, t, pipeline, seed=None, **kwargs):
         if torch.is_tensor(t):
@@ -278,7 +279,7 @@ class VectorDegradationIncreaseVariance:
         data_orig_shape = data.shape
         data = data.view(data.shape[0], -1)
 
-        std_dev = t*10
+        std_dev = t**self.time_scale * self.multiply_with
         # Generate a sample from the standard normal distribution.
         standard_normal_sample = rand_like_with_seed(data, seed=seed)
 

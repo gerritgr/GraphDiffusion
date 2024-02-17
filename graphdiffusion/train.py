@@ -33,7 +33,7 @@ def train_epoch(dataloader, pipeline, optimizer):
     total_loss = 0.0
     for batch in dataloader:
         batch = pipeline.preprocess(batch) 
-        
+
         if isinstance(batch, list) or isinstance(batch, tuple):
             batch, label = batch
 
@@ -141,7 +141,7 @@ class VectorTrain:
             None
         """
         assert pipeline is not None, "pipeline must be provided"
-        self.pipeline = pipeline
+        self.pipeline = pipeline # TODO: remove this line potentially
         dataloader_train = VectorTrain.input_to_dataloader(input_data=data, device=self.pipeline.device)
         dataloader_test = VectorTrain.input_to_dataloader(input_data=data_test, device=self.pipeline.device) if data_test is not None else None
         model = self.pipeline.get_model()

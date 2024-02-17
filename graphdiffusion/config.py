@@ -103,7 +103,7 @@ def get_params(func, config, kwargs=None):
 
     if kwargs is not None:
         for key, value in kwargs.items():
-            if key in filtered_config:
+            if key in valid_keys:
                 filtered_config[key] = value
 
     return filtered_config
