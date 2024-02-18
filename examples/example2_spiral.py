@@ -233,7 +233,7 @@ pipeline.visualize_foward(
 train_dataloader = DataLoader(points[10:], batch_size=100, shuffle=True)
 test_dataloader = DataLoader(points[:10], batch_size=100, shuffle=True)
 
-pipeline.train(data=train_dataloader, epochs=10000, data_test=test_dataloader, pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_iv.pt")
+pipeline.train(data=train_dataloader, epochs=10000, data_test=test_dataloader)
 pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_iv.pt")
 
 pipeline.visualize_reconstruction(
@@ -247,3 +247,26 @@ pipeline.visualize_reconstruction(
 
 compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2/spiral_compare_iv.pdf")
 pipeline.info("compare iv", compare)
+
+
+#VectorDenoiserLarge
+
+
+pipeline = PipelineVector(node_feature_dim=2, degradation_obj=degradation_obj, reconstruction_obj = VectorDenoiserLarge(node_feature_dim=2), pre_trained_path="../pre_trained/vectordenoiser_spiral_weights_iv2.pt", level="DEBUG")
+pipeline.bridge_obj = VectorBridgeAlt()
+
+
+pipeline.train(data=train_dataloader, epochs=10000, data_test=test_dataloader)
+pipeline.save_all_model_weights("../pre_trained/vectordenoiser_spiral_weights_iv2.pt")
+
+pipeline.visualize_reconstruction(
+    data=train_dataloader,
+    plot_data_func=plot_2darray_on_axis,
+    outfile="images/example2/spiral_backward_iv2.jpg",
+    num=25,
+    steps=100,
+)
+
+
+compare = pipeline.compare_distribution(real_data=train_dataloader, outfile="images/example2/spiral_compare_iv2.pdf")
+pipeline.info("compare iv2", compare)

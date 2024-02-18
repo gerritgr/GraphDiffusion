@@ -1,6 +1,6 @@
 # Do no use - GraphDiffusion
 [![codecov](https://codecov.io/gh/gerritgr/GraphDiffusion/graph/badge.svg?token=O1FXPKS2ZI)](https://codecov.io/gh/gerritgr/GraphDiffusion)
-![example workflow](https://github.com/github/docs/actions/workflows/multi_test.yml/badge.svg)
+![example workflow](https://github.com/gerritgr/GraphDiffusion/actions/workflows/multi_test.yml/badge.svg)
 
 **Note**: This project is in the early stages of development and is currently public for development purposes only. It is not yet ready for production use.
 
