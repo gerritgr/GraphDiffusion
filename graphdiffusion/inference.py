@@ -28,8 +28,6 @@ class VectorInference:
         """
         Initializes the VectorInference class.
 
-        Args:
-            pipeline (object, optional): An object representing the processing pipeline.
         """
 
     def __call__(self, data, pipeline, noise_to_start, steps):
@@ -37,8 +35,8 @@ class VectorInference:
         Perform vector inference by iteratively refining the estimate of the original data.
 
         Args:
-            data (torch.utils.data.DataLoader, optional): A DataLoader providing data to infer from. Required if 'noise_to_start' is not provided.
-            noise_to_start (Tensor, optional): The starting noise tensor to begin inference. Required if 'dataloader' is not provided.
+            data (torch.utils.data.DataLoader, optional): A DataLoader providing data to infer from. Required if 'noise_to_start' is not provided. Should be batche (first dimension is batch dimension). 
+            noise_to_start (Tensor, optional): The starting noise tensor to begin inference. Required if 'dataloader' is not provided. Should be batched. 
             steps (int or array-like, optional): The number of steps or a sequence of 't' values for the inference process. Defaults to a linspace from 1 to 0 with 100 steps.
 
         Returns:
@@ -75,13 +73,17 @@ class VectorInference:
         # Initialize the starting point by adding 100% noise to a random data point if noise_to_start is not provided
         if noise_to_start is None:
             if isinstance(data, torch.utils.data.DataLoader):
+                assert data.batch_size > 0, "The DataLoader must have a batch size greater than 0."
                 random_data_point = next(iter(data))
+                if data.batch_size == 1:
+                    assert random_data_point.shape[0] == 1 and random_data_point.dim() > 1, "The dataloader must provide batched data."
                 if isinstance(random_data_point, list) or isinstance(random_data_point, tuple):
                     random_data_point = random_data_point[0]
             elif isinstance(data, torch.Tensor):
                 random_data_point = data
             else:
                 raise ValueError("data must be a DataLoader or a Tensor")
+            random_data_point = random_data_point.to(pipeline.device)
             random_data_point = pipeline.preprocess(random_data_point)
             noise_to_start = self.pipeline.degradation(random_data_point, t=1.0)
 
@@ -89,7 +91,8 @@ class VectorInference:
         assert data_t is not None
 
         for i, t in enumerate(steps):
-            data_0 = self.pipeline.reconstruction(data_t, t)  # Reconstruct data from the current state
+            with torch.no_grad():
+                data_0 = self.pipeline.reconstruction(data_t, t)  # Reconstruct data from the current state
             if "clamp_inference" in self.pipeline.config:
                 data_0 = torch.clamp(data_0, *self.pipeline.config["clamp_inference"])
             assert data_0 is not None and data_t is not None

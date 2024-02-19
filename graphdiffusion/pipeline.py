@@ -49,6 +49,13 @@ class PipelineBase:
         self.preprocess_batch = preprocess_batch
         self.postprocess_batch = postprocess_batch
 
+        self.reconstruction_obj.to(self.device)
+        if isinstance(self.degradation_obj, nn.Module):
+            self.degradation_obj.to(self.device)
+        if isinstance(self.distance_obj, nn.Module):
+            self.distance_obj.to(self.device)
+
+
         if not callable(self.reconstruction_obj):
             raise ValueError("reconstruction_obj must be callable")
         if not callable(self.inference_obj):
@@ -240,6 +247,7 @@ class PipelineBase:
         if isinstance(data, torch.Tensor) and data.dim() == 1:
             data = data.view(1, -1)
 
+        data = data.to(self.device)
         arrays = list()
         for t in np.linspace(0, 1, num):
             arrays.append(self.degradation(data, t))
@@ -264,11 +272,17 @@ class PipelineBase:
             return final_list
 
         if isinstance(data, torch.utils.data.DataLoader):
-            data = next(iter(data))
-            if isinstance(data, list) or isinstance(data, tuple):
-                data = data[0]
+            data_x = next(iter(data))
+            if isinstance(data_x, list) or isinstance(data_x, tuple):
+                data_x = data_x[0]
+            assert data_x.dim() > 1
+            if data.batch_size == 1:
+                #data_x = next(iter(data))
+                assert data_x.shape[0] == 1, "The dataloader must provide batched data."
+            data = data_x
             data = self.preprocess(data)
 
+        data = data.to(self.device)
         arrays_data = list()
         arrays_projections = list()
         backward_steps = list(np.linspace(1.0, 0, steps))
@@ -406,6 +420,10 @@ class PipelineBase:
             real_batch_1 = next(real_data_iter)
             real_batch_2 = next(real_data_iter)  # should be disjoint from real_batch_1
             generated_batch = next(generated_data_iter)
+
+            real_batch_1 = real_batch_1.to(self.device)
+            real_batch_2 = real_batch_2.to(self.device)
+            generated_batch = generated_batch.to(self.device)
 
             axis_between = None
             axis_within = None

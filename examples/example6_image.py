@@ -75,7 +75,7 @@ pipeline.visualize_foward(
 )
 
 
-pipeline.train(data=train_loader, epochs=100)
+pipeline.train(data=train_loader, epochs=10)
 pipeline.save_all_model_weights("../pre_trained/mnist_weights.pt")
 
 

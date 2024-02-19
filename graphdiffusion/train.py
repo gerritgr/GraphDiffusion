@@ -14,8 +14,11 @@ import random
 def model_test(pipeline, dataloader):  # cannot name it test_model due to test suit
     total_loss = 0
     pipeline.get_model().eval()
-    with torch.no_grad():  # redundant?
+    with torch.no_grad(): 
         for batch in dataloader:
+            if isinstance(batch, list) or isinstance(batch, tuple):
+                batch, _ = batch # ignore label
+            batch = batch.to(pipeline.device)
             t = torch.rand(batch.shape[0], device=batch.device)
             batch_with_noise = pipeline.degradation(batch, t)
             batch_reconstructed = pipeline.reconstruction(batch_with_noise, t)
@@ -35,8 +38,9 @@ def train_epoch(dataloader, pipeline, optimizer):
         batch = pipeline.preprocess(batch) 
 
         if isinstance(batch, list) or isinstance(batch, tuple):
-            batch, label = batch
+            batch, _ = batch # ignore label
 
+        batch = batch.to(pipeline.device)
         # Generate random tensor 't' for degradation
         t = torch.rand(batch.shape[0], device=pipeline.device)
 

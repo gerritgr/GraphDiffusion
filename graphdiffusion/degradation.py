@@ -158,7 +158,7 @@ class VectorDegradationHighVariance:
         return transformed_sample
 
 
-class VectorDegradationDDPM(nn.Module):
+class VectorDegradationDDPM():
     def __init__(self):
         """
         Initializes the VectorDegradationDDPM module. The pipeline parameter is stored but not currently used.
@@ -166,7 +166,7 @@ class VectorDegradationDDPM(nn.Module):
         Args:
             pipeline (object, optional): An object representing the processing pipeline, unused.
         """
-        super(VectorDegradationDDPM, self).__init__()
+        #super(VectorDegradationDDPM, self).__init__()
 
     @staticmethod
     def generate_schedule(ddpm_start=0.0001, ddpm_end=0.04, step_num=100):
@@ -185,7 +185,7 @@ class VectorDegradationDDPM(nn.Module):
         assert betas.numel() == step_num, "Number of generated betas does not match the step number."
         return betas
 
-    def forward(self, data, t, pipeline, seed=None, **kwargs):
+    def __call__(self, data, t, pipeline, seed=None, **kwargs):
         """
         Apply the DDPM degradation process to the input data based on the degradation factor 't'.
 
