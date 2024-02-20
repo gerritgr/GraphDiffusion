@@ -7,6 +7,7 @@ from loguru import logger
 
 from graphdiffusion import utils
 from graphdiffusion.utils import create_path
+from torch_geometric.data import Data
 
 
 def to_numpy_array(input_array):
@@ -16,6 +17,9 @@ def to_numpy_array(input_array):
         return input_array.detach().cpu().numpy()
     # Check if the input_array is already a NumPy array
     elif isinstance(input_array, np.ndarray):
+        return input_array
+    elif isinstance(input_array, Data):
+        # Return the PyG graph unchanged
         return input_array
     else:
         raise TypeError("The input should be a PyTorch tensor or a NumPy array")
@@ -102,11 +106,15 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show=False, plot_data_func=
     plot_data_func = plot_data_func or plot_array_on_axis
 
     # Find global x and y limits
-    max_length = max(len(arr) for arr in arrays)
-    max_value = max(arr.max() for arr in arrays)
-    min_value = min(arr.min() for arr in arrays)
-    x_limits = (-0.5, max_length - 0.5)
-    y_limits = (min_value - 0.5, max_value + 0.5)
+    try:
+        max_length = max(len(arr) for arr in arrays)
+        max_value = max(arr.max() for arr in arrays)
+        min_value = min(arr.min() for arr in arrays)
+        x_limits = (-0.5, max_length - 0.5)
+        y_limits = (min_value - 0.5, max_value + 0.5)
+    except Exception as e:
+        from loguru import logger
+        logger.warning(str(e))
 
     # Determine the grid size
     num_plots = len(arrays)
