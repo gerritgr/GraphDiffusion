@@ -5,9 +5,10 @@ import random
 import traceback
 from loguru import logger
 
-from graphdiffusion import utils
-from graphdiffusion.utils import create_path
+
+from graphdiffusion.utils import create_path, remove_hydrogens_from_pyg
 from torch_geometric.data import Data
+
 
 
 def to_numpy_array(input_array):
@@ -106,15 +107,15 @@ def create_grid_plot(arrays, outfile="test.pdf", plt_show=False, plot_data_func=
     plot_data_func = plot_data_func or plot_array_on_axis
 
     # Find global x and y limits
-    try:
-        max_length = max(len(arr) for arr in arrays)
-        max_value = max(arr.max() for arr in arrays)
-        min_value = min(arr.min() for arr in arrays)
-        x_limits = (-0.5, max_length - 0.5)
-        y_limits = (min_value - 0.5, max_value + 0.5)
-    except Exception as e:
-        from loguru import logger
-        logger.warning(str(e))
+    #try:
+    #    max_length = max(len(arr) for arr in arrays)
+    #    max_value = max(arr.max() for arr in arrays)
+    #    min_value = min(arr.min() for arr in arrays)
+    #    x_limits = (-0.5, max_length - 0.5)
+    #    y_limits = (min_value - 0.5, max_value + 0.5)
+    #except Exception as e:
+    #    from loguru import logger
+    #    logger.warning(str(e))
 
     # Determine the grid size
     num_plots = len(arrays)
@@ -222,3 +223,152 @@ def plot_image_on_axis(array, axis, arrays=None):
 
     # Display the image
     axis.imshow(array.astype(np.uint8) if array.dtype == np.float32 or array.dtype == np.float64 else array)
+
+
+
+
+
+
+
+
+import networkx as nx
+from torch_geometric.utils import to_networkx
+
+
+
+def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None, remove_hydrogens=False):
+    """
+    Plot a PyG graph on a specified Matplotlib axis, with different line styles for different bond types
+    based on one-hot encoding in data.edge_attr.
+
+    Parameters:
+    - data: PyG Data object representing the graph to be plotted.
+    - axis: Matplotlib axis object where the graph will be plotted.
+    - node_size: int, size of the nodes in the plot.
+    """
+    from torch_geometric.utils import subgraph
+
+    if node_size is None:
+        node_size = 8000 // data.num_nodes
+
+
+    # Define colors for atom types
+    atom_colors = ['white', 'black', 'blue', 'red', 'green']  # For [Hydrogen, Carbon, Nitrogen, Oxygen, Fluorine]
+    bond_colors = ['lightgray', 'gray', 'darkgray']
+    
+    # Map one-hot encoded atom types to colors
+    def one_hot_to_color(one_hot_vector):
+        print("one hot", one_hot_vector)
+        if one_hot_vector[0] > 0:
+            one_hot_vector = one_hot_vector[1:]
+            atom_type_index = one_hot_vector.argmax()
+            return atom_colors[atom_type_index]
+        one_hot_vector = one_hot_vector[1:]
+        if one_hot_vector.max() < 0.5:
+            return "white"
+        atom_type_index = one_hot_vector.argmax()
+        return bond_colors[atom_type_index]
+    
+    # Convert one-hot encodings to colors for each node
+    node_colors = [one_hot_to_color(data.x[i, :]) for i in range(data.num_nodes)]
+    print("node_colors", node_colors)
+    
+    # Convert the PyG graph object to a NetworkX graph
+    graph = to_networkx(data, to_undirected=True, node_attrs=['x'])
+    
+    # Bond type to line style mapping
+    #bond_styles = ['solid', 'dashed', 'dotted', 'dashdot']  # Assuming up to 4 bond types; adjust as needed
+    
+    # Compute node positions
+    pos = nx.spring_layout(graph, seed=42)
+    
+    # Draw nodes
+    nx.draw_networkx_nodes(graph, pos, ax=axis, node_color=node_colors, edgecolors='black', linewidths=2, node_size=node_size)
+    
+    # Draw edges with styles based on bond types
+    for u, v, edge_attr in graph.edges(data=True):
+        nx.draw_networkx_edges(graph, pos, ax=axis, edgelist=[(u, v)], width=2, edge_color='black')
+    
+    # Draw labels with white text
+    nx.draw_networkx_labels(graph, pos, ax=axis, font_color='lightblue')
+    
+    axis.set_title("Graph Representation of a Molecule with Different Bond Types")
+    axis.axis('off')  # Hide the axes
+
+
+
+
+def plot_pyg_graph(data, axis, arrays=None, node_size=None, remove_hydrogens=False):
+    """
+    Plot a PyG graph on a specified Matplotlib axis, with different line styles for different bond types
+    based on one-hot encoding in data.edge_attr.
+
+    Parameters:
+    - data: PyG Data object representing the graph to be plotted.
+    - axis: Matplotlib axis object where the graph will be plotted.
+    - node_size: int, size of the nodes in the plot.
+    """
+    from torch_geometric.utils import subgraph
+
+    is_inflated = False
+    try:
+        is_inflated = data.is_inflated
+    except:
+        pass
+    if is_inflated:
+        return plot_pyg_edgegraph(data, axis, arrays=arrays, node_size=node_size, remove_hydrogens=remove_hydrogens)
+
+
+    if node_size is None:
+        node_size = 8000 // data.num_nodes
+
+    if remove_hydrogens:
+        data = remove_hydrogens_from_pyg(data)
+        #data_old = data
+        #data = Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
+        #non_hydrogen_mask = data.x[:, 0] == 0
+        #subset = non_hydrogen_mask.clone().detach()
+        #new_edge_index, new_edge_attr = subgraph(subset, data.edge_index, data.edge_attr, relabel_nodes = True)
+        #data.edge_index = new_edge_index
+        #data.edge_attr = new_edge_attr
+        #data.x = data.x[non_hydrogen_mask]
+        # Copy any additional data
+        #for key, item in data_old:
+        #    if key not in ['x', 'edge_index', 'edge_attr']:
+        #        data[key] = item
+
+
+    # Define colors for atom types
+    atom_colors = ['white', 'black', 'blue', 'red', 'green']  # For [Hydrogen, Carbon, Nitrogen, Oxygen, Fluorine]
+    
+    # Map one-hot encoded atom types to colors
+    def one_hot_to_color(one_hot_vector, colors):
+        atom_type_index = one_hot_vector.argmax()
+        return colors[atom_type_index]
+    
+    # Convert one-hot encodings to colors for each node
+    node_colors = [one_hot_to_color(data.x[i, :5], atom_colors) for i in range(data.num_nodes)]
+    
+    # Convert the PyG graph object to a NetworkX graph
+    graph = to_networkx(data, to_undirected=True, node_attrs=['x'], edge_attrs=['edge_attr'])
+    
+    # Bond type to line style mapping
+    bond_styles = ['solid', 'dashed', 'dotted', 'dashdot']  # Assuming up to 4 bond types; adjust as needed
+    
+    # Compute node positions
+    pos = nx.spring_layout(graph, seed=42)
+    
+    # Draw nodes
+    nx.draw_networkx_nodes(graph, pos, ax=axis, node_color=node_colors, edgecolors='black', linewidths=2, node_size=node_size)
+    
+    # Draw edges with styles based on bond types
+    for u, v, edge_attr in graph.edges(data=True):
+        bond_type_index =  np.argmax(edge_attr['edge_attr'])  # Assuming 'edge_attr' is the one-hot encoded bond type
+        style = bond_styles[bond_type_index] if bond_type_index < len(bond_styles) else 'solid'
+        nx.draw_networkx_edges(graph, pos, ax=axis, edgelist=[(u, v)], style=style, width=2, edge_color='black')
+    
+    # Draw labels with white text
+    nx.draw_networkx_labels(graph, pos, ax=axis, font_color='lightblue')
+    
+    axis.set_title("Graph Representation of a Molecule with Different Bond Types")
+    axis.axis('off')  # Hide the axes

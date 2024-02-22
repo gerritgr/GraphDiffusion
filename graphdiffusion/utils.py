@@ -277,3 +277,143 @@ if __name__ == "__main__":
     
     print(f"Original batch shape: {dummy_batch.shape}")
     print(f"Transformed batch shape: {transformed_batch.shape}")
+          
+
+
+################################
+################################
+# QM 9 utils
+################################
+################################
+          
+
+import torch
+from torch_geometric.data import Data
+
+from torch_geometric.utils import to_undirected
+
+
+
+
+
+def find_edge_attr(data, src, target, undirected=True):
+    """
+    Find the edge attribute of an edge connecting src to target in a PyG graph.
+    If undirected is True, also return the attribute if an edge in the reverse direction exists.
+
+    Parameters:
+    - data: A PyTorch Geometric Data object representing the graph.
+    - src: The source node id.
+    - target: The target node id.
+    - undirected: If True, also consider the edge in the reverse direction.
+
+    Returns:
+    - The attribute of the edge connecting src to target (or target to src if undirected is True) if it exists, otherwise None.
+    """
+    # Ensure that src and target are within bounds and edge_attr exists
+    if src >= data.num_nodes or target >= data.num_nodes or data.edge_attr is None:
+        return None
+
+    # Function to search for an edge and return its attribute
+    def search_edge(s, t):
+        edge_indices = (data.edge_index[0] == s) & (data.edge_index[1] == t)
+        edge_pos = edge_indices.nonzero(as_tuple=True)
+        if len(edge_pos[0]) == 0:
+            return None
+        else:
+            return data.edge_attr[edge_pos[0][0]]
+
+    # Search for the edge in the specified direction
+    edge_attr_value = search_edge(src, target)
+    if edge_attr_value is not None:
+        return edge_attr_value
+
+    # If undirected is True and the edge was not found, search in the reverse direction
+    if undirected:
+        return search_edge(target, src)
+
+    # If no edge is found in either direction, return None
+    return None
+
+# Example usage:
+# Assuming 'data' is your PyTorch Geometric Data object
+# src = 0  # Example source node id
+# target = 1  # Example target node id
+# Check in both directions
+# edge_attr_value = find_edge_attr(data, src, target, undirected=True)
+# print(edge_attr_value)
+
+def remove_hydrogens_from_pyg(data):
+    from torch_geometric.utils import subgraph
+    #data = data.clone()
+    data_old = data
+    data = Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
+    non_hydrogen_mask = data.x[:, 0] == 0
+    subset = non_hydrogen_mask.clone().detach()
+    new_edge_index, new_edge_attr = subgraph(subset, data.edge_index, data.edge_attr, relabel_nodes = True)
+    data.edge_index = new_edge_index
+    data.edge_attr = new_edge_attr
+    data.x = data.x[non_hydrogen_mask]
+    # Copy any additional data
+    for key, item in data_old:
+        if key not in ['x', 'edge_index', 'edge_attr']:
+            data[key] = item
+    return data
+
+
+
+def inflate_graph(graph, node_indicator=1.0, edge_indicator=-1.0, blank=-1.0, to_undirected=True):
+    assert graph.edge_attr is not None
+    if abs(node_indicator - edge_indicator) < 0.1:
+        raise ValueError("node_indicator and edge_indicator are too close to each other.")
+
+
+    num_original_nodes = graph.num_nodes
+    original_node_feature_dim = graph.x.size(1)
+    original_edge_feature_dim = graph.edge_attr.size(1)
+
+    new_node_feature_dim = max(original_node_feature_dim, original_edge_feature_dim) + 1
+    new_node_num = num_original_nodes + (num_original_nodes**2 - num_original_nodes) // 2
+
+    new_x = torch.zeros(new_node_num, new_node_feature_dim, device=graph.x.device, dtype=graph.x.dtype) + blank
+    new_x[:num_original_nodes, 0] = node_indicator
+    new_x[num_original_nodes:, 0] = edge_indicator
+    new_x[:num_original_nodes, 1:original_node_feature_dim+1] = graph.x
+
+    edge_list_tuple = []
+    new_node_index = num_original_nodes
+    for start_i in range(num_original_nodes):
+        for target_i in range(num_original_nodes):
+            if start_i >= target_i:
+                continue
+            edge_list_tuple.append((start_i, new_node_index))
+            edge_list_tuple.append((new_node_index, target_i))
+            edge_attr = find_edge_attr(graph, start_i, target_i)
+            if edge_attr is not None:
+                new_x[new_node_index, 1:original_edge_feature_dim+1] = edge_attr
+            new_node_index += 1
+
+    # Fixing the creation of new_edge_index from edge_list_tuple
+    if to_undirected:
+        edge_list_tuple = edge_list_tuple + [(j, i) for i, j in edge_list_tuple]
+    new_edge_index = torch.tensor(edge_list_tuple, dtype=torch.long).t().contiguous()
+
+    # Create a new Data object with the updated graph structure
+    new_graph = Data(x=new_x, edge_index=new_edge_index.to(graph.edge_index.device))
+    new_graph.is_inflated = True
+
+    #new_graph.node_mask = new_x[:, 0] == node_indicator
+    #new_graph.edge_mask = new_x[:, 0] == edge_indicator
+    new_graph.node_mask = torch.isclose(new_x[:, 0], torch.tensor([node_indicator], device=new_x.device), atol=1e-6)
+    new_graph.edge_mask = torch.isclose(new_x[:, 0], torch.tensor([edge_indicator], device=new_x.device), atol=1e-6)
+
+    new_graph.original_edge_feature_dim = original_edge_feature_dim
+    new_graph.original_node_feature_dim = original_node_feature_dim
+    new_graph.num_original_nodes = num_original_nodes
+
+    for key, item in graph:
+        if key not in ['x', 'edge_index', 'edge_attr', 'node_mask', 'edge_mask', 'original_edge_feature_dim', 'original_node_feature_dim', 'num_original_nodes']:
+            new_graph[key] = item
+
+    return new_graph
+
