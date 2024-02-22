@@ -417,3 +417,83 @@ def inflate_graph(graph, node_indicator=1.0, edge_indicator=-1.0, blank=-1.0, to
 
     return new_graph
 
+
+
+
+def get_all_neighbors(graph, node_id):
+    """
+    Get all unique neighbors of a node in a PyTorch Geometric graph, considering edges in both directions.
+
+    Parameters:
+    - graph: A PyTorch Geometric Data object representing the graph.
+    - node_id: The ID of the node for which to find neighbors.
+
+    Returns:
+    - A tensor containing the IDs of all unique neighbor nodes.
+    """
+    # Ensure node_id is within the valid range
+    if node_id >= graph.num_nodes:
+        raise ValueError("node_id is out of bounds.")
+
+    # Concatenate source and target nodes from edge_index to consider both directions
+    all_nodes = torch.cat((graph.edge_index[0], graph.edge_index[1]))
+    all_neighbors = torch.cat((graph.edge_index[1], graph.edge_index[0]))
+
+    # Find indices where node_id appears as either source or target
+    neighbor_mask = (all_nodes == node_id)
+
+    # Retrieve and return unique neighbor IDs
+    neighbors = all_neighbors[neighbor_mask]
+    unique_neighbors = torch.unique(neighbors).tolist()
+
+    return unique_neighbors
+
+
+
+
+def reduce_graph(inflated_graph):
+    # Check for the inflation flag or specific attributes indicating inflation
+    if not hasattr(inflated_graph, 'is_inflated') or not inflated_graph.is_inflated:
+        raise ValueError("The input graph does not seem to be inflated.")
+
+    # Retrieve original graph dimensions and node/edge counts
+    num_reduced_nodes = inflated_graph.num_original_nodes
+    original_node_feature_dim = inflated_graph.original_node_feature_dim
+    original_edge_feature_dim = inflated_graph.original_edge_feature_dim
+
+    # Reconstruct original node features from the first part of the inflated graph's x
+    reduced_x = inflated_graph.x[:num_reduced_nodes, 1:original_node_feature_dim]
+
+    # Identify nodes and edges based on indicators
+    reduced_edge_index = list()
+    reduced_edge_attr = list()
+
+    #reduced_edges = inflated_graph.x[inflated_graph.edge_mask, 1:original_edge_feature_dim]
+
+    for i in range(inflated_graph.x.shape[0]):
+        if not inflated_graph.edge_mask[i]:
+            continue
+        edge_i = inflated_graph.x[i, 1:original_edge_feature_dim]
+        if edge_i.max() < 0.0:
+            continue
+        neighbors_of_i = get_all_neighbors(inflated_graph, i)
+        assert len(neighbors_of_i) == 2
+        reduced_edge_index.append(neighbors_of_i)
+        reduced_edge_attr.append(edge_i)
+
+    print("reduced_edge_index", reduced_edge_index)
+    print("reduced_edge_attr", reduced_edge_attr)
+
+    reduced_edge_index = torch.tensor(reduced_edge_index, dtype=torch.long).t().contiguous()
+    reduced_edge_attr = torch.stack(reduced_edge_attr, dim=0)
+
+
+    # Reconstruct the original graph Data object
+    reduced_graph = Data(x=reduced_x, edge_index=reduced_edge_index, edge_attr=reduced_edge_attr)
+
+    # Copy other attributes from the inflated graph
+    for key, item in inflated_graph:
+        if key not in ['x', 'edge_index', 'edge_attr', 'is_inflated', 'node_mask', 'edge_mask', 'num_original_nodes', 'original_node_feature_dim', 'original_edge_feature_dim']:
+            reduced_graph[key] = item
+    
+    return reduced_graph

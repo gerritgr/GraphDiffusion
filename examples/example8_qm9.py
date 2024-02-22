@@ -172,7 +172,7 @@ pipeline.visualize_foward(
     plot_data_func=plot_pyg_graph,
 )
 
-data = dataset[1021] #dataset[101]
+data = dataset[101] #dataset[101] #1021
 data = remove_hydrogens_from_pyg(data)
 data.x = data.x[:,0:5]
 print("\n"*6)
@@ -180,7 +180,7 @@ print("before transform ", data)
 
 fig, ax = plt.subplots(figsize=(10, 7))
 plot_pyg_graph(data, ax, remove_hydrogens=False)
-plt.savefig(create_path("images/example8/molecule_edgegraph.png"))
+plt.savefig(create_path("images/example8/molecule_graph.png"))
 
 data = inflate_graph(data)
 print("after transform ", data)
@@ -189,7 +189,7 @@ print(data.x)
 
 fig, ax = plt.subplots(figsize=(10, 7))
 plot_pyg_graph(data, ax, remove_hydrogens=False)
-plt.savefig(create_path("images/example8/molecule_edgegraph2.png"))
+plt.savefig(create_path("images/example8/molecule_inflated_graph.png"))
 
 print(data)
 print("print(data.x)")
@@ -198,3 +198,13 @@ print(data.edge_index.t())
 
 
 print(data.node_mask, data.x[data.node_mask])
+
+
+data = reduce_graph(data)
+
+
+print(data)
+
+fig, ax = plt.subplots(figsize=(10, 7))
+plot_pyg_graph(data, ax, remove_hydrogens=False)
+plt.savefig(create_path("images/example8/molecule_inflated_and_reduced_graph.png"))
