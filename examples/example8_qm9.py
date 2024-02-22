@@ -155,14 +155,19 @@ from torch_geometric.loader import DataLoader
 
 # Load the QM9 dataset
 
-batch_size = 2  # You can adjust the batch size as needed
+batch_size = 1 # You can adjust the batch size as needed
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 
-def degradation_obj(data, t, pipeline):
+def degradation_obj(data, t, pipeline): #TODO batches
+    data = data.clone()
+    data = inflate_graph(data)
+    #data.x = data.x + t * 30 * torch.randn_like(data.x)
+    data.x[:,1:] = data.x[:,1:] + t  * torch.randn_like(data.x[:,1:])
+    data= reduce_graph(data)
     return data
 
-pipeline = PipelineVector(node_feature_dim=2, level="DEBUG",     degradation_obj=degradation_obj,)
+pipeline = PipelineVector(node_feature_dim=2, level="DEBUG",     degradation_obj=degradation_obj, preprocess_batch=remove_hydrogens_from_pyg)
 
 
 pipeline.visualize_foward(
@@ -208,3 +213,7 @@ print(data)
 fig, ax = plt.subplots(figsize=(10, 7))
 plot_pyg_graph(data, ax, remove_hydrogens=False)
 plt.savefig(create_path("images/example8/molecule_inflated_and_reduced_graph.png"))
+
+
+
+

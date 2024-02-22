@@ -348,7 +348,8 @@ def remove_hydrogens_from_pyg(data):
     #data = data.clone()
     data_old = data
     data = Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
-    non_hydrogen_mask = data.x[:, 0] == 0
+    #non_hydrogen_mask = data.x[:, 0] == 0
+    non_hydrogen_mask = data.x.argmax(dim=1) != 0
     subset = non_hydrogen_mask.clone().detach()
     new_edge_index, new_edge_attr = subgraph(subset, data.edge_index, data.edge_attr, relabel_nodes = True)
     data.edge_index = new_edge_index

@@ -242,6 +242,7 @@ class PipelineBase:
 
         if isinstance(data, torch.utils.data.DataLoader):
             data = next(iter(data))
+            data = self.preprocess(data)
             if isinstance(data, list) or isinstance(data, tuple):
                 data = data[0]
         if isinstance(data, torch.Tensor) and data.dim() == 1:

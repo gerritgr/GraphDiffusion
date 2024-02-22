@@ -320,7 +320,7 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None, remove_hydrogens=Fal
 
 
     if node_size is None:
-        node_size = 8000 // data.num_nodes
+        node_size = 7000 // data.num_nodes
 
     if remove_hydrogens:
         data = remove_hydrogens_from_pyg(data)
@@ -370,5 +370,5 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None, remove_hydrogens=Fal
     # Draw labels with white text
     nx.draw_networkx_labels(graph, pos, ax=axis, font_color='lightblue')
     
-    axis.set_title("Graph Representation of a Molecule with Different Bond Types")
+    #axis.set_title("Graph Representation of a Molecule with Different Bond Types")
     axis.axis('off')  # Hide the axes
