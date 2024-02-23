@@ -53,6 +53,7 @@ print(data.edge_index)
 print(data.edge_attr)
 
 
+
 # hydrogen, carbon, Nitrogen, Oxygen, Fluorine
 
 
@@ -163,11 +164,31 @@ def degradation_obj(data, t, pipeline): #TODO batches
     data = data.clone()
     data = inflate_graph(data)
     #data.x = data.x + t * 30 * torch.randn_like(data.x)
-    data.x[:,1:] = data.x[:,1:] + t  * torch.randn_like(data.x[:,1:])
+    new_x = data.x + t * 3 * torch.randn_like(data.x)
+    data.x[data.node_mask,1:data.original_node_feature_dim+1] = new_x[data.node_mask,1:data.original_node_feature_dim+1]
+    data.x[data.edge_mask,1:data.original_edge_feature_dim+1] = new_x[data.edge_mask,1:data.original_edge_feature_dim+1]
     data= reduce_graph(data)
+    #data = inflate_graph(data) 
     return data
 
-pipeline = PipelineVector(node_feature_dim=2, level="DEBUG",     degradation_obj=degradation_obj, preprocess_batch=remove_hydrogens_from_pyg)
+def degradation_obj_batch(data, t, pipeline):
+    print("data batched",data, data.batch)
+    from torch_geometric.data import Data, Batch
+    # Step 1: Check if the graph is batched
+    if hasattr(data, 'batch'):
+        # Step 2: De-batch the graph
+       # data.num_graphs = data.batch.max().item() + 1
+        data_list = Batch.to_data_list(data)# data.to_data_list()
+    else:
+        return degradation_obj(data, t, pipeline)
+
+    # Step 3: Apply `add_node()` to each graph
+    modified_data_list = [degradation_obj(graph, t, pipeline) for graph in data_list]
+
+    return Batch.from_data_list(modified_data_list)
+
+
+pipeline = PipelineVector(node_feature_dim=2, level="DEBUG",     degradation_obj=batchify_pyg_transform(degradation_obj), preprocess_batch=batchify_pyg_transform(remove_hydrogens_from_pyg)) #remove_hydrogens_from_pyg
 
 
 pipeline.visualize_foward(

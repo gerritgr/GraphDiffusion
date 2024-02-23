@@ -343,11 +343,18 @@ def find_edge_attr(data, src, target, undirected=True):
 # edge_attr_value = find_edge_attr(data, src, target, undirected=True)
 # print(edge_attr_value)
 
+
+def transform_qm9(data):
+    data_new = data.clone()
+    data_new.x = data_new.x[:, :5]
+    return data_new
+
 def remove_hydrogens_from_pyg(data):
     from torch_geometric.utils import subgraph
     #data = data.clone()
+    data = transform_qm9(data)
     data_old = data
-    data = Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
+    data = data.clone() #Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
     #non_hydrogen_mask = data.x[:, 0] == 0
     non_hydrogen_mask = data.x.argmax(dim=1) != 0
     subset = non_hydrogen_mask.clone().detach()
@@ -356,10 +363,55 @@ def remove_hydrogens_from_pyg(data):
     data.edge_attr = new_edge_attr
     data.x = data.x[non_hydrogen_mask]
     # Copy any additional data
-    for key, item in data_old:
-        if key not in ['x', 'edge_index', 'edge_attr']:
-            data[key] = item
+    #for key, item in data_old:
+    #    if key not in ['x', 'edge_index', 'edge_attr']:
+    #        data[key] = item
     return data
+
+
+def remove_hydrogens_from_pyg_batch(data):
+    from torch_geometric.data import Data, Batch
+    if hasattr(data, 'batch'):
+        # Convert batched Data object to a list of individual Data objects
+        data_list = Batch.to_data_list(data)
+        # Apply `func` to each individual Data object
+        modified_data_list = [remove_hydrogens_from_pyg(d) for d in data_list]
+        # Re-batch the modified Data objects into a single Batch object
+        return Batch.from_data_list(modified_data_list)
+
+    return func(data)
+
+
+from torch_geometric.data import Data, Batch
+
+def batchify_pyg_transform(func):
+    """
+    Wraps a function that operates on individual PyTorch Geometric Data objects to
+    work on a batched Data object, applying the function to each graph in the batch.
+    
+    Parameters:
+    - func (callable): Function to apply to each Data object. The function takes a Data
+                       object as its first argument and can accept additional arguments
+                       and keyword arguments. It returns a modified Data object.
+                       
+    Returns:
+    - Callable that applies `func` to each Data object in a batch or a single Data object,
+      passing through any additional arguments and keyword arguments.
+    """
+    def apply_func_to_batch(data, *args, **kwargs):
+        # Check if the data is batched by looking for the 'batch' attribute
+        if hasattr(data, 'batch'):
+            # Convert batched Data object to a list of individual Data objects
+            data_list = Batch.to_data_list(data)
+            # Apply `func` to each individual Data object, passing through any additional arguments
+            modified_data_list = [func(d, *args, **kwargs) for d in data_list]
+            # Re-batch the modified Data objects into a single Batch object
+            return Batch.from_data_list(modified_data_list)
+        else:
+            # If data is not batched, directly apply `func`, passing through any additional arguments
+            return func(data, *args, **kwargs)
+    
+    return apply_func_to_batch
 
 
 
@@ -372,6 +424,7 @@ def inflate_graph(graph, node_indicator=1.0, edge_indicator=-1.0, blank=-1.0, to
     num_original_nodes = graph.num_nodes
     original_node_feature_dim = graph.x.size(1)
     original_edge_feature_dim = graph.edge_attr.size(1)
+
 
     new_node_feature_dim = max(original_node_feature_dim, original_edge_feature_dim) + 1
     new_node_num = num_original_nodes + (num_original_nodes**2 - num_original_nodes) // 2
