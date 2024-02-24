@@ -352,10 +352,13 @@ def transform_qm9(data):
 def remove_hydrogens_from_pyg(data):
     from torch_geometric.utils import subgraph
     #data = data.clone()
+    if 'is_inflated' in data and data.is_inflated:
+        raise ValueError("The input graph does not seem to be inflated.")
     data = transform_qm9(data)
     data_old = data
     data = data.clone() #Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
     #non_hydrogen_mask = data.x[:, 0] == 0
+    assert torch.all(torch.isclose(data.x.sum(dim=1), torch.tensor(1.0, device=data.x.device), atol=1e-6)), "Not all rows in data.x sum to one (within tolerance)."
     non_hydrogen_mask = data.x.argmax(dim=1) != 0
     subset = non_hydrogen_mask.clone().detach()
     new_edge_index, new_edge_attr = subgraph(subset, data.edge_index, data.edge_attr, relabel_nodes = True)
@@ -424,6 +427,7 @@ def inflate_graph(graph, node_indicator=1.0, edge_indicator=-1.0, blank=-1.0, to
     num_original_nodes = graph.num_nodes
     original_node_feature_dim = graph.x.size(1)
     original_edge_feature_dim = graph.edge_attr.size(1)
+    assert num_original_nodes > 0 and original_node_feature_dim > 0 and original_edge_feature_dim > 0 
 
 
     new_node_feature_dim = max(original_node_feature_dim, original_edge_feature_dim) + 1

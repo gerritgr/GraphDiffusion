@@ -236,7 +236,7 @@ from torch_geometric.utils import to_networkx
 
 
 
-def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None, remove_hydrogens=False):
+def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None):
     """
     Plot a PyG graph on a specified Matplotlib axis, with different line styles for different bond types
     based on one-hot encoding in data.edge_attr.
@@ -305,7 +305,7 @@ def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None, remove_hydrogens
 
 
 
-def plot_pyg_graph(data, axis, arrays=None, node_size=None, remove_hydrogens=False):
+def plot_pyg_graph(data, axis, arrays=None, node_size=None):
     """
     Plot a PyG graph on a specified Matplotlib axis, with different line styles for different bond types
     based on one-hot encoding in data.edge_attr.
@@ -327,26 +327,12 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None, remove_hydrogens=Fal
     except:
         pass
     if is_inflated:
-        return plot_pyg_edgegraph(data, axis, arrays=arrays, node_size=node_size, remove_hydrogens=remove_hydrogens)
+        return plot_pyg_edgegraph(data, axis, arrays=arrays, node_size=node_size)
 
 
     if node_size is None:
         node_size = 7000 // data.num_nodes
 
-    if remove_hydrogens:
-        data = remove_hydrogens_from_pyg(data)
-        #data_old = data
-        #data = Data(x=data.x, edge_index=data.edge_index, edge_attr=data.edge_attr)
-        #non_hydrogen_mask = data.x[:, 0] == 0
-        #subset = non_hydrogen_mask.clone().detach()
-        #new_edge_index, new_edge_attr = subgraph(subset, data.edge_index, data.edge_attr, relabel_nodes = True)
-        #data.edge_index = new_edge_index
-        #data.edge_attr = new_edge_attr
-        #data.x = data.x[non_hydrogen_mask]
-        # Copy any additional data
-        #for key, item in data_old:
-        #    if key not in ['x', 'edge_index', 'edge_attr']:
-        #        data[key] = item
 
 
     # Define colors for atom types
