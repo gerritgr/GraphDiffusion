@@ -249,7 +249,7 @@ def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None):
     from torch_geometric.utils import subgraph
 
     if node_size is None:
-        node_size = 8000 // data.num_nodes
+        node_size = 5000 // data.num_nodes
 
 
     # Define colors for atom types
@@ -261,14 +261,12 @@ def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None):
     
     # Map one-hot encoded atom types to colors
     def one_hot_to_color(one_hot_vector):
-        print("one hot", one_hot_vector, data)
         if one_hot_vector[0] > 0:
             try:
                 original_node_feature_dim = data.original_node_feature_dim[0]
             except:
                 original_node_feature_dim = data.original_node_feature_dim
             one_hot_vector = one_hot_vector[1:original_node_feature_dim+1]
-            print("one hot cut", one_hot_vector)
             atom_type_index = one_hot_vector.argmax()
             return atom_colors[atom_type_index]
         try:
@@ -277,7 +275,6 @@ def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None):
             original_edge_feature_dim = data.original_edge_feature_dim
         
         one_hot_vector = one_hot_vector[1:original_edge_feature_dim+1]
-        print("one hot cut edge", one_hot_vector)
         if one_hot_vector.max() < 0.5:
             return "lightyellow"
         atom_type_index = one_hot_vector.argmax()
@@ -309,7 +306,7 @@ def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None):
     nx.draw_networkx_labels(graph, pos, ax=axis, font_color='lightblue')
     
     #axis.set_title("Graph Representation of a Molecule with Different Bond Types")
-    axis.axis('off')  # Hide the axes
+    axis.axis('on')  # Hide the axes
 
 
 
@@ -336,13 +333,20 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
     except:
         pass
     if is_inflated:
-        return plot_pyg_edgegraph(data, axis, arrays=arrays, node_size=node_size)
+        # Divide the given axis into two sub-axes
+        subaxes_tl = axis.inset_axes([0, 0.5, 0.5, 0.5])  # Top-left sub-axis
+        subaxes_br = axis.inset_axes([0.5, 0, 0.5, 0.5])  # Bottom-right sub-axis
+        plot_pyg_edgegraph(data.clone(), subaxes_tl, arrays=arrays, node_size=node_size)
+        #return plot_pyg_edgegraph(data, subaxes2, arrays=arrays, node_size=node_size)
+        from graphdiffusion.utils import reduce_graph
+        data = reduce_graph(data)
+        axis = subaxes_br
 
 
     assert data.x.shape[1] == 4, "The first 5 features should be one-hot encoded atom types"
 
     if node_size is None:
-        node_size = 7000 // data.num_nodes
+        node_size = 1000 // data.num_nodes
 
 
 
@@ -351,10 +355,6 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
     
     # Map one-hot encoded atom types to colors
     def one_hot_to_color(one_hot_vector, colors):
-        print("one_hot_vector", one_hot_vector)
-        if one_hot_vector.numel() != 4:
-            print("Problem with graph object shape", one_hot_vector, data)
-            raise ValueError("one_hot_vector should have 4 elements")
         atom_type_index = one_hot_vector.argmax()
         return colors[atom_type_index]
     
@@ -371,9 +371,12 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
     # Compute node positions
     pos = nx.spring_layout(graph, seed=42)
 
-    if isinstance(arrays, list):
-        graph_pos = to_networkx(arrays[0], to_undirected=True, node_attrs=['x'], edge_attrs=['edge_attr'])
-        pos = nx.spring_layout(graph_pos, seed=42)
+    try:
+        if isinstance(arrays, list):
+            graph_pos = to_networkx(arrays[0], to_undirected=True, node_attrs=['x'], edge_attrs=['edge_attr'])
+            pos = nx.spring_layout(graph_pos, seed=42)
+    except:
+        pass
     
     # Draw nodes
     nx.draw_networkx_nodes(graph, pos, ax=axis, node_color=node_colors, edgecolors='black', linewidths=2, node_size=node_size)
@@ -388,4 +391,4 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
     nx.draw_networkx_labels(graph, pos, ax=axis, font_color='lightblue')
     
     #axis.set_title("Graph Representation of a Molecule with Different Bond Types")
-    axis.axis('on')  # Hide the axes
+    axis.axis('on')  # Hide the axess
