@@ -82,7 +82,7 @@ def pre_process_qm9(data):
     data = inflate_graph(data)
     return data
 
-def gen_dataloader(batch_size = 2):
+def gen_dataloader(batch_size = 1):
     import gzip, pickle
     #try:
     #    print("try to load data")
@@ -101,16 +101,21 @@ def gen_dataloader(batch_size = 2):
 
 dataloader = gen_dataloader()
 
+
+
 def degradation_obj(data, t, pipeline): #TODO batches
     data = data.clone()
-    print(data, data.x)
-    #data = inflate_graph(data)
-    #data.x = data.x + t * 30 * torch.randn_like(data.x)
     new_x = data.x + t * 3 * torch.randn_like(data.x)
-    data.x[data.node_mask,1:data.original_node_feature_dim+1] = new_x[data.node_mask,1:data.original_node_feature_dim+1]
-    data.x[data.edge_mask,1:data.original_edge_feature_dim+1] = new_x[data.edge_mask,1:data.original_edge_feature_dim+1]
+    if 'batch' in data:
+        original_node_feature_dim = data.original_node_feature_dim[0]
+        original_edge_feature_dim = data.original_edge_feature_dim[0]
+    else:
+        original_node_feature_dim = data.original_node_feature_dim
+        original_edge_feature_dim = data.original_edge_feature_dim
+
+    data.x[data.node_mask,1:original_node_feature_dim+1] = new_x[data.node_mask,1:original_node_feature_dim+1]
+    data.x[data.edge_mask,1:original_edge_feature_dim+1] = new_x[data.edge_mask,1:original_edge_feature_dim+1]
     data= reduce_graph(data)
-    #data = inflate_graph(data) 
     return data
 
 
@@ -160,3 +165,36 @@ plt.savefig(create_path("images/example8/molecule_inflated_and_reduced_graph.png
 
 
 
+
+
+################
+#### learning
+################
+
+dataloader = gen_dataloader(batch_size = 1)
+
+
+
+
+def degradation_obj(data, t, pipeline): #TODO batches
+    data = data.clone()
+    new_x = data.x + t * 3 * torch.randn_like(data.x)
+    if 'batch' in data:
+        original_node_feature_dim = data.original_node_feature_dim[0]
+        original_edge_feature_dim = data.original_edge_feature_dim[0]
+    else:
+        original_node_feature_dim = data.original_node_feature_dim
+        original_edge_feature_dim = data.original_edge_feature_dim
+    data.x[data.node_mask,1:original_node_feature_dim+1] = new_x[data.node_mask,1:original_node_feature_dim+1]
+    data.x[data.edge_mask,1:original_edge_feature_dim+1] = new_x[data.edge_mask,1:original_edge_feature_dim+1]
+    return data
+
+pipeline = PipelineVector(node_feature_dim=2, level="DEBUG", degradation_obj=batchify_pyg_transform(degradation_obj)) #remove_hydrogens_from_pyg
+
+
+pipeline.visualize_foward(
+    data=dataloader,
+    outfile="images/example8/dummy_forward2.pdf",
+    num=25,
+    plot_data_func=plot_pyg_graph,
+)

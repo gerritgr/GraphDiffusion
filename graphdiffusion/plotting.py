@@ -253,7 +253,7 @@ def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None):
 
 
     # Define colors for atom types
-    atom_colors = ['white', 'black', 'blue', 'red', 'green']  # For [Hydrogen, Carbon, Nitrogen, Oxygen, Fluorine]
+    atom_colors = ['black', 'blue', 'red', 'green']  # For [Hydrogen, Carbon, Nitrogen, Oxygen, Fluorine]
     #bond_colors = ['lightgray', 'gray', 'darkgray', 'black']
     bond_colors = ['khaki', 'orange', 'darkorange', 'darkred']
 
@@ -261,13 +261,22 @@ def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None):
     
     # Map one-hot encoded atom types to colors
     def one_hot_to_color(one_hot_vector):
-        print("one hot", one_hot_vector)
+        print("one hot", one_hot_vector, data)
         if one_hot_vector[0] > 0:
-            one_hot_vector = one_hot_vector[1:data.original_node_feature_dim+1]
+            try:
+                original_node_feature_dim = data.original_node_feature_dim[0]
+            except:
+                original_node_feature_dim = data.original_node_feature_dim
+            one_hot_vector = one_hot_vector[1:original_node_feature_dim+1]
             print("one hot cut", one_hot_vector)
             atom_type_index = one_hot_vector.argmax()
             return atom_colors[atom_type_index]
-        one_hot_vector = one_hot_vector[1:data.original_edge_feature_dim+1]
+        try:
+            original_edge_feature_dim = data.original_edge_feature_dim[0]
+        except:
+            original_edge_feature_dim = data.original_edge_feature_dim
+        
+        one_hot_vector = one_hot_vector[1:original_edge_feature_dim+1]
         print("one hot cut edge", one_hot_vector)
         if one_hot_vector.max() < 0.5:
             return "lightyellow"
@@ -330,16 +339,22 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
         return plot_pyg_edgegraph(data, axis, arrays=arrays, node_size=node_size)
 
 
+    assert data.x.shape[1] == 4, "The first 5 features should be one-hot encoded atom types"
+
     if node_size is None:
         node_size = 7000 // data.num_nodes
 
 
 
     # Define colors for atom types
-    atom_colors = ['white', 'black', 'blue', 'red', 'green']  # For [Hydrogen, Carbon, Nitrogen, Oxygen, Fluorine]
+    atom_colors = ['black', 'blue', 'red', 'green'] + ['pink']*20   # For [Hydrogen (white not shown), Carbon, Nitrogen, Oxygen, Fluorine], pink indicates error
     
     # Map one-hot encoded atom types to colors
     def one_hot_to_color(one_hot_vector, colors):
+        print("one_hot_vector", one_hot_vector)
+        if one_hot_vector.numel() != 4:
+            print("Problem with graph object shape", one_hot_vector, data)
+            raise ValueError("one_hot_vector should have 4 elements")
         atom_type_index = one_hot_vector.argmax()
         return colors[atom_type_index]
     

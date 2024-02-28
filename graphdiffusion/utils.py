@@ -365,6 +365,7 @@ def remove_hydrogens_from_pyg(data):
     data.edge_index = new_edge_index
     data.edge_attr = new_edge_attr
     data.x = data.x[non_hydrogen_mask]
+    data.x = data.x[:, 1:] # actually remove hydrogen column 
     # Copy any additional data
     #for key, item in data_old:
     #    if key not in ['x', 'edge_index', 'edge_attr']:
@@ -520,7 +521,7 @@ def reduce_graph(inflated_graph):
     original_edge_feature_dim = inflated_graph.original_edge_feature_dim
 
     # Reconstruct original node features from the first part of the inflated graph's x
-    reduced_x = inflated_graph.x[:num_reduced_nodes, 1:original_node_feature_dim]
+    reduced_x = inflated_graph.x[:num_reduced_nodes, 1:original_node_feature_dim+1]
 
     # Identify nodes and edges based on indicators
     reduced_edge_index = list()
@@ -531,7 +532,7 @@ def reduce_graph(inflated_graph):
     for i in range(inflated_graph.x.shape[0]):
         if not inflated_graph.edge_mask[i]:
             continue
-        edge_i = inflated_graph.x[i, 1:original_edge_feature_dim]
+        edge_i = inflated_graph.x[i, 1:original_edge_feature_dim+1]
         if edge_i.max() < 0.0:
             continue
         neighbors_of_i = get_all_neighbors(inflated_graph, i)
@@ -539,8 +540,6 @@ def reduce_graph(inflated_graph):
         reduced_edge_index.append(neighbors_of_i)
         reduced_edge_attr.append(edge_i)
 
-    print("reduced_edge_index", reduced_edge_index)
-    print("reduced_edge_attr", reduced_edge_attr)
 
     reduced_edge_index = torch.tensor(reduced_edge_index, dtype=torch.long).t().contiguous()
     reduced_edge_attr = torch.stack(reduced_edge_attr, dim=0)
