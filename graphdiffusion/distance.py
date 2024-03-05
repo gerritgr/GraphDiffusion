@@ -224,7 +224,7 @@ class GraphDistanceWasserstein:
         - input_dim (int): Input dimension of the graph data.
         - output_dim (int): Output dimension of the graph embeddings.
         """
-        self.graph_similarity_model = SimGCN(input_dim=input_dim, output_dim=output_dim)
+        self.graph_similarity_model = SimGCNAlt()
         self.loss = SamplesLoss(loss="sinkhorn", p=2, blur=0.05) 
 
     def __call__(self, x1, x2, dist_type=None):

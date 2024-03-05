@@ -70,10 +70,15 @@ print("========================")
 from graphdiffusion.distance import GraphDistance, GraphDistanceWasserstein, GraphDistanceAssignment
 
 dist = GraphDistance()
-print("graph distance: ", dist(graph1, graph2))
+d_g = dist(graph1, graph2)
 
-#dist = GraphDistanceWasserstein()
-#print("graph distance wasserstein: ", dist(graph1, graph2))
+dist = GraphDistanceWasserstein()
+d_w = dist(graph1, graph2)
 
-#dist = GraphDistanceAssignment()
-#print("graph distance assign: ", dist(graph1, graph2))
+
+dist = GraphDistanceAssignment()
+d_da = dist(graph1, graph2)
+
+print("graph distance: ", d_g)
+print("graph distance wasserstein: ", d_w)
+print("graph distance assign: ", d_da)
