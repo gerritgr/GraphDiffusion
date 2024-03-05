@@ -75,34 +75,71 @@ class VectorDistance:
             # If the distance type is neither "L1" nor "L2", raise an error
             raise ValueError(f"Unsupported distance type: {dist_type}")
 
-
+from torch_geometric.nn import SimpleConv, GCNConv, GATConv, GATv2Conv
 class SimGCN(torch.nn.Module):
-    def __init__(self, input_dim=4, output_dim=4):
+    def __init__(self, input_dim=1, output_dim=1):
         super(SimGCN, self).__init__()
-        self.input_dict = nn.ModuleDict({str(int(input_dim)): GCNConv(input_dim, output_dim)})
+        output_dim = 1
+        self.input_dict = nn.ModuleDict({str(int(input_dim)): GCNConv(input_dim, 1)})
+        self.conv1_alt = SimpleConv()
 
         with DeterministicSeed() as env:
-            self.conv2 = GCNConv(output_dim, output_dim)
-            self.conv3 = GCNConv(output_dim, output_dim)
-            self.conv4 = GCNConv(output_dim, output_dim)
+            self.conv2 = GCNConv(1, 1)
+            self.conv3 = GCNConv(1, 1)
+            self.conv4 = GCNConv(1, output_dim)
 
         self.out_dim = output_dim
 
     def forward(self, x, edge_index):
         input_dim = int(x.shape[1])
-        if input_dim not in self.input_dict:
+        if str(input_dim) not in self.input_dict:
             with DeterministicSeed() as env:
-                self.input_dict[str(input_dim)] = GCNConv(input_dim, self.out_dim)
+                self.input_dict[str(int(input_dim))] = GCNConv(input_dim, self.out_dim)
+
 
         conv1 = self.input_dict[str(input_dim)]
-        x1 = conv1(x, edge_index)
-
-        x2 = self.conv2(x1, edge_index)
-        x3 = self.conv3(x2, edge_index)
-        x4 = self.conv4(x3, edge_index)
-        x_nodeembeddings = torch.cat((x1, x2, x3, x4), dim=1)
-        x_graphembedding = torch.mean(x_nodeembeddings, dim=0)
+        conv1 = self.conv1_alt
+        with DeterministicSeed() as env:
+            x1 = conv1(x, edge_index)
+            x1 = torch.round(x1 * 1e4) / 1e4
+            x2 = self.conv2(x1, edge_index)
+            x2 = torch.round(x2 * 1e4) / 1e4
+            x3 = self.conv3(x2, edge_index)
+            x3 = torch.round(x3 * 1e4) / 1e4
+            x4 = self.conv4(x3, edge_index)
+            x4 = torch.round(x4 * 1e4) / 1e4
+            x_nodeembeddings = torch.cat((x1, x2, x3, x4), dim=1)
+            x_graphembedding = torch.mean(x_nodeembeddings, dim=0)
         return x_graphembedding, x_nodeembeddings
+
+
+
+from torch_geometric.nn import GCN
+class SimGCNAlt(torch.nn.Module):
+    def __init__(self, input_dim=1, output_dim=1):
+        super(SimGCNAlt, self).__init__()
+        self.model1 =  GCN(input_dim, 1, 1)
+        #self.input_dict = nn.ModuleDict({str(int(input_dim)): GCN(input_dim, 1, 1)})
+        self.model2 = GCN(1, output_dim, 2)
+
+    def forward(self, x, edge_index):
+        x = x * 10
+        #input_dim = int(x.shape[1])
+        #if str(input_dim) not in self.input_dict:
+        ##    with DeterministicSeed() as env:
+        #        self.input_dict[str(int(input_dim))] = GCNConv(input_dim, self.out_dim)
+        model1 = self.model1 #self.input_dict[str(input_dim)]
+
+
+        x2 = model1(x, edge_index)
+        x3 = self.model1(x2* 10, edge_index)
+
+        x_nodeembeddings = torch.cat((x2, x3), dim=1)
+        x_graphembedding = torch.mean(x_nodeembeddings, dim=0)
+        print("ndoe emdbedings after nn", x_nodeembeddings)
+        return x_graphembedding, x_nodeembeddings
+
+
 
 
 import torch
@@ -121,7 +158,7 @@ class GraphDistance:
     - __call__(x1, x2, dist_type="L1"): Computes the distance between two graph embeddings.
     """
 
-    def __init__(self, input_dim=4, output_dim=4):
+    def __init__(self, input_dim=4, output_dim=1):
         """
         Initializes the GraphDistance class with a graph similarity model.
 
@@ -129,7 +166,7 @@ class GraphDistance:
         - input_dim (int): Input dimension of the graph data.
         - output_dim (int): Output dimension of the graph embeddings.
         """
-        self.graph_similarity_model = SimGCN(input_dim=input_dim, output_dim=output_dim)
+        self.graph_similarity_model = SimGCNAlt() #(input_dim=input_dim, output_dim=output_dim)
 
     def __call__(self, x1, x2, dist_type="L1"):
         """
@@ -150,8 +187,10 @@ class GraphDistance:
             raise ValueError("Input data objects must have 'x' and 'edge_index' attributes.")
 
         # Obtain graph embeddings
+
         graph_emb1, _ = self.graph_similarity_model(x1.x, x1.edge_index)
         graph_emb2, _ = self.graph_similarity_model(x2.x, x2.edge_index)
+
 
         # Compute distance based on dist_type
         if dist_type == "L1":
@@ -208,6 +247,7 @@ class GraphDistanceWasserstein:
 
         # Obtain graph embeddings
         self.graph_similarity_model.eval()
+
         _, node_embeddings1 = self.graph_similarity_model(x1.x, x1.edge_index)
         _, node_embeddings2 = self.graph_similarity_model(x2.x, x2.edge_index)        
 
@@ -215,6 +255,8 @@ class GraphDistanceWasserstein:
         node_embeddings1 = node_embeddings1.view(1, -1, node_embeddings1.shape[-1])  # Reshape for geomloss
         node_embeddings2 = node_embeddings2.view(1, -1, node_embeddings2.shape[-1])  # Reshape for geomloss
         
+        node_embeddings1 = (node_embeddings1 * 1000).int().float() /1000
+        node_embeddings2 = (node_embeddings2 * 1000).int().float() / 1000
         distance = self.loss(node_embeddings1, node_embeddings2)
 
         # TODO: using the wasserstein distance, compute the best mapping/assignment/matching between elements of node_embeddings1 and node_embeddings2 and print it.
@@ -247,21 +289,30 @@ def compute_assignment(node_embeddings1, node_embeddings2, return_permutationlis
     if node_embeddings1.dim() != 2 or node_embeddings2.dim() != 2:
         raise ValueError("Both node_embeddings1 and node_embeddings2 must be 2D tensors.")
     
+
     node_embeddings1_np = node_embeddings1.detach().cpu().numpy()
     node_embeddings2_np = node_embeddings2.detach().cpu().numpy()
+
+    elem_num = node_embeddings1.shape[0]
     
+    print("node_embeddings1_np\n", node_embeddings1_np, "node_embeddings2_np\n", node_embeddings2_np)
+
     if use_cosine:
         # Compute the cost matrix based on cosine similarity, then invert it since we want to maximize similarity
         cost_matrix = -cosine_similarity(node_embeddings1_np, node_embeddings2_np)
     else:
         # Compute the cost matrix based on squared Euclidean distance
-        cost_matrix = np.zeros((node_embeddings1.shape[0], node_embeddings2.shape[0]))
-        for i in range(cost_matrix.shape[0]):
-            for j in range(cost_matrix.shape[1]):
-                cost_matrix[i, j] = np.linalg.norm(node_embeddings1_np[i] - node_embeddings2_np[j]) #works better without ** 2
-
-    #print("cost matrix:\n", cost_matrix)
+        cost_matrix = np.zeros((elem_num, elem_num))
+        for i in range(elem_num):
+            for j in range(elem_num):
+                print("compare", node_embeddings1_np[i,:].var(),node_embeddings2_np[j,:].var())
+                cost_matrix[i, j] = np.linalg.norm(node_embeddings1_np[i,:] - node_embeddings2_np[j,:]) #works better without ** 2
+                #costs = np.sum((node_embeddings1_np[i,:] - node_embeddings2_np[j,:])**2)
+                #cost_matrix[i, j] = costs
+                                                   
+    print("cost matrix:\n", cost_matrix)
     # Solve the assignment problem
+    
     row_ind, col_ind = linear_sum_assignment(cost_matrix)
 
     assignment_dict = {int(row): int(col) for row, col in zip(row_ind, col_ind)}
@@ -294,7 +345,7 @@ class GraphDistanceAssignment:
         - input_dim (int): Input dimension of the graph data.
         - output_dim (int): Output dimension of the graph embeddings.
         """
-        self.graph_similarity_model = SimGCN(input_dim=input_dim, output_dim=output_dim)
+        self.graph_similarity_model = SimGCNAlt()# SimGCN(input_dim=input_dim, output_dim=output_dim)
 
     def __call__(self, x1, x2, dist_type=None):
         """
@@ -316,15 +367,27 @@ class GraphDistanceAssignment:
 
         # Obtain graph embeddings
         self.graph_similarity_model.eval()
-        _, node_embeddings1 = self.graph_similarity_model(x1.x, x1.edge_index)
-        _, node_embeddings2 = self.graph_similarity_model(x2.x, x2.edge_index)        
+        with torch.no_grad():
+            _, node_embeddings1 = self.graph_similarity_model(x1.x, x1.edge_index)
+            _, node_embeddings2 = self.graph_similarity_model(x2.x, x2.edge_index)        
 
-        #node_permutation = compute_assignment(node_embeddings1, node_embeddings2, return_permutationlist=True)
+            
+        node_embeddings1 = torch.cat((x1.x, node_embeddings1), dim=1)
+        node_embeddings2 = torch.cat((x2.x, node_embeddings2), dim=1)
+
+        node_embeddings1 = (node_embeddings1 * 1000).int().float() /1000
+        node_embeddings2 = (node_embeddings2 * 1000).int().float() / 1000
+        print("output of ne is ", (node_embeddings1*100000).sum(), (node_embeddings2*100000).sum())
+
+
+        # TODO multiple calls
         node_permutation = compute_assignment(node_embeddings1, node_embeddings2, return_permutationlist=True)
-        #node_permutation = [node_permutation[i] for i in range(len(node_permutation))]
 
         node_features = x1.x[node_permutation]
 
-        distance = torch.norm(node_features - x2.x, p=2)
+        print("node_permutation", node_permutation)
+        print("compare ", node_features, x2.x)
+
+        distance = torch.norm(node_features - x2.x, p=1)
 
         return distance
