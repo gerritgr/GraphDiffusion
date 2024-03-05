@@ -118,9 +118,9 @@ from torch_geometric.nn import GCN
 class SimGCNAlt(torch.nn.Module):
     def __init__(self, input_dim=1, output_dim=1):
         super(SimGCNAlt, self).__init__()
-        self.model1 =  GCN(input_dim, 1, 1)
+        self.model1 =  GCN(input_dim, 4, 4, 1)
         #self.input_dict = nn.ModuleDict({str(int(input_dim)): GCN(input_dim, 1, 1)})
-        self.model2 = GCN(1, output_dim, 2)
+        self.model2 = GCN(1, 4, 4, 1)
 
     def forward(self, x, edge_index):
         x = x * 10

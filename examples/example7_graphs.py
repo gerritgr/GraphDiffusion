@@ -67,11 +67,3 @@ dist = GraphDistanceAssignment()
 print("graph distance assign: ", dist(graph1, graph2))
 
 
-
-print("EVERZTHING NEW")
-from torch_geometric.nn import GCN
-model = GCN(1, 1, 2)
-x = model(graph1.x * 100, graph1.edge_index)
-print(graph1.x, x)
-x = model(graph2.x * 100, graph2.edge_index)
-print(graph2.x, x)
