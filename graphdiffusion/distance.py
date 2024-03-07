@@ -77,66 +77,51 @@ class VectorDistance:
 
 from torch_geometric.nn import SimpleConv, GCNConv, GATConv, GATv2Conv
 class SimGCN(torch.nn.Module):
-    def __init__(self, input_dim=1, output_dim=1):
+    def __init__(self, input_dim=1):
         super(SimGCN, self).__init__()
-        output_dim = 1
         self.input_dict = nn.ModuleDict({str(int(input_dim)): GCNConv(input_dim, 1)})
-        self.conv1_alt = SimpleConv()
+        self.conv2 = GCNConv(1, 1)
+        self.conv3 = GCNConv(1, 1)
+        self.conv4 = GCNConv(1, 1)
 
-        with DeterministicSeed() as env:
-            self.conv2 = GCNConv(1, 1)
-            self.conv3 = GCNConv(1, 1)
-            self.conv4 = GCNConv(1, output_dim)
-
-        self.out_dim = output_dim
 
     def forward(self, x, edge_index):
         input_dim = int(x.shape[1])
         if str(input_dim) not in self.input_dict:
             with DeterministicSeed() as env:
-                self.input_dict[str(int(input_dim))] = GCNConv(input_dim, self.out_dim)
+                self.input_dict[str(int(input_dim))] = GCNConv(input_dim, 2)
 
 
         conv1 = self.input_dict[str(input_dim)]
-        conv1 = self.conv1_alt
-        with DeterministicSeed() as env:
-            x1 = conv1(x, edge_index)
-            x1 = torch.round(x1 * 1e4) / 1e4
-            x2 = self.conv2(x1, edge_index)
-            x2 = torch.round(x2 * 1e4) / 1e4
-            x3 = self.conv3(x2, edge_index)
-            x3 = torch.round(x3 * 1e4) / 1e4
-            x4 = self.conv4(x3, edge_index)
-            x4 = torch.round(x4 * 1e4) / 1e4
-            x_nodeembeddings = torch.cat((x1, x2, x3, x4), dim=1)
-            x_graphembedding = torch.mean(x_nodeembeddings, dim=0)
+        x1 = conv1(x, edge_index)
+        x2 = self.conv2(x1, edge_index)
+        x3 = self.conv3(x2, edge_index)
+        x4 = self.conv4(x3, edge_index)
+        x_nodeembeddings = torch.cat((x1, x2, x3, x4), dim=1)
+        x_graphembedding = torch.mean(x_nodeembeddings, dim=0)
         return x_graphembedding, x_nodeembeddings
 
 
 
-from torch_geometric.nn import GCN
+from torch_geometric.nn import GCN, GIN
 class SimGCNAlt(torch.nn.Module):
-    def __init__(self, input_dim=1, output_dim=1):
+    def __init__(self, input_dim=1):
         super(SimGCNAlt, self).__init__()
         self.model1 =  GCN(input_dim, 4, 4, 1)
-        #self.input_dict = nn.ModuleDict({str(int(input_dim)): GCN(input_dim, 1, 1)})
         self.model2 = GCN(1, 4, 4, 1)
+        randomize_trainable_params(self.model1)
+        randomize_trainable_params(self.model2)
 
     def forward(self, x, edge_index):
         x = x * 10
-        #input_dim = int(x.shape[1])
-        #if str(input_dim) not in self.input_dict:
-        ##    with DeterministicSeed() as env:
-        #        self.input_dict[str(int(input_dim))] = GCNConv(input_dim, self.out_dim)
         model1 = self.model1 #self.input_dict[str(input_dim)]
 
-
         x2 = model1(x, edge_index)
+        x2 = torch.sin(x2*10)
         x3 = self.model1(x2* 10, edge_index)
 
         x_nodeembeddings = torch.cat((x2, x3), dim=1)
         x_graphembedding = torch.mean(x_nodeembeddings, dim=0)
-        print("ndoe emdbedings after nn", x_nodeembeddings)
         return x_graphembedding, x_nodeembeddings
 
 
@@ -225,7 +210,7 @@ class GraphDistanceWasserstein:
         - output_dim (int): Output dimension of the graph embeddings.
         """
         self.graph_similarity_model = SimGCNAlt()
-        self.loss = SamplesLoss(loss="sinkhorn", p=2, blur=0.05) 
+        self.loss = SamplesLoss(loss="laplacian", p=2, blur=0.05) 
 
     def __call__(self, x1, x2, dist_type=None):
         """
@@ -258,6 +243,8 @@ class GraphDistanceWasserstein:
         node_embeddings1 = (node_embeddings1 * 1000).int().float() /1000
         node_embeddings2 = (node_embeddings2 * 1000).int().float() / 1000
         distance = self.loss(node_embeddings1, node_embeddings2)
+
+        print("node embeddingsa are\n", node_embeddings1, "\n",node_embeddings2)
 
         # TODO: using the wasserstein distance, compute the best mapping/assignment/matching between elements of node_embeddings1 and node_embeddings2 and print it.
 
@@ -377,7 +364,6 @@ class GraphDistanceAssignment:
 
         node_embeddings1 = (node_embeddings1 * 1000).int().float() /1000
         node_embeddings2 = (node_embeddings2 * 1000).int().float() / 1000
-        print("output of ne is ", (node_embeddings1*100000).sum(), (node_embeddings2*100000).sum())
 
 
         # TODO multiple calls

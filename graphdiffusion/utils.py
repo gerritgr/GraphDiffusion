@@ -554,3 +554,16 @@ def reduce_graph(inflated_graph):
             reduced_graph[key] = item
     
     return reduced_graph
+
+
+
+import torch.nn as nn
+
+def randomize_trainable_params(model, std=1.0):
+    """
+    Randomizes all trainable parameters of the given model by setting them
+    to random values from a normal distribution.
+    """
+    for param in model.parameters():
+        if param.requires_grad:  # Check if the parameter is trainable
+            nn.init.normal_(param, mean=0.0, std=std)
