@@ -109,18 +109,17 @@ class SimGCNAlt(torch.nn.Module):
         super(SimGCNAlt, self).__init__()
         self.model1 =  GCN(input_dim, 4, 4, 1)
         self.model2 = GCN(1, 4, 4, 1)
-        randomize_trainable_params(self.model1)
-        randomize_trainable_params(self.model2)
+        randomize_trainable_params(self.model1, std=3)
+        randomize_trainable_params(self.model2, std=3)
 
     def forward(self, x, edge_index):
-        x = x * 10
         model1 = self.model1 #self.input_dict[str(input_dim)]
 
-        x2 = model1(x, edge_index)
+        x2 = model1(x*10, edge_index)
         x2 = torch.sin(x2*10)
-        x3 = self.model1(x2* 10, edge_index)
+        x3 = self.model2(x2, edge_index)
 
-        x_nodeembeddings = torch.cat((x2, x3), dim=1)
+        x_nodeembeddings = torch.cat((x3, x3), dim=1) #todo important
         x_graphembedding = torch.mean(x_nodeembeddings, dim=0)
         return x_graphembedding, x_nodeembeddings
 
@@ -210,7 +209,7 @@ class GraphDistanceWasserstein:
         - output_dim (int): Output dimension of the graph embeddings.
         """
         self.graph_similarity_model = SimGCNAlt()
-        self.loss = SamplesLoss(loss="laplacian", p=2, blur=0.05) 
+        self.loss = SamplesLoss(loss="laplacian", p=2, blur=0.03) 
 
     def __call__(self, x1, x2, dist_type=None):
         """
@@ -231,7 +230,8 @@ class GraphDistanceWasserstein:
             raise ValueError("Input data objects must have 'x' and 'edge_index' attributes.")
 
         # Obtain graph embeddings
-        self.graph_similarity_model.eval()
+        #self.graph_similarity_model.eval()
+        self.graph_similarity_model.train()
 
         _, node_embeddings1 = self.graph_similarity_model(x1.x, x1.edge_index)
         _, node_embeddings2 = self.graph_similarity_model(x2.x, x2.edge_index)        
@@ -240,11 +240,8 @@ class GraphDistanceWasserstein:
         node_embeddings1 = node_embeddings1.view(1, -1, node_embeddings1.shape[-1])  # Reshape for geomloss
         node_embeddings2 = node_embeddings2.view(1, -1, node_embeddings2.shape[-1])  # Reshape for geomloss
         
-        node_embeddings1 = (node_embeddings1 * 1000).int().float() /1000
-        node_embeddings2 = (node_embeddings2 * 1000).int().float() / 1000
         distance = self.loss(node_embeddings1, node_embeddings2)
 
-        print("node embeddingsa are\n", node_embeddings1, "\n",node_embeddings2)
 
         # TODO: using the wasserstein distance, compute the best mapping/assignment/matching between elements of node_embeddings1 and node_embeddings2 and print it.
 
@@ -282,7 +279,6 @@ def compute_assignment(node_embeddings1, node_embeddings2, return_permutationlis
 
     elem_num = node_embeddings1.shape[0]
     
-    print("node_embeddings1_np\n", node_embeddings1_np, "node_embeddings2_np\n", node_embeddings2_np)
 
     if use_cosine:
         # Compute the cost matrix based on cosine similarity, then invert it since we want to maximize similarity
@@ -362,8 +358,11 @@ class GraphDistanceAssignment:
         node_embeddings1 = torch.cat((x1.x, node_embeddings1), dim=1)
         node_embeddings2 = torch.cat((x2.x, node_embeddings2), dim=1)
 
-        node_embeddings1 = (node_embeddings1 * 1000).int().float() /1000
-        node_embeddings2 = (node_embeddings2 * 1000).int().float() / 1000
+
+        print("node embeddingsa are\n", node_embeddings1, "\n",node_embeddings2)
+
+        #node_embeddings1 = (node_embeddings1 * 1000).int().float() /1000
+        #node_embeddings2 = (node_embeddings2 * 1000).int().float() / 1000
 
 
         # TODO multiple calls

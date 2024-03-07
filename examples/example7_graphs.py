@@ -68,13 +68,13 @@ print("========================")
 # GD object
 ############################################
 from graphdiffusion.distance import GraphDistance, GraphDistanceWasserstein, GraphDistanceAssignment
+graph1.x.requires_grad = True
 
 dist = GraphDistance()
 d_g = dist(graph1, graph2)
 
 dist = GraphDistanceWasserstein()
 d_w = dist(graph1, graph2)
-
 
 dist = GraphDistanceAssignment()
 d_da = dist(graph1, graph2)
