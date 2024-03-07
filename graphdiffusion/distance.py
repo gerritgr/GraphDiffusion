@@ -119,7 +119,7 @@ class SimGCNAlt(torch.nn.Module):
         x2 = torch.sin(x2*10)
         x3 = self.model2(x2, edge_index)
 
-        x_nodeembeddings = torch.cat((x3, x3), dim=1) #todo important
+        x_nodeembeddings = torch.cat((x2, x3), dim=1) #todo important
         x_graphembedding = torch.mean(x_nodeembeddings, dim=0)
         return x_graphembedding, x_nodeembeddings
 

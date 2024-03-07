@@ -310,7 +310,7 @@ def plot_pyg_edgegraph(data, axis, arrays=None, node_size=None):
 
 
 
-
+from graphdiffusion.utils import batchify_pyg_transform
 def plot_pyg_graph(data, axis, arrays=None, node_size=None):
     """
     Plot a PyG graph on a specified Matplotlib axis, with different line styles for different bond types
@@ -323,7 +323,7 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
     """
     from torch_geometric.utils import subgraph
 
-
+    print("start graph plotting")
     is_inflated = False
     try:
         if isinstance(data.is_inflated, bool):
@@ -339,10 +339,14 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
         plot_pyg_edgegraph(data.clone(), subaxes_tl, arrays=arrays, node_size=node_size)
         #return plot_pyg_edgegraph(data, subaxes2, arrays=arrays, node_size=node_size)
         from graphdiffusion.utils import reduce_graph
-        data = reduce_graph(data)
+        print("reduce graph:")
+        print("num orig nodes", data.num_original_nodes)
+        reduce_func = batchify_pyg_transform(reduce_graph)
+        data = reduce_func(data)
+        print("data reduced", data, data.x, data.edge_index, data.edge_attr)
         axis = subaxes_br
 
-
+    print("plot reduced graph:", data)
     assert data.x.shape[1] == 4, "The first 5 features should be one-hot encoded atom types"
 
     if node_size is None:
@@ -379,6 +383,7 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
         pass
     
     # Draw nodes
+    print("graph: ", graph, graph.nodes(), node_colors)
     nx.draw_networkx_nodes(graph, pos, ax=axis, node_color=node_colors, edgecolors='black', linewidths=2, node_size=node_size)
     
     # Draw edges with styles based on bond types

@@ -404,7 +404,7 @@ def batchify_pyg_transform(func):
     """
     def apply_func_to_batch(data, *args, **kwargs):
         # Check if the data is batched by looking for the 'batch' attribute
-        if hasattr(data, 'batch'):
+        if hasattr(data, 'batch') and data.batch is not None and data.batch.max() > 0.5:
             # Convert batched Data object to a list of individual Data objects
             data_list = Batch.to_data_list(data)
             # Apply `func` to each individual Data object, passing through any additional arguments
@@ -510,10 +510,21 @@ def get_all_neighbors(graph, node_id):
 
 
 
+
 def reduce_graph(inflated_graph):
-    # Check for the inflation flag or specific attributes indicating inflation
-    if not hasattr(inflated_graph, 'is_inflated') or not inflated_graph.is_inflated:
+    print("inflated_graph", inflated_graph)
+    if not hasattr(inflated_graph, 'is_inflated'):
         raise ValueError("The input graph does not seem to be inflated.")
+    
+    if 'batch' in inflated_graph:
+        inflated_graph.is_inflated = inflated_graph.is_inflated[0]
+        inflated_graph.original_node_feature_dim = inflated_graph.original_node_feature_dim[0]
+        inflated_graph.original_edge_feature_dim = inflated_graph.original_edge_feature_dim[0]
+        inflated_graph.num_original_nodes = int(inflated_graph.num_original_nodes.sum().item())
+
+    if not inflated_graph.is_inflated:
+        raise ValueError("The input graph does not seem to be inflated.")
+
 
     # Retrieve original graph dimensions and node/edge counts
     num_reduced_nodes = inflated_graph.num_original_nodes
