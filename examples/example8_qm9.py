@@ -171,7 +171,7 @@ plt.savefig(create_path("images/example8/molecule_inflated_and_reduced_graph.png
 #### learning
 ################
 
-dataloader = gen_dataloader(batch_size = 2)
+dataloader = gen_dataloader(batch_size = 1)
 
 
 
