@@ -307,3 +307,4 @@ pipeline.visualize_reconstruction(
 # visualize and print
 
 # smiles -> single molecule container -> batched molecule container -> preprocessed/augmented batch -> distance/reconstruction/bridge/degradation
+# fils: models, algorithms, utils, containers
