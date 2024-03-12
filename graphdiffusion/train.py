@@ -60,7 +60,7 @@ def train_epoch(dataloader, pipeline, optimizer):
     average_loss = total_loss / len(dataloader)
     return average_loss
 
-
+import torch_geometric
 class VectorTrain:
     """
     A class for training a model using a specified pipeline that encapsulates the model, degradation, reconstruction, and distance calculation.
@@ -69,14 +69,15 @@ class VectorTrain:
         pipeline (object): An object encapsulating the model, degradation, reconstruction, and distance calculation.
     """
 
-    def __init__(self):
+    def __init__(self, train_epoch_func=None, test_epoch_func=None,):
         """
         Initializes the VectorTrain class.
 
         Args:
             pipeline (object): An object representing the processing pipeline including model, degradation, reconstruction, and distance calculation.
         """
-        pass
+        self.train_epoch_func = train_epoch if train_epoch_func is None else train_epoch_func
+        self.test_epoch_func = model_test if test_epoch_func is None else test_epoch_func
 
     @staticmethod
     def input_to_dataloader(input_data, device, batch_size_default=1):
@@ -94,6 +95,9 @@ class VectorTrain:
         Raises:
             TypeError: If the input data is not a DataLoader, list of Tensors, or a single Tensor.
         """
+
+        if isinstance(input_data, torch_geometric.loader.dataloader.DataLoader):
+            return input_data
 
         def to_device(data):
             if isinstance(data, torch.Tensor):
@@ -145,6 +149,7 @@ class VectorTrain:
             None
         """
         assert pipeline is not None, "pipeline must be provided"
+
         self.pipeline = pipeline # TODO: remove this line potentially
         dataloader_train = VectorTrain.input_to_dataloader(input_data=data, device=self.pipeline.device)
         dataloader_test = VectorTrain.input_to_dataloader(input_data=data_test, device=self.pipeline.device) if data_test is not None else None
@@ -179,11 +184,11 @@ class VectorTrain:
         for epoch in pbar:
             # TODO: if epoch is zero or epoch is the last epoch, or epoch is dividable by 10: compute the loss using dataloader_test and save it as total_loss_test
             if dataloader_test is not None and (epoch == 0 or epoch == epochs - 1 or (epoch + 1) % 10 == 0):
-                average_loss_test = model_test(self.pipeline, dataloader_test)
+                average_loss_test = self.test_epoch_func(self.pipeline, dataloader_test)
                 pipeline.debug(f"Test loss: {average_loss_test:.5f}, Epoch: {epoch}")
                 pipeline.debug(f"Train loss: {average_loss:.5f}, Epoch: {epoch}")
 
-            average_loss = train_epoch(dataloader_train, self.pipeline, optimizer)
+            average_loss = self.train_epoch_func(dataloader_train, self.pipeline, optimizer)
 
             # Update moving average loss
             if moving_average_loss is None:

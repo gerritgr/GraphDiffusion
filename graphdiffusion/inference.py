@@ -108,12 +108,15 @@ class VectorInference:
             data_t_next = self.pipeline.bridge(data_t, data_0, t, t_next)
             data_t = data_t_next
 
-            if torch.isnan(data_t).any() or torch.isinf(data_t).any():
-                nan_inf_mask = torch.isnan(data_t) | torch.isinf(data_t)
-                count_nan_inf = torch.sum(nan_inf_mask).item()  # Count the number of NaN/Inf values
-                warn_str = f"Warning at step {i}: The tensor contains {count_nan_inf} NaN/Inf values. These will be replaced with 0."
-                pipeline.warning(warn_str)
-                data_t = torch.where(nan_inf_mask, torch.zeros_like(data_t), data_t)
+            try:
+                if torch.isnan(data_t).any() or torch.isinf(data_t).any():
+                    nan_inf_mask = torch.isnan(data_t) | torch.isinf(data_t)
+                    count_nan_inf = torch.sum(nan_inf_mask).item()  # Count the number of NaN/Inf values
+                    warn_str = f"Warning at step {i}: The tensor contains {count_nan_inf} NaN/Inf values. These will be replaced with 0."
+                    pipeline.warning(warn_str)
+                    data_t = torch.where(nan_inf_mask, torch.zeros_like(data_t), data_t)
+            except:
+                pass
 
         assert data_0 is not None and data_t is not None
         return data_t, data_0

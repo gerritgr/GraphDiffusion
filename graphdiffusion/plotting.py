@@ -68,6 +68,7 @@ def plot_2darray_on_axis(array, axis, arrays):
     :param axis: A Matplotlib axis object on which to draw the scatter plot.
     :param arrays: List of all arrays that will be plotttet.
     """
+
     # If the input array is 1D, reshape it to 2D with batch size 1
     if array.ndim == 1:
         array = array.reshape(1, -1)
@@ -323,7 +324,6 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
     """
     from torch_geometric.utils import subgraph
 
-    print("start graph plotting")
     is_inflated = False
     try:
         if isinstance(data.is_inflated, bool):
@@ -337,16 +337,11 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
         subaxes_tl = axis.inset_axes([0, 0.5, 0.5, 0.5])  # Top-left sub-axis
         subaxes_br = axis.inset_axes([0.5, 0, 0.5, 0.5])  # Bottom-right sub-axis
         plot_pyg_edgegraph(data.clone(), subaxes_tl, arrays=arrays, node_size=node_size)
-        #return plot_pyg_edgegraph(data, subaxes2, arrays=arrays, node_size=node_size)
         from graphdiffusion.utils import reduce_graph
-        print("reduce graph:")
-        print("num orig nodes", data.num_original_nodes)
         reduce_func = batchify_pyg_transform(reduce_graph)
         data = reduce_func(data)
-        print("data reduced", data, data.x, data.edge_index, data.edge_attr)
         axis = subaxes_br
 
-    print("plot reduced graph:", data)
     assert data.x.shape[1] == 4, "The first 5 features should be one-hot encoded atom types"
 
     if node_size is None:
@@ -383,7 +378,6 @@ def plot_pyg_graph(data, axis, arrays=None, node_size=None):
         pass
     
     # Draw nodes
-    print("graph: ", graph, graph.nodes(), node_colors)
     nx.draw_networkx_nodes(graph, pos, ax=axis, node_color=node_colors, edgecolors='black', linewidths=2, node_size=node_size)
     
     # Draw edges with styles based on bond types

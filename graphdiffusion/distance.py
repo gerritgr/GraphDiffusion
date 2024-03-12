@@ -278,6 +278,8 @@ def compute_assignment(node_embeddings1, node_embeddings2, return_permutationlis
     node_embeddings2_np = node_embeddings2.detach().cpu().numpy()
 
     elem_num = node_embeddings1.shape[0]
+
+    print("input node embeddings for linear assign.: \n", node_embeddings1_np, node_embeddings2_np)
     
 
     if use_cosine:
@@ -288,7 +290,6 @@ def compute_assignment(node_embeddings1, node_embeddings2, return_permutationlis
         cost_matrix = np.zeros((elem_num, elem_num))
         for i in range(elem_num):
             for j in range(elem_num):
-                print("compare", node_embeddings1_np[i,:].var(),node_embeddings2_np[j,:].var())
                 cost_matrix[i, j] = np.linalg.norm(node_embeddings1_np[i,:] - node_embeddings2_np[j,:]) #works better without ** 2
                 #costs = np.sum((node_embeddings1_np[i,:] - node_embeddings2_np[j,:])**2)
                 #cost_matrix[i, j] = costs
@@ -301,12 +302,10 @@ def compute_assignment(node_embeddings1, node_embeddings2, return_permutationlis
     assignment_dict = {int(row): int(col) for row, col in zip(row_ind, col_ind)}
     assignment_dict = {value: key for key, value in assignment_dict.items()} # reverse because we apply it to the 2nd argument
 
-    #print("assignment_dict", assignment_dict)
     if not return_permutationlist:
         return assignment_dict
 
     node_permutation = [assignment_dict[i] for i in range(len(assignment_dict))]
-    #print("cost matrix\n", cost_matrix, "\nnode permutation", node_permutation)
     return node_permutation
 
 class GraphDistanceAssignment:
@@ -358,9 +357,6 @@ class GraphDistanceAssignment:
         node_embeddings1 = torch.cat((x1.x, node_embeddings1), dim=1)
         node_embeddings2 = torch.cat((x2.x, node_embeddings2), dim=1)
 
-
-        print("node embeddingsa are\n", node_embeddings1, "\n",node_embeddings2)
-
         #node_embeddings1 = (node_embeddings1 * 1000).int().float() /1000
         #node_embeddings2 = (node_embeddings2 * 1000).int().float() / 1000
 
@@ -369,9 +365,6 @@ class GraphDistanceAssignment:
         node_permutation = compute_assignment(node_embeddings1, node_embeddings2, return_permutationlist=True)
 
         node_features = x1.x[node_permutation]
-
-        print("node_permutation", node_permutation)
-        print("compare ", node_features, x2.x)
 
         distance = torch.norm(node_features - x2.x, p=1)
 

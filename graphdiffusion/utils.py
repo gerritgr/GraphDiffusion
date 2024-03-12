@@ -512,15 +512,28 @@ def get_all_neighbors(graph, node_id):
 
 
 def reduce_graph(inflated_graph):
-    print("inflated_graph", inflated_graph)
     if not hasattr(inflated_graph, 'is_inflated'):
         raise ValueError("The input graph does not seem to be inflated.")
+
+    print("reduce graph: ", inflated_graph, inflated_graph.x, inflated_graph.edge_index)
     
     if 'batch' in inflated_graph:
-        inflated_graph.is_inflated = inflated_graph.is_inflated[0]
-        inflated_graph.original_node_feature_dim = inflated_graph.original_node_feature_dim[0]
-        inflated_graph.original_edge_feature_dim = inflated_graph.original_edge_feature_dim[0]
-        inflated_graph.num_original_nodes = int(inflated_graph.num_original_nodes.sum().item())
+        try:
+            inflated_graph.is_inflated = inflated_graph.is_inflated[0]
+        except:
+            pass
+        try:
+            inflated_graph.original_node_feature_dim = inflated_graph.original_node_feature_dim[0]
+        except:
+            pass
+        try:
+            inflated_graph.original_edge_feature_dim = inflated_graph.original_edge_feature_dim[0]
+        except:
+            pass
+        try:
+            inflated_graph.num_original_nodes = int(inflated_graph.num_original_nodes.sum().item())
+        except:
+            pass
 
     if not inflated_graph.is_inflated:
         raise ValueError("The input graph does not seem to be inflated.")
@@ -553,7 +566,8 @@ def reduce_graph(inflated_graph):
 
 
     reduced_edge_index = torch.tensor(reduced_edge_index, dtype=torch.long).t().contiguous()
-    reduced_edge_attr = torch.stack(reduced_edge_attr, dim=0)
+    #reduced_edge_attr = torch.stack(reduced_edge_attr, dim=0)
+    #reduced_edge_attr = reduced_edge_attr.reshape()
 
 
     # Reconstruct the original graph Data object

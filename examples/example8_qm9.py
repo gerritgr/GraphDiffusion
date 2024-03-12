@@ -93,6 +93,7 @@ def gen_dataloader(batch_size = 1):
     #except:
     #    print("generate data")
     transformed_dataset = [pre_process_qm9(data) for data in tqdm(dataset[:1000])]
+    transformed_dataset = [data for data in transformed_dataset if data.edge_index.numel() > 1]
     #transformed_dataset_path = "./data/QM9/transformed_dataset.pkl.gz"
     #with gzip.open(transformed_dataset_path, 'wb') as f:
     #    pickle.dump(transformed_dataset, f)
@@ -171,6 +172,8 @@ plt.savefig(create_path("images/example8/molecule_inflated_and_reduced_graph.png
 #### learning
 ################
 
+print("\n"*10)
+
 dataloader = gen_dataloader(batch_size = 1)
 
 
@@ -178,6 +181,9 @@ dataloader = gen_dataloader(batch_size = 1)
 
 def degradation_obj(data, t, pipeline): #TODO batches
     data = data.clone()
+    if isinstance(t, torch.Tensor):
+        t = t[0]
+    t = torch.ones((data.x.shape[0], 1), device=pipeline.device) * t #todo fix batches
     new_x = data.x + t * 3 * torch.randn_like(data.x)
     #if 'batch' in data:
     #    original_node_feature_dim = data.original_node_feature_dim[0]
@@ -198,3 +204,106 @@ pipeline.visualize_foward(
     num=25,
     plot_data_func=plot_pyg_graph,
 )
+
+from torch_geometric.nn import GCN, GIN, BatchNorm
+class graph_reconstruction(nn.Module):
+    def __init__(self, node_feature_dim, time_dim):
+        super(graph_reconstruction, self).__init__()
+        hidden_channels = 64
+        self.gnn =  GIN(in_channels= node_feature_dim + time_dim, hidden_channels = hidden_channels, num_layers = 6, out_channels=node_feature_dim, dropout=0.3, train_eps=True, jk='cat', norm=BatchNorm(hidden_channels))
+
+
+    def forward(self, data, t, condition=None, pipeline=None, *args, **kwargs):
+        data = data.clone()
+        if isinstance(t, torch.Tensor):
+            t = t[0]
+        t = torch.ones((data.x.shape[0], 1), device=data.x.device) * t #todo fix batches
+        x_in = torch.cat((data.x , t), dim=1)
+        new_x = self.gnn(x_in, data.edge_index)
+        original_node_feature_dim = data.original_node_feature_dim
+        original_edge_feature_dim = data.original_edge_feature_dim
+        data.x[data.node_mask,1:original_node_feature_dim+1] = new_x[data.node_mask,1:original_node_feature_dim+1]
+        data.x[data.edge_mask,1:original_edge_feature_dim+1] = new_x[data.edge_mask,1:original_edge_feature_dim+1]
+        return data
+
+model = graph_reconstruction(5,1)
+
+def train_graph_epoch(dataloader, pipeline, optimizer):
+    model = pipeline.get_model()
+    model.train()
+    total_loss = 0.0
+    for batch in dataloader:
+        batch = pipeline.preprocess(batch) 
+
+        if isinstance(batch, list) or isinstance(batch, tuple):
+            batch, _ = batch # ignore label
+
+        batch = batch.to(pipeline.device)
+        # Generate random tensor 't' for degradation
+        t = torch.ones(batch.x.shape[0], device=pipeline.device) * torch.rand(1)
+
+        optimizer.zero_grad()
+        # Apply degradation and reconstruction from the pipeline
+        batch_with_noise = pipeline.degradation(batch, t)
+        batch_reconstructed = pipeline.reconstruction(batch_with_noise, t)
+
+        # Compute loss using the pipeline's distance method
+        loss = pipeline.distance(batch, batch_reconstructed)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
+
+    # Calculate average loss for the epoch
+    average_loss = total_loss / len(dataloader)
+    return average_loss
+
+train_obj = VectorTrain(train_epoch_func=train_graph_epoch)
+
+for data in dataloader:
+    t = torch.rand(data.x.shape[0]).reshape(-1,1)
+    print("input", data, t)
+    data_out = model(data, t)
+    print("data out", data_out)
+    error = torch.sum((data_out.x - data.x)**2)
+    break
+
+
+distance_obj = GraphDistanceAssignment()
+def compute_distance(data1, data2):
+    original_node_feature_dim = data1.original_node_feature_dim
+    original_edge_feature_dim = data1.original_edge_feature_dim
+    node_dist = data1.x[data1.node_mask,1:original_node_feature_dim+1] - data2.x[data1.node_mask,1:original_node_feature_dim+1]
+    edge_dist = data1.x[data1.edge_mask,1:original_edge_feature_dim+1] - data2.x[data1.edge_mask,1:original_edge_feature_dim+1]
+    dist = torch.norm(node_dist) + torch.norm(edge_dist)
+    return dist
+
+bridge_obj = VectorBridgeNaive()
+pipeline = PipelineVector(node_feature_dim=2, level="DEBUG", degradation_obj=batchify_pyg_transform(degradation_obj), train_obj=train_obj, reconstruction_obj=model, distance_obj=compute_distance, bridge_obj=bridge_obj)
+
+
+pipeline.train(data=dataloader, epochs=10)
+
+pipeline.save_all_model_weights("../pre_trained/qm9_weights.pt")
+
+
+data = next(iter(dataloader))
+pipeline.visualize_reconstruction(
+    data=data,
+    plot_data_func=plot_pyg_graph,
+    outfile="images/example8/backward_inference.jpg",
+    num=25,
+    steps=100,
+)
+
+
+
+
+# container:
+# create (e.g. takes smiles or molecular graph) - can return 0
+# to batch
+# distance
+# to device
+# degrade
+# visualize and print
+
+# smiles -> single molecule container -> batched molecule container -> preprocessed/augmented batch -> distance/reconstruction/bridge/degradation

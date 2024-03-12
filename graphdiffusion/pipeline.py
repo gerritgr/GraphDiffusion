@@ -276,14 +276,21 @@ class PipelineBase:
             data_x = next(iter(data))
             if isinstance(data_x, list) or isinstance(data_x, tuple):
                 data_x = data_x[0]
-            assert data_x.dim() > 1
-            if data.batch_size == 1:
-                #data_x = next(iter(data))
-                assert data_x.shape[0] == 1, "The dataloader must provide batched data."
-            data = data_x
-            data = self.preprocess(data)
+            if not isinstance(data_x, torch_geometric.data.Data):
+                data_x = data_x[0]
+                assert data_x.dim() > 1
+                if data.batch_size == 1:
+                    #data_x = next(iter(data))
+                    assert data_x.shape[0] == 1, "The dataloader must provide batched data."
+                data = data_x
+                data = self.preprocess(data)
+            else:
+                data = data_x
 
-        data = data.to(self.device)
+        try:
+            data = data.to(self.device)
+        except:
+            pass
         arrays_data = list()
         arrays_projections = list()
         backward_steps = list(np.linspace(1.0, 0, steps))
