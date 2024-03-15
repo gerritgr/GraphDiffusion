@@ -164,17 +164,21 @@ plot_pyg_graph(data, ax)
 plt.savefig(create_path("images/example8/molecule_inflated_and_reduced_graph.png"))
 
 
-
-
-
-
 ################
-#### learning
+#### plotting
 ################
 
 print("\n"*10)
 
-dataloader = gen_dataloader(batch_size = 1)
+dataloader = gen_dataloader(batch_size = 4)
+
+
+for data_batch in dataloader:
+    print(data_batch)
+    print(data_batch.x)
+    print(data_batch.edge_index)
+    print(data_batch.edge_attr)
+    break
 
 
 
@@ -205,12 +209,20 @@ pipeline.visualize_foward(
     plot_data_func=plot_pyg_graph,
 )
 
-from torch_geometric.nn import GCN, GIN, BatchNorm
-class graph_reconstruction(nn.Module):
+
+
+################
+#### learning
+################
+
+from torch_geometric.nn import GCN, GIN, BatchNorm, PNA
+from torch.nn import Linear as Lin
+from torch.nn import Sequential as Seq
+class graph_reconstructionGIN(nn.Module):
     def __init__(self, node_feature_dim, time_dim):
-        super(graph_reconstruction, self).__init__()
-        hidden_channels = 64
-        self.gnn =  GIN(in_channels= node_feature_dim + time_dim, hidden_channels = hidden_channels, num_layers = 6, out_channels=node_feature_dim, dropout=0.3, train_eps=True, jk='cat', norm=BatchNorm(hidden_channels))
+        super(graph_reconstructionGIN, self).__init__()
+        hidden_channels = 32
+        self.gnn =  GIN(in_channels= node_feature_dim + time_dim, hidden_channels = hidden_channels, num_layers = 4, out_channels=node_feature_dim, dropout=0.1, train_eps=True, jk='cat', norm=BatchNorm(hidden_channels))
 
 
     def forward(self, data, t, condition=None, pipeline=None, *args, **kwargs):
@@ -220,13 +232,118 @@ class graph_reconstruction(nn.Module):
         t = torch.ones((data.x.shape[0], 1), device=data.x.device) * t #todo fix batches
         x_in = torch.cat((data.x , t), dim=1)
         new_x = self.gnn(x_in, data.edge_index)
-        original_node_feature_dim = data.original_node_feature_dim
-        original_edge_feature_dim = data.original_edge_feature_dim
+        original_node_feature_dim = data.original_node_feature_dim[0]
+        original_edge_feature_dim = data.original_edge_feature_dim[0]
         data.x[data.node_mask,1:original_node_feature_dim+1] = new_x[data.node_mask,1:original_node_feature_dim+1]
         data.x[data.edge_mask,1:original_edge_feature_dim+1] = new_x[data.edge_mask,1:original_edge_feature_dim+1]
         return data
+    
+from torch_geometric.utils import erdos_renyi_graph, to_networkx, from_networkx, degree
+def dataset_to_degree_bin(train_dataset):
+  """
+  Convert a dataset to a histogram of node degrees (in-degrees).
+  Load from file if available; otherwise, compute from the dataset.
+  """
 
-model = graph_reconstruction(5,1)
+  # Assert that the dataset is provided.
+  assert(train_dataset is not None)
+
+  # Compute the maximum in-degree in the training data.
+  max_degree = -1
+  for data in train_dataset:
+    #data = data.to(DEVICE)
+    d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
+    max_degree = max(max_degree, int(d.max()))
+
+  # Create an empty histogram for degrees.
+  deg = torch.zeros(max_degree + 1, dtype=torch.long)
+
+  # Populate the histogram with data from the dataset.
+  for data in train_dataset:
+    #data = data.to(DEVICE)
+    d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
+    deg += torch.bincount(d, minlength=deg.numel())
+
+  # Save the computed histogram to a file.
+  #write_file("deg.pickle", deg.cpu())
+
+  return deg
+class graph_reconstruction(nn.Module):
+    def __init__(self, node_feature_dim, time_dim, train_dataset, towers=2, normalization=True, depth=6, dropout=0.05, pre_post_layers=1, hidden_channels=32):
+        super(graph_reconstruction, self).__init__()
+        self.sigmoid = nn.Sigmoid()
+
+        # Adjust hidden channels for the given towers.
+        hidden_channels = towers * ((hidden_channels // towers) + 1) # must match
+
+        # Calculate input and output channels.
+        in_channels = node_feature_dim + time_dim
+        out_channels = node_feature_dim
+
+        # Get degree histogram for the dataset
+        deg = dataset_to_degree_bin(train_dataset)
+
+        # Set aggregators and scalers for the PNA layer.
+        aggregators = ['mean', 'min', 'max', 'std']
+        scalers = ['identity', 'amplification', 'attenuation']
+
+        # Create a normalization layer if required.
+        self.normalization = BatchNorm(hidden_channels) if normalization else None
+
+        # Define the PNA layer.
+        self.pnanet = PNA(
+            in_channels=in_channels,
+            hidden_channels=hidden_channels,
+            out_channels=hidden_channels,
+            num_layers=depth,
+            aggregators=aggregators,
+            scalers=scalers,
+            deg=deg,
+            dropout=dropout,
+            towers=towers,
+            norm=self.normalization,
+            pre_layers=pre_post_layers,
+            post_layers=pre_post_layers
+        )
+
+        # Define the final MLP layer.
+        self.final_mlp = Seq(
+            Lin(hidden_channels, hidden_channels),
+            nn.ReLU(),
+            Lin(hidden_channels, hidden_channels),
+            nn.ReLU(),
+            Lin(hidden_channels, hidden_channels),
+            nn.ReLU(),
+            Lin(hidden_channels, out_channels)
+        )
+
+    def forward(self, data, t, condition=None, pipeline=None, *args, **kwargs):
+        """
+        Perform a forward pass through the PNAnet.
+        """
+        data = data.clone()
+        x_in = data.x
+        edge_index = data.edge_index
+        TIME_FEATURE_DIM = 1
+        row_num = x_in.shape[0]
+        t = t.view(-1, TIME_FEATURE_DIM)
+        x = torch.concat((x_in, t), dim=1)
+
+        x = self.pnanet(x, edge_index)
+        x = self.final_mlp(x)
+
+        # Assertions for sanity checks
+        assert(x.numel() > 1)
+        assert(x.shape[0] == row_num)
+
+        original_node_feature_dim = data.original_node_feature_dim[0]
+        original_edge_feature_dim = data.original_edge_feature_dim[0]
+        data.x[data.node_mask,1:original_node_feature_dim+1] = x[data.node_mask,1:original_node_feature_dim+1]
+        data.x[data.edge_mask,1:original_edge_feature_dim+1] = x[data.edge_mask,1:original_edge_feature_dim+1]
+        return data
+
+train_dataset = [data for data in gen_dataloader(batch_size = 1)]
+model = graph_reconstruction(5,1, train_dataset)
 
 def train_graph_epoch(dataloader, pipeline, optimizer):
     model = pipeline.get_model()
@@ -259,6 +376,43 @@ def train_graph_epoch(dataloader, pipeline, optimizer):
 
 train_obj = VectorTrain(train_epoch_func=train_graph_epoch)
 
+
+
+class VectorBridgeGraph(nn.Module):
+    def __init__(self):
+        super(VectorBridgeGraph, self).__init__()
+
+    def forward(self, data_now, data_prediction, t_now, t_query, pipeline, vectorbridge_magnitude_scale=None, vectorbridge_rand_scale=None):
+        vectorbridge_magnitude_scale = (
+            pipeline.config.vectorbridge_magnitude_scale or 1.0
+        )  # vectorbridge_magnitude_scale should be taken automatically from the config, this does not work currently somehow
+        vectorbridge_rand_scale = pipeline.config.vectorbridge_rand_scale or 1.0
+        vectorbridge_magnitude_scale = 1.0
+        vectorbridge_rand_scale = 2.0
+        data_new = data_now.clone()
+        data_now = data_now.x
+        data_prediction = data_prediction.x
+
+        row_num = data_now.shape[0]
+        data_orig_shape = data_now.shape
+        data_pred_shape = data_prediction.shape
+        assert data_orig_shape == data_pred_shape
+        data_now = data_now.view(row_num, -1)
+        data_prediction = data_prediction.view(row_num, -1)
+        direction = data_prediction - data_now
+        t_diff = t_now - t_query
+        t_scale = t_diff / t_now
+        change_vector = direction * 1.1 * t_scale  # (1.0 - t_query) #t_scale # multiply each column by the corresponding magnitude
+        x_tminus1 = data_now + change_vector  # / vectorbridge_magnitude_scale
+        if t_query > 1e-3:
+            x_tminus1 += torch.randn_like(x_tminus1) * (t_query / vectorbridge_rand_scale)
+
+        x_tminus1 = x_tminus1.reshape(data_orig_shape)  # Use view_as for safety and readability
+        data_new.x = x_tminus1
+        return data_new
+
+
+
 for data in dataloader:
     t = torch.rand(data.x.shape[0]).reshape(-1,1)
     print("input", data, t)
@@ -272,20 +426,29 @@ distance_obj = GraphDistanceAssignment()
 def compute_distance(data1, data2):
     original_node_feature_dim = data1.original_node_feature_dim
     original_edge_feature_dim = data1.original_edge_feature_dim
+    try:
+        original_node_feature_dim = original_node_feature_dim[0]
+        original_edge_feature_dim = original_edge_feature_dim[0]
+    except:
+        pass
+    #print("original_node_feature_dim", original_node_feature_dim)
     node_dist = data1.x[data1.node_mask,1:original_node_feature_dim+1] - data2.x[data1.node_mask,1:original_node_feature_dim+1]
     edge_dist = data1.x[data1.edge_mask,1:original_edge_feature_dim+1] - data2.x[data1.edge_mask,1:original_edge_feature_dim+1]
     dist = torch.norm(node_dist) + torch.norm(edge_dist)
     return dist
 
-bridge_obj = VectorBridgeNaive()
-pipeline = PipelineVector(node_feature_dim=2, level="DEBUG", degradation_obj=batchify_pyg_transform(degradation_obj), train_obj=train_obj, reconstruction_obj=model, distance_obj=compute_distance, bridge_obj=bridge_obj)
+bridge_obj = VectorBridgeGraph()
+pipeline = PipelineVector(node_feature_dim=2, level="DEBUG", degradation_obj=batchify_pyg_transform(degradation_obj), train_obj=train_obj, reconstruction_obj=model, distance_obj=compute_distance, bridge_obj=bridge_obj, pre_trained_path="../pre_trained/qm9_weightsPNA.pt")
 
+print("start training")
+dataloader = gen_dataloader(batch_size = 100)
+pipeline.train(data=dataloader, epochs=10000)
 
-pipeline.train(data=dataloader, epochs=10)
+pipeline.save_all_model_weights("../pre_trained/qm9_weightsPNA.pt")
 
-pipeline.save_all_model_weights("../pre_trained/qm9_weights.pt")
+print("start reconstruction")
 
-
+dataloader = gen_dataloader(batch_size = 1)
 data = next(iter(dataloader))
 pipeline.visualize_reconstruction(
     data=data,

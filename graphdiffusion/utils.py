@@ -515,7 +515,6 @@ def reduce_graph(inflated_graph):
     if not hasattr(inflated_graph, 'is_inflated'):
         raise ValueError("The input graph does not seem to be inflated.")
 
-    print("reduce graph: ", inflated_graph, inflated_graph.x, inflated_graph.edge_index)
     
     if 'batch' in inflated_graph:
         try:
@@ -564,10 +563,11 @@ def reduce_graph(inflated_graph):
         reduced_edge_index.append(neighbors_of_i)
         reduced_edge_attr.append(edge_i)
 
-
     reduced_edge_index = torch.tensor(reduced_edge_index, dtype=torch.long).t().contiguous()
-    #reduced_edge_attr = torch.stack(reduced_edge_attr, dim=0)
-    #reduced_edge_attr = reduced_edge_attr.reshape()
+    if len(reduced_edge_attr) > 0:
+        reduced_edge_attr = torch.stack(reduced_edge_attr, dim=0)
+    else:
+        reduced_edge_attr = torch.empty((len(reduced_edge_attr), edge_i.numel()), dtype=torch.float32)
 
 
     # Reconstruct the original graph Data object
@@ -578,6 +578,8 @@ def reduce_graph(inflated_graph):
         if key not in ['x', 'edge_index', 'edge_attr', 'is_inflated', 'node_mask', 'edge_mask', 'num_original_nodes', 'original_node_feature_dim', 'original_edge_feature_dim']:
             reduced_graph[key] = item
     
+    if reduced_graph.edge_index.numel() > 0:
+        assert(reduced_graph.edge_attr.shape[0] == reduced_graph.edge_index.shape[1])
     return reduced_graph
 
 
